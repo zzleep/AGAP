@@ -6,78 +6,96 @@
 [![SDG 11](https://img.shields.io/badge/SDG-11-orange)](#)
 [![SDG 13](https://img.shields.io/badge/SDG-13-green)](#)
 
-> **AGAP** — the *Advance Guidance & Assistance Platform* — delivers real‑time disaster preparedness tools that connect residents and local government before, during, and after severe weather events.
-
----
-
-## Overview
-
-Santa Rosa City is regularly battered by severe weather: month-long coastal inundation along Laguna de Bay, flash floods across the Silang–Santa Rosa River Basin, and widespread grid failures. Yet residents often lack localised early warnings, reliable safety-status channels, and transparent information on critical infrastructure like drainage and dikes. Emergency responders operate with incomplete field data, slowing relief and prolonging vulnerability.
-
-AGAP bridges this gap. It’s an **AI‑powered Progressive Web Application** that puts a one‑tap lifeline in every pocket, gives authorities a unified command view, and uses explainable intelligence to turn raw data into life‑saving decisions.
+> **AGAP** is an ultra-resilient, zero-install Progressive Web App that turns every smartphone into a lifeline – closing the gap between citizens and first responders when severe weather strikes Santa Rosa City.
 
 ---
 
 ## Problem Statement
 
-The City of Santa Rosa is highly vulnerable to severe weather events, including prolonged coastal inundation, flash flooding, and power or communication outages. Residents frequently have no access to localised early warning systems, emergency preparedness tools, or real‑time community information. Limited visibility into drainage and flood‑control projects makes it harder for both citizens and local government to strengthen disaster preparedness, improve coordination, and build resilient communities.
+Santa Rosa City faces devastating impacts during severe weather events: month-long coastal inundation along Laguna de Bay, rapid flash flooding across the Silang–Santa Rosa river basin, and frequent power and communication grid failures.  
+
+Most residents remain critically vulnerable. They lack emergency preparedness tools, localized early warning systems, and **offline-capable** communication channels. On the ground, local emergency response units struggle with limited real-time situational awareness – a gap that severely hinders quick, coordinated action when every minute counts.
 
 ---
 
-## Proposed Solution
+## Solution
 
-AGAP is a Progressive Web Application that improves disaster preparedness and community resilience through:
+Where traditional infrastructure fails, lightweight, accessible technology creates a lifeline.  
 
-- Predictive safe routing based on live rainfall, elevation models, and historical flood spots.
-- A **1‑Tap Emergency Button** that instantly broadcasts “I Am Safe” or “Need Urgent Assistance” with GPS coordinates.
-- Anonymous community reporting that protects the reporter’s identity.
-- An **AI‑powered command dashboard** that consolidates citizen signals, sensor data, and predictive insights for local authorities.
+AGAP is a **zero-install Progressive Web App (PWA)** that uses local caching and lightweight predictive mapping to function even when networks are down. It bridges the critical gap between citizens and first responders during a disaster – instantly broadcasting safety statuses, guiding people along safe routes, and delivering real-time intelligence to the command center.  
 
-By integrating real‑time data, geospatial analytics, and explainable AI, the platform delivers early warnings, supports informed decision‑making, enhances infrastructure transparency, and enables seamless coordination between citizens and the Local Government Unit (LGU).
+This is not just another disaster app. It’s a digital infrastructure layer that transforms Santa Rosa’s disaster response capabilities and offers a scalable blueprint for climate resilience across vulnerable coastal cities – bringing us one solution closer to becoming an internationally certified smart city.
 
 ---
 
-## Core Features
+## How It Works
 
-###  Citizen Side (Progressive Web App)
+1. **Before the storm** – Citizens receive early weather alerts and can review pre-validated disaster guides and evacuation routes.  
+2. **During the emergency** – A single tap broadcasts “I Am Safe” or “Need Urgent Assistance” with GPS coordinates. The app works offline and queues data for when connectivity returns.  
+3. **On the command side** – The admin dashboard ingests live citizen signals, rainfall gauges, and sensor data. AI models suggest tactical actions and surface emerging community threats.  
+4. **After the event** – Anonymous reporting lets residents flag damaged infrastructure, unsafe areas, or other concerns, helping the LGU prioritize recovery efforts.
+
+---
+
+## Features
+
+### Currently Available (MVP)
 
 | Feature | Description |
 |---------|-------------|
-| **1‑Tap Emergency Button** | Two states: *I Am Safe* and *Need Urgent Assistance*. Each tap sends a geotagged signal instantly to the command hub. |
-| **Predictive Safe Route Engine** | Analyses live rainfall forecasts, elevation models, and historical flood spots to calculate safe routes *before* water accumulates. |
-| **Anonymous & Secure Reporting** | Submit community concerns without fear of retaliation. Reporter identity is cryptographically protected. |
+| **Weather Alert** | Push notifications for severe weather advisories based on PAGASA bulletins. |
+| **SOS Button** | Instant distress signal with location sharing (initial version). |
+| **Evacuation Route** | Pre-mapped evacuation corridors and assembly points. |
+| **Disaster Guide** | Offline-first emergency preparedness information and checklists. |
 
-###  Admin Side (City Command Dashboard)
+### Proposed Features (Roadmap)
 
-| Feature | Description |
-|---------|-------------|
-| **Unified City Data Command Hub** | A single operational interface merging live citizen status feeds, rainfall gauges, and traffic sensors. |
-| **Explainable AI Recommendation Engine** | Suggests tactical actions and explains step‑by‑step why a specific response was prioritised. |
-| **Simulated Evacuation Planner** | Simulate severe rainfall scenarios to design, validate, and publish pre‑approved evacuation corridors. |
-| **1‑Tap Emergency Status Receiver** | Automatically ingests and groups signals into a real‑time casualty and safety heatmap for first responders. |
-| **AI Community Insight Dashboard** | Generates summaries, detects recurring issues, and predicts emerging community concerns before they escalate. |
+#### Citizen Side
+
+| Feature | Phase | Description |
+|---------|-------|-------------|
+| **1‑Tap Emergency Button** (revamp) | Phase 1 | Dual-state action: *I Am Safe* / *Need Urgent Assistance*. When online, transmits precise geotagged GPS coordinates; offline, queues the signal for automatic send when connectivity resumes. |
+| **Predictive Safe Route Engine** (Flow Engine) | Phase 2 | Analyses live rainfall forecasts, elevation models, drainage capacities, and historical flood spots to calculate accessible routes *before* water accumulates on roads. |
+| **Anonymous & Secure Reporting** | Phase 2 | Youth and residents can submit community concerns without fear of retaliation. Reporter identity is cryptographically protected. |
+
+#### Admin Side (City Command Dashboard)
+
+| Feature | Phase | Description |
+|---------|-------|-------------|
+| **AI Community Insight Dashboard** | Phase 1 | Generates summaries, detects recurring issues, and visualizes trends through charts and analytics. Predicts emerging community concerns by analysing historical reports. |
+| **AI Smart Report Classification** | Phase 2 | Automatically classifies incoming reports (e.g., bullying, unsafe areas, infrastructure, environment, mental health) and assigns priority levels, recommending the appropriate LGU department. |
+| **Explainable AI Recommendation Engine (Aegis)** | Phase 2 | Suggests specific tactical actions (e.g., “Deploy 2 rescue boats to Barangay Sinkang and close Manila South Road at Segment 4”) with step-by-step reasoning explaining why the response was prioritised. |
+| **1‑Tap Emergency Status Receiver** | Phase 1 | Ingest and group citizen signals into a real-time safety and casualty heatmap for first responders. |
+| **Simulated Evacuation Planner** | Phase 2 | Simulate severe rainfall scenarios to design, validate, and publish pre-approved evacuation corridors. |
 
 ---
 
-## Key Functionality
+## Alignment with Sustainable Development Goals
 
-- **Instant distress & safety broadcasting** – The 1‑Tap Emergency Button acts as a critical lifeline, transmitting the user’s status and precise GPS location.
-- **AI‑driven report triage** – Incoming community reports are automatically classified, prioritised, and trend‑analysed, giving the LGU actionable intelligence without manual sifting.
-- **Explainable decision support** – Every AI recommendation comes with human‑readable reasoning, so officials understand *why* a particular action is suggested.
-- **Offline resilience** – As a PWA, core features remain functional even during partial network outages, critical when communication infrastructure is damaged.
+- **SDG 11** – Sustainable Cities and Communities  
+  Strengthens local resilience, infrastructure transparency, and inclusive community participation.
+
+- **SDG 13** – Climate Action  
+  Delivers early warnings, data-driven adaptation tools, and proactive disaster risk reduction for climate-vulnerable cities.
+
+---
+
+## Youth Participation
+
+This project is driven by youth, with a focus on **Governance and Environment**. Young developers, designers, and community organisers are central to building, testing, and deploying the platform in real-world drills. AGAP empowers youth to shape their city’s disaster preparedness and environmental monitoring.
 
 ---
 
 ## Technology Stack *(to be determined)*
 
-The technology choices for the platform are currently under evaluation. They will be selected to ensure:
+Tech choices will be evaluated to meet strict requirements:
 
-- **Fast and reliable offline experience** (Progressive Web App standards)
-- **Real‑time geospatial processing** and routing
-- **Explainable AI/ML** models for risk prediction and recommendation
-- **Secure, scalable cloud infrastructure** that can withstand disaster‑area conditions
+- **Offline resilience** – PWA with service workers and local caching for use during network outages.
+- **Real-time geospatial processing** – Lightweight mapping and routing engines that work on low-bandwidth connections.
+- **Explainable AI/ML** – Models that provide transparent, human-readable reasoning for every recommendation.
+- **Scalable, secure cloud infrastructure** – Built to survive disaster-area conditions.
 
-The final stack will be documented here once prototyping begins.
+The final stack will be documented once prototyping begins.
 
 ---
 
@@ -89,7 +107,14 @@ Setup documentation is under development. The project is currently in its early 
 
 ## Project Structure
 
-The repository structure will be established as the project moves into active development. Initially it will be organised into separate modules for the client application, backend services, AI engine, documentation, and deployment scripts. A detailed tree will be added once the foundation is laid.
+The repository will be organised into modular components once active development starts:
+
+- Client application (PWA frontend)
+- Backend API and real‑time services
+- AI/ML pipeline (data processing, model training, explainability)
+- Documentation and deployment scripts
+
+A detailed tree will be added when the foundation is laid.
 
 ---
 
@@ -103,19 +128,6 @@ We welcome contributions that improve disaster resilience for vulnerable communi
 4. Open a pull request with a clear description of changes and the problem it solves.
 
 A detailed `CONTRIBUTING.md` will be available soon.
-
----
-
-## Youth Participation
-
-This project is built with strong youth involvement, focusing on **Governance and Environment**. Young developers, designers, and community organisers are encouraged to contribute, report issues, and help deploy the platform in real‑world drills.
-
----
-
-## Alignment with Sustainable Development Goals
-
-- **SDG 11** – Sustainable Cities and Communities: Strengthens local resilience and infrastructure transparency.
-- **SDG 13** – Climate Action: Provides early warnings and data‑driven tools to adapt to climate‑related hazards.
 
 ---
 
