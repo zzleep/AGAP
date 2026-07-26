@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title>AGAP</title>
+  <rect width="512" height="512" rx="108" fill="#0f172a"/>
+  <path d="M256 74 421 397h-69l-32-66H192l-32 66H91L256 74Zm0 119-40 83h80l-40-83Z" fill="#ef4444"/>
+</svg>

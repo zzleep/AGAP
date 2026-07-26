@@ -1,0 +1,12 @@
+# AGAP Gitignore
+AGENTS.md
+.env
+.env.local
+node_modules/
+dist/
+.tmp/
+.DS_Store
+*.log
+.agents/
+AGAP_Blueprint.md
+tests/

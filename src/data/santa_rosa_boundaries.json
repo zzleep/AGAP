@@ -1,0 +1,24 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Santa Rosa City Boundary",
+        "admin_level": "city"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [121.085, 14.335],
+            [121.135, 14.335],
+            [121.135, 14.285],
+            [121.085, 14.285],
+            [121.085, 14.335]
+          ]
+        ]
+      }
+    }
+  ]
+}
