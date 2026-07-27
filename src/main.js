@@ -1,4 +1,26 @@
 import 'leaflet/dist/leaflet.css'
+// TEAM_001: Silently intercept Mapbox telemetry requests to prevent browser console spam/errors from adblockers
+if (typeof window !== 'undefined') {
+  const originalFetch = window.fetch
+  window.fetch = function (input, init) {
+    const url = typeof input === 'string' ? input : (input?.url || '')
+    if (url.includes('events.mapbox.com')) {
+      return Promise.resolve(new Response(null, { status: 200 }))
+    }
+    return originalFetch.apply(this, arguments)
+  }
+
+  if (navigator.sendBeacon) {
+    const originalSendBeacon = navigator.sendBeacon
+    navigator.sendBeacon = function (url, data) {
+      if (typeof url === 'string' && url.includes('events.mapbox.com')) {
+        return true
+      }
+      return originalSendBeacon.apply(this, arguments)
+    }
+  }
+}
+
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { createI18n } from 'vue-i18n'

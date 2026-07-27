@@ -1,4 +1,4 @@
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase'
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase'
 import { useSOSStore } from '@/stores/sosStore'
 import { useConnectivityStore } from '@/stores/connectivityStore'
 import { findNearestBarangay } from '@/data/barangay_coords'
@@ -14,12 +14,8 @@ export function useSOS() {
   async function warmConnection() {
     if (connectivity.isPrewarmed) return
     try {
-      await fetch(`${SUPABASE_URL}/rest/v1/`, {
-        method: 'GET',
-        headers: {
-          'apikey': SUPABASE_ANON_KEY
-        }
-      })
+      // TEAM_001: Pre-warm connection using configured client to avoid 401 console error
+      await supabase.from('sos_reports').select('id').limit(1)
       connectivity.isPrewarmed = true
     } catch (err) {
       console.warn('TLS connection pre-warm ping failed:', err)
