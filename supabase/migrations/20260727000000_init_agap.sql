@@ -206,3 +206,14 @@ CREATE POLICY "Allow authenticated update aegis_suggestions"
 ALTER PUBLICATION supabase_realtime ADD TABLE public.sos_reports;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.community_reports;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.aegis_suggestions;
+
+-- === Schema Fixes (appended 2026-07-27) ===
+
+-- Fix 1: Add dedicated scenario_type column for indexable filtering
+ALTER TABLE public.aegis_suggestions ADD COLUMN scenario_type TEXT;
+
+-- Fix 2: Index on outcome for server-side aggregation
+CREATE INDEX IF NOT EXISTS idx_aegis_suggestions_outcome ON public.aegis_suggestions(outcome);
+
+-- Fix 3: GIN index on related_sos_ids for SOS-to-suggestion queries
+CREATE INDEX IF NOT EXISTS idx_aegis_suggestions_related_sos ON public.aegis_suggestions USING GIN (related_sos_ids);

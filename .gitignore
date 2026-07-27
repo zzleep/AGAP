@@ -5,6 +5,7 @@ AGENTS.md
 node_modules/
 dist/
 .tmp/
+supabase/.temp/
 .DS_Store
 *.log
 .agents/

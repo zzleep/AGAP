@@ -3,16 +3,36 @@
     <div class="flex items-center justify-between">
       <div>
         <h2 class="text-xl font-bold text-white">Aegis AI Advisory Command Panel</h2>
-        <p class="text-xs text-slate-400">Gemini 2.0 Flash operational recommendations — advisory only, never autonomous</p>
+        <p class="text-xs text-slate-400">Gemini 2.5 Flash operational recommendations — advisory only, never autonomous</p>
       </div>
       <div class="flex items-center space-x-2">
-        <button
-          @click="simulateScenario"
-          :disabled="isLoading"
-          class="px-3 py-1.5 rounded-lg bg-purple-900 hover:bg-purple-800 text-purple-200 text-xs font-bold border border-purple-700 transition-colors disabled:opacity-50"
-        >
-          🎬 Simulate Scenario
-        </button>
+        <div class="relative">
+          <button
+            @click="showScenarioSelector = !showScenarioSelector"
+            :disabled="isLoading"
+            class="px-3 py-1.5 rounded-lg bg-purple-900 hover:bg-purple-800 text-purple-200 text-xs font-bold border border-purple-700 transition-colors disabled:opacity-50"
+          >
+            🎬 Simulate Scenario
+          </button>
+          <!-- Scenario Selector Dropdown -->
+          <div
+            v-if="showScenarioSelector"
+            class="absolute right-0 mt-2 w-80 p-3 rounded-xl bg-slate-900 border border-slate-800 shadow-2xl z-50 space-y-2"
+          >
+            <div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-2">Select Scenario</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div
+                v-for="(s, key) in scenarios"
+                :key="key"
+                @click="simulateScenario(key)"
+                class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-purple-600 hover:bg-purple-950/40 cursor-pointer transition-all"
+              >
+                <div class="text-xs font-bold text-white">{{ s.icon }} {{ s.label }}</div>
+                <div class="text-[10px] text-slate-400 mt-0.5 leading-tight">{{ s.description }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
         <button
           v-if="!activeRecommendation && !isLoading"
           @click="askAegis"
@@ -27,7 +47,7 @@
     <div v-if="isLoading" class="p-6 rounded-xl bg-purple-950/40 border border-purple-800/60 text-center space-y-3">
       <div class="w-8 h-8 mx-auto border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
       <p class="text-sm text-purple-300 font-semibold">Aegis is analyzing the situation...</p>
-      <p class="text-xs text-slate-400">Consulting Gemini 2.0 Flash for operational recommendation</p>
+      <p class="text-xs text-slate-400">Consulting Gemini 2.5 Flash for operational recommendation</p>
     </div>
 
     <div v-if="outcomeError" class="p-3 rounded-xl bg-rose-950/40 border border-rose-800/40 text-xs text-rose-300">
@@ -49,7 +69,11 @@
                 'bg-slate-800 text-slate-300'
               ]"
             >
-              {{ activeRecommendation.confidence }} Confidence
+              {{ activeRecommendation.confidence || 'unknown' }} Confidence
+            </span>
+            <span v-if="activeRecommendation.scenario_type" class="px-2 py-0.5 text-[10px] uppercase font-bold rounded"
+              :class="scenarioBadgeClass(activeRecommendation.scenario_type)">
+              {{ scenarioIcon(activeRecommendation.scenario_type) }} {{ activeRecommendation.scenario_type }}
             </span>
           </div>
 
@@ -201,7 +225,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useSOSStore } from '@/stores/sosStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useFlowStore } from '@/stores/flowStore'
@@ -217,6 +241,60 @@ const selectedOutcome = ref(null)
 const outcomeSubmitting = ref(false)
 const outcomeError = ref('')
 const historyLog = ref([])
+const showScenarioSelector = ref(false)
+
+const scenarios = {
+  flood: {
+    label: 'Flood',
+    icon: '🌊',
+    sos_ids: ['sim_flood_001', 'sim_flood_002', 'sim_flood_003'],
+    barangay: 'Tagapo',
+    count: 3,
+    floodSeverity: 'danger',
+    weatherAlert: 'Heavy rainfall warning: 18.5mm/hr sustained. Typhoon signal #2 raised over Santa Rosa City.',
+    description: 'Rising flood waters, water rescue needed'
+  },
+  earthquake: {
+    label: 'Earthquake',
+    icon: '🏚️',
+    sos_ids: ['sim_eq_001', 'sim_eq_002', 'sim_eq_003', 'sim_eq_004', 'sim_eq_005'],
+    barangay: 'Malitlit',
+    count: 5,
+    floodSeverity: 'none',
+    weatherAlert: 'Aftershock warning: M5.2 earthquake detected 15km east of Santa Rosa. Possible structural damage.',
+    description: 'Building collapse, search & rescue needed'
+  },
+  typhoon: {
+    label: 'Typhoon',
+    icon: '🌀',
+    sos_ids: ['sim_ty_001', 'sim_ty_002', 'sim_ty_003', 'sim_ty_004'],
+    barangay: 'Dila',
+    count: 4,
+    floodSeverity: 'warning',
+    weatherAlert: 'Typhoon Signal #3. Maximum sustained winds 120km/h. Coastal storm surge expected. Widespread power outages.',
+    description: 'Pre-emptive evacuation, shelter management'
+  },
+  fire: {
+    label: 'Fire',
+    icon: '🔥',
+    sos_ids: ['sim_fire_001', 'sim_fire_002'],
+    barangay: 'Market Area',
+    count: 2,
+    floodSeverity: 'none',
+    weatherAlert: 'Structural fire reported in commercial district. Fire spreading risk due to nearby buildings. Dense urban area.',
+    description: 'Fire suppression, perimeter evacuation'
+  },
+  landslide: {
+    label: 'Landslide',
+    icon: '⛰️',
+    sos_ids: ['sim_ls_001', 'sim_ls_002', 'sim_ls_003'],
+    barangay: 'Sinalhan',
+    count: 3,
+    floodSeverity: 'watch',
+    weatherAlert: 'Continuous heavy rain for 48 hours. Soil saturation critical. Tension cracks reported on hillside slope.',
+    description: 'Geohazard assessment, route closure'
+  }
+}
 
 // Auto-surface when cluster forms
 watch(() => sosStore.activeClusters, (clusters) => {
@@ -227,13 +305,35 @@ watch(() => sosStore.activeClusters, (clusters) => {
       cluster.barangay,
       cluster.count,
       flowStore.zoneSeverity,
-      null
+      null,
+      'flood'
     )
   }
 }, { deep: true })
 
-onMounted(() => {
+onMounted(async () => {
   fetchHistory()
+  // Ensure SOS data is loaded if navigated here directly
+  if (sosStore.activeReports.length === 0) {
+    await sosStore.fetchActiveReports()
+    sosStore.subscribeToRealtimeSOS()
+  }
+  // Check for already-existing clusters on mount
+  if (sosStore.activeClusters.length > 0 && !activeRecommendation.value && !isLoading.value) {
+    const cluster = sosStore.activeClusters[0]
+    invokeAegis(
+      cluster.reports.map(r => r.id),
+      cluster.barangay,
+      cluster.count,
+      flowStore.zoneSeverity,
+      null,
+      'flood'
+    )
+  }
+})
+
+onUnmounted(() => {
+  // Keep SOS subscription alive for other admin pages — don't unsubscribe here
 })
 
 async function askAegis() {
@@ -246,7 +346,8 @@ async function askAegis() {
       cluster.barangay,
       cluster.count,
       flowStore.zoneSeverity,
-      null
+      null,
+      'flood'
     )
   } else {
     const pending = sosStore.activeReports.filter(r => r.status === 'pending')
@@ -257,26 +358,23 @@ async function askAegis() {
         first.barangay,
         1,
         flowStore.zoneSeverity,
-        null
+        null,
+        'flood'
       )
     } else {
-      await invokeAegis([], 'Tagapo', 0, 'watch', 'No active alerts')
+      await invokeAegis([], 'Tagapo', 0, 'watch', 'No active alerts', 'flood')
     }
   }
 }
 
-async function simulateScenario() {
-  // Pre-scripted scenario: 3-SOS cluster in Tagapo + heavy rain
-  await invokeAegis(
-    ['sim_sos_001', 'sim_sos_002', 'sim_sos_003'],
-    'Tagapo',
-    3,
-    'danger',
-    'Heavy rainfall warning: 18.5mm/hr sustained. Typhoon signal #2 raised over Santa Rosa City.'
-  )
+async function simulateScenario(key) {
+  const s = scenarios[key]
+  if (!s) return
+  showScenarioSelector.value = false
+  await invokeAegis(s.sos_ids, s.barangay, s.count, s.floodSeverity, s.weatherAlert, key)
 }
 
-async function invokeAegis(sosIds, barangay, count, floodSeverity, weatherAlert) {
+async function invokeAegis(sosIds, barangay, count, floodSeverity, weatherAlert, scenarioType = 'flood') {
   isLoading.value = true
   selectedOutcome.value = null
   outcomeError.value = ''
@@ -289,7 +387,8 @@ async function invokeAegis(sosIds, barangay, count, floodSeverity, weatherAlert)
         cluster_barangay: barangay,
         cluster_count: count,
         flood_zone_severity: floodSeverity,
-        weather_alert: weatherAlert
+        weather_alert: weatherAlert,
+        scenario_type: scenarioType
       }
     })
 
@@ -300,10 +399,12 @@ async function invokeAegis(sosIds, barangay, count, floodSeverity, weatherAlert)
         target_barangay: barangay,
         reasoning: 'Step 1: Edge Function unavailable — defaulting to standard dispatch.\nStep 2: SOS cluster density suggests immediate response.\nStep 3: Manual operator assessment required.\nStep 4: Pre-position resources based on local knowledge.',
         confidence: 'low',
+        scenario_type: scenarioType,
         raw_inputs: {
           sos_cluster: { ids: sosIds, barangay, count },
           flood_zone: { severity: floodSeverity || 'none' },
-          weather: { alert: weatherAlert || 'No active alert' }
+          weather: { alert: weatherAlert || 'No active alert' },
+          scenario_type: scenarioType
         }
       }
     } else {
@@ -316,7 +417,8 @@ async function invokeAegis(sosIds, barangay, count, floodSeverity, weatherAlert)
       target_barangay: barangay,
       reasoning: 'AI service error. Please assess the situation manually.',
       confidence: 'low',
-      raw_inputs: { error: err.message }
+      scenario_type: scenarioType,
+      raw_inputs: { error: err.message, scenario_type: scenarioType }
     }
   } finally {
     isLoading.value = false
@@ -349,10 +451,11 @@ async function submitOutcome(outcome) {
 
     selectedOutcome.value = outcome
     await fetchHistory()
+    // Disable further submissions for this advisory
+    outcomeSubmitting.value = true
   } catch (err) {
     console.warn('Failed to log Aegis outcome:', err)
     outcomeError.value = err.message || 'Unable to log operator outcome.'
-  } finally {
     outcomeSubmitting.value = false
   }
 }
@@ -361,6 +464,7 @@ function resetPanel() {
   activeRecommendation.value = null
   selectedOutcome.value = null
   outcomeError.value = ''
+  outcomeSubmitting.value = false
 }
 
 async function fetchHistory() {
@@ -379,9 +483,29 @@ async function fetchHistory() {
   }
 }
 
+function scenarioBadgeClass(type) {
+  const map = {
+    flood: 'bg-blue-900 text-blue-200',
+    earthquake: 'bg-orange-900 text-orange-200',
+    typhoon: 'bg-cyan-900 text-cyan-200',
+    fire: 'bg-red-900 text-red-200',
+    landslide: 'bg-amber-900 text-amber-200'
+  }
+  return map[type] || 'bg-slate-800 text-slate-300'
+}
+
+function scenarioIcon(type) {
+  const map = {
+    flood: '🌊', earthquake: '🏚️', typhoon: '🌀', fire: '🔥', landslide: '⛰️'
+  }
+  return map[type] || '🤖'
+}
+
 function formatTimeAgo(dateStr) {
   if (!dateStr) return 'Just now'
-  const diffMs = Date.now() - new Date(dateStr).getTime()
+  const ts = new Date(dateStr).getTime()
+  if (!Number.isFinite(ts)) return 'Just now'
+  const diffMs = Date.now() - ts
   const diffMins = Math.floor(diffMs / 60000)
   if (diffMins < 1) return 'Just now'
   if (diffMins < 60) return `${diffMins}m ago`
