@@ -10,5 +10,7 @@ dist/
 .agents/
 AGAP_Blueprint.md
 tests/
+.omo
+.opencode
 .teams/
 
