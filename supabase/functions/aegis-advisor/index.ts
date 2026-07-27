@@ -97,6 +97,7 @@ Respond with valid JSON only, no markdown, no extra text. Use this exact structu
   "reasoning": "Step 1: [observation]\\nStep 2: [analysis]\\nStep 3: [conclusion]\\nStep 4: [recommended action rationale]",
   "confidence": "high|medium|low"
 }
+IMPORTANT: Confidence criteria — Use HIGH when you have specific, actionable data (confirmed cluster count, known hazard severity, clear weather alert). Use MEDIUM when data is present but incomplete (some SOS reports, general hazard known). Use LOW only when data is minimal or vague (no SOS cluster, no weather alert, unknown conditions). Default to HIGH when you have 3+ SOS reports and a defined hazard scenario.
 IMPORTANT: In the reasoning field, be sure to separate each step with the actual newline character (\n).`
 }
 
@@ -128,6 +129,7 @@ Respond with valid JSON only, no markdown, no extra text. Use this exact structu
   "reasoning": "Step 1: [observation]\\nStep 2: [analysis]\\nStep 3: [conclusion]\\nStep 4: [recommended action rationale]",
   "confidence": "high|medium|low"
 }
+IMPORTANT: Confidence criteria — Use HIGH when you have specific, actionable data (confirmed cluster count, known hazard severity, clear weather alert). Use MEDIUM when data is present but incomplete (some SOS reports, general hazard known). Use LOW only when data is minimal or vague (no SOS cluster, no weather alert, unknown conditions). Default to HIGH when you have 3+ SOS reports and a defined hazard scenario.
 IMPORTANT: In the reasoning field, be sure to separate each step with the actual newline character (\n).`
 }
 
@@ -159,6 +161,7 @@ Respond with valid JSON only, no markdown, no extra text. Use this exact structu
   "reasoning": "Step 1: [observation]\\nStep 2: [analysis]\\nStep 3: [conclusion]\\nStep 4: [recommended action rationale]",
   "confidence": "high|medium|low"
 }
+IMPORTANT: Confidence criteria — Use HIGH when you have specific, actionable data (confirmed cluster count, known hazard severity, clear weather alert). Use MEDIUM when data is present but incomplete (some SOS reports, general hazard known). Use LOW only when data is minimal or vague (no SOS cluster, no weather alert, unknown conditions). Default to HIGH when you have 3+ SOS reports and a defined hazard scenario.
 IMPORTANT: In the reasoning field, be sure to separate each step with the actual newline character (\n).`
 }
 
@@ -190,6 +193,7 @@ Respond with valid JSON only, no markdown, no extra text. Use this exact structu
   "reasoning": "Step 1: [observation]\\nStep 2: [analysis]\\nStep 3: [conclusion]\\nStep 4: [recommended action rationale]",
   "confidence": "high|medium|low"
 }
+IMPORTANT: Confidence criteria — Use HIGH when you have specific, actionable data (confirmed cluster count, known hazard severity, clear weather alert). Use MEDIUM when data is present but incomplete (some SOS reports, general hazard known). Use LOW only when data is minimal or vague (no SOS cluster, no weather alert, unknown conditions). Default to HIGH when you have 3+ SOS reports and a defined hazard scenario.
 IMPORTANT: In the reasoning field, be sure to separate each step with the actual newline character (\n).`
 }
 
@@ -221,6 +225,7 @@ Respond with valid JSON only, no markdown, no extra text. Use this exact structu
   "reasoning": "Step 1: [observation]\\nStep 2: [analysis]\\nStep 3: [conclusion]\\nStep 4: [recommended action rationale]",
   "confidence": "high|medium|low"
 }
+IMPORTANT: Confidence criteria — Use HIGH when you have specific, actionable data (confirmed cluster count, known hazard severity, clear weather alert). Use MEDIUM when data is present but incomplete (some SOS reports, general hazard known). Use LOW only when data is minimal or vague (no SOS cluster, no weather alert, unknown conditions). Default to HIGH when you have 3+ SOS reports and a defined hazard scenario.
 IMPORTANT: In the reasoning field, be sure to separate each step with the actual newline character (\n).`
 }
 
