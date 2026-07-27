@@ -2,7 +2,7 @@
   <div class="space-y-4">
     <router-link to="/app/guides" class="inline-flex items-center text-xs text-blue-400 font-medium hover:underline">
       <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-      Back to All Guides
+      {{ $t('guideDetail.backToGuides') }}
     </router-link>
 
     <div v-if="guide" class="p-5 rounded-xl bg-slate-800 border border-slate-700 space-y-4">
@@ -20,7 +20,7 @@
     </div>
 
     <div v-else class="p-8 text-center text-slate-400 text-sm">
-      Guide not found.
+      {{ $t('guideDetail.notFound') }}
     </div>
   </div>
 </template>
