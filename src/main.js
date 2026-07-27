@@ -1,5 +1,5 @@
 import 'leaflet/dist/leaflet.css'
-// TEAM_001: Silently intercept Mapbox telemetry requests to prevent browser console spam/errors from adblockers
+// Silently intercept Mapbox telemetry requests to prevent browser console spam/errors from adblockers
 if (typeof window !== 'undefined') {
   const originalFetch = window.fetch
   window.fetch = function (input, init) {

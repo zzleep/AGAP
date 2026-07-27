@@ -40,29 +40,72 @@
         ></textarea>
       </div>
 
-      <!-- Math CAPTCHA Verification -->
-      <div class="p-4 rounded-2xl bg-[#f9ebe8] border border-[#f3d3cd] space-y-2">
-        <label class="block text-xs font-bold text-[#902715]">
-          {{ $t('communityReport.captchaLabel', { num1: captcha.num1, num2: captcha.num2 }) }}
-        </label>
-        <div class="flex items-center space-x-3">
-          <input
-            v-model="captcha.userResponse"
-            type="number"
-            required
-            :placeholder="$t('communityReport.answer')"
-            class="w-28 px-3.5 py-2 rounded-xl bg-white border border-[#E0E0E0] text-[#0A0A0A] text-xs font-bold focus:outline-none focus:border-[#902715]"
-          />
+      <!-- Incident Photo Attachment Section -->
+      <div class="space-y-2 p-4 rounded-2xl bg-[#F5F5F5] border border-[#E0E0E0]">
+        <div class="flex items-center justify-between">
+          <label class="block text-xs font-extrabold uppercase tracking-wider text-[#1F3A4B]">
+            Attach Incident Photo <span class="text-[10px] text-[#717171] font-normal lowercase">(camera only)</span>
+          </label>
+          <span v-if="form.image_url" class="px-2.5 py-0.5 rounded-full bg-[#556B2F] text-white text-[10px] font-bold flex items-center">
+            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+            Photo Captured
+          </span>
+        </div>
+
+        <!-- Hidden Native File Input forced to Camera using capture="environment" -->
+        <input
+          type="file"
+          ref="fileInputRef"
+          accept="image/*"
+          capture="environment"
+          @change="handleNativeCameraCapture"
+          class="hidden"
+        />
+
+        <!-- Photo Preview Box (If Photo Captured) -->
+        <div v-if="form.image_url" class="relative rounded-2xl overflow-hidden border border-[#E0E0E0] bg-slate-900 group">
+          <img :src="form.image_url" alt="Captured incident photo" class="w-full h-48 object-cover" />
+          <div class="absolute inset-0 bg-black/40 flex items-center justify-center space-x-3 opacity-90 transition-opacity">
+            <button
+              type="button"
+              @click="triggerCameraInput"
+              class="px-3.5 py-2 rounded-xl bg-white/90 hover:bg-white text-[#0A0A0A] text-xs font-bold shadow-md flex items-center space-x-1.5"
+            >
+              <svg class="w-4 h-4 text-[#902715]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3" stroke-width="2"/></svg>
+              <span>Retake</span>
+            </button>
+            <button
+              type="button"
+              @click="removeCapturedPhoto"
+              class="px-3.5 py-2 rounded-xl bg-[#902715] hover:bg-[#781f11] text-white text-xs font-bold shadow-md flex items-center space-x-1.5"
+            >
+              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              <span>Remove</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Camera Trigger Buttons (If No Photo Yet) -->
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
           <button
             type="button"
-            @click="generateCaptcha"
-            class="text-xs text-[#902715] font-bold hover:underline"
+            @click="startLiveCamera"
+            class="w-full py-3 px-4 rounded-xl bg-[#1F3A4B] hover:bg-[#152733] text-white text-xs font-bold flex items-center justify-center space-x-2 transition-all shadow-m3-sm active:scale-95"
           >
-            {{ $t('communityReport.refreshChallenge') }}
+            <svg class="w-4 h-4 text-[#F7FB41]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            <span>Live Camera View</span>
+          </button>
+          <button
+            type="button"
+            @click="triggerCameraInput"
+            class="w-full py-3 px-4 rounded-xl bg-white border border-[#E0E0E0] hover:bg-[#EEF2E6] text-[#0A0A0A] text-xs font-bold flex items-center justify-center space-x-2 transition-all shadow-m3-sm active:scale-95"
+          >
+            <svg class="w-4 h-4 text-[#902715]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3" stroke-width="2"/></svg>
+            <span>Snap with Device Camera</span>
           </button>
         </div>
-        <p v-if="captchaError" class="text-xs text-[#902715] font-extrabold">
-          {{ $t('communityReport.captchaError') }}
+        <p class="text-[11px] text-[#556B2F] font-bold leading-tight flex items-center mt-1">
+          📸 Attaching a photo helps CDRRMO verify and dispatch response faster.
         </p>
       </div>
 
@@ -77,6 +120,10 @@
           <p><strong>{{ $t('communityReport.aiCategory') }}:</strong> <span class="capitalize text-[#902715] font-bold">{{ submittedData.ai_category || $t('communityReport.triagePending') }}</span></p>
           <p><strong>{{ $t('communityReport.aiPriority') }}:</strong> <span class="capitalize text-[#D14D3E] font-bold">{{ submittedData.ai_priority || $t('communityReport.medium') }}</span></p>
           <p v-if="submittedData.ai_department"><strong>{{ $t('communityReport.targetDept') }}:</strong> {{ submittedData.ai_department }}</p>
+          <div v-if="submittedData.image_url" class="mt-2 pt-2 border-t border-[#D8E2C7]">
+            <p class="text-[11px] font-bold text-[#556B2F] mb-1">Attached Camera Photo:</p>
+            <img :src="submittedData.image_url" alt="Attached photo" class="w-24 h-24 object-cover rounded-xl border border-[#D8E2C7]" />
+          </div>
         </div>
         <button
           type="button"
@@ -90,12 +137,50 @@
       <!-- Submit Action Button -->
       <button
         type="submit"
-        :disabled="reportStore.isSubmitting || !form.raw_description || !captcha.userResponse"
+        :disabled="reportStore.isSubmitting || !form.raw_description"
         class="w-full py-4 rounded-2xl bg-[#902715] hover:bg-[#781f11] disabled:opacity-50 text-[#F7FB41] font-expressive font-black text-base tracking-wide transition-all shadow-m3-md active:scale-95 border border-[#F7FB41]"
       >
         {{ reportStore.isSubmitting ? $t('communityReport.submitting') : $t('communityReport.submitReport') }}
       </button>
     </form>
+
+    <!-- HTML5 Live Camera View Finder Modal -->
+    <div v-if="showLiveCameraModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+      <div class="max-w-md w-full p-5 rounded-3xl bg-slate-900 border border-slate-700 space-y-4 text-white shadow-2xl">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="w-3 h-3 rounded-full bg-red-500 animate-ping"></span>
+            <h3 class="font-expressive font-bold text-sm">Live Camera Viewfinder</h3>
+          </div>
+          <button type="button" @click="stopLiveCamera" class="text-slate-400 hover:text-white">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Camera Video Feed Container -->
+        <div class="relative w-full h-64 rounded-2xl bg-black overflow-hidden border border-slate-800 flex items-center justify-center">
+          <video ref="videoEl" autoplay playsinline class="w-full h-full object-cover"></video>
+          <div v-if="cameraError" class="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center p-4 text-center space-y-2">
+            <svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <p class="text-xs text-red-300 font-semibold">{{ cameraError }}</p>
+            <button type="button" @click="triggerCameraInput" class="px-3 py-1.5 rounded-lg bg-blue-600 text-xs font-bold text-white">Use Device Camera App</button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <button type="button" @click="stopLiveCamera" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold">Cancel</button>
+          <button
+            type="button"
+            @click="snapLivePhoto"
+            :disabled="!!cameraError"
+            class="px-5 py-2.5 rounded-xl bg-[#902715] hover:bg-[#781f11] disabled:opacity-50 text-[#F7FB41] text-xs font-extrabold flex items-center space-x-2 shadow-lg active:scale-95"
+          >
+            <svg class="w-4 h-4 text-[#F7FB41]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3" stroke-width="2.5"/></svg>
+            <span>SNAP PHOTO</span>
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Soft Throttle Nag Modal -->
     <div v-if="showNagModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -131,22 +216,141 @@
 </template>
 
 <script setup>
+import { ref, onUnmounted, nextTick } from 'vue'
 import { useReportStore } from '@/stores/reportStore'
 import { useCommunityReport } from '@/composables/useCommunityReport'
 
 const reportStore = useReportStore()
 const {
   form,
-  captcha,
-  captchaError,
   showNagModal,
   secondsRemaining,
   submissionSuccess,
   submittedData,
   barangays,
-  generateCaptcha,
   handleInitialSubmit,
   executeSubmission,
   resetForm
 } = useCommunityReport()
+
+// Camera state & media stream handlers
+const fileInputRef = ref(null)
+const videoEl = ref(null)
+const showLiveCameraModal = ref(false)
+const cameraError = ref('')
+let mediaStream = null
+
+function triggerCameraInput() {
+  stopLiveCamera()
+  if (fileInputRef.value) {
+    fileInputRef.value.click()
+  }
+}
+
+function handleNativeCameraCapture(event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    compressImage(e.target.result, 1024, 0.8, (compressedDataUrl) => {
+      form.value.image_url = compressedDataUrl
+    })
+  }
+  reader.readAsDataURL(file)
+}
+
+async function startLiveCamera() {
+  cameraError.value = ''
+  showLiveCameraModal.value = true
+  await nextTick()
+
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      cameraError.value = 'Live camera access not supported by browser. Use device camera app.'
+      return
+    }
+
+    mediaStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    })
+
+    if (videoEl.value) {
+      videoEl.value.srcObject = mediaStream
+    }
+  } catch (err) {
+    console.warn('Camera stream error:', err)
+    cameraError.value = 'Could not start camera. Please grant camera permission or use device camera app.'
+  }
+}
+
+function snapLivePhoto() {
+  if (!videoEl.value) return
+
+  const canvas = document.createElement('canvas')
+  const video = videoEl.value
+  canvas.width = video.videoWidth || 640
+  canvas.height = video.videoHeight || 480
+
+  const ctx = canvas.getContext('2d')
+  if (ctx) {
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    const rawDataUrl = canvas.toDataURL('image/jpeg', 0.8)
+    compressImage(rawDataUrl, 1024, 0.8, (compressedDataUrl) => {
+      form.value.image_url = compressedDataUrl
+      stopLiveCamera()
+    })
+  }
+}
+
+function stopLiveCamera() {
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(track => track.stop())
+    mediaStream = null
+  }
+  showLiveCameraModal.value = false
+  cameraError.value = ''
+}
+
+function removeCapturedPhoto() {
+  form.value.image_url = ''
+  if (fileInputRef.value) {
+    fileInputRef.value.value = ''
+  }
+}
+
+function compressImage(base64Str, maxDim, quality, callback) {
+  const img = new Image()
+  img.onload = () => {
+    let width = img.width
+    let height = img.height
+
+    if (width > maxDim || height > maxDim) {
+      if (width > height) {
+        height = Math.round((height * maxDim) / width)
+        width = maxDim
+      } else {
+        width = Math.round((width * maxDim) / height)
+        height = maxDim
+      }
+    }
+
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(img, 0, 0, width, height)
+    callback(canvas.toDataURL('image/jpeg', quality))
+  }
+  img.src = base64Str
+}
+
+onUnmounted(() => {
+  stopLiveCamera()
+})
 </script>

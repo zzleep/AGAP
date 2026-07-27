@@ -335,7 +335,6 @@ function addBoundaryLayer() {
     data: santaRosaBoundaries
   })
 
-  // TEAM_001: Re-added boundary fill layer with lighter color and lower opacity (0.08) for a subtle, premium look
   map.addLayer({
     id: 'santa-rosa-boundary-fill',
     type: 'fill',

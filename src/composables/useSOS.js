@@ -14,7 +14,7 @@ export function useSOS() {
   async function warmConnection() {
     if (connectivity.isPrewarmed) return
     try {
-      // TEAM_001: Pre-warm connection using configured client to avoid 401 console error
+      // Pre-warm connection using configured client to avoid 401 console error
       await supabase.from('sos_reports').select('id').limit(1)
       connectivity.isPrewarmed = true
     } catch (err) {
