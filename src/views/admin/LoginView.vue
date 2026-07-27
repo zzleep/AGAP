@@ -50,11 +50,11 @@
 
           <div class="text-center">
 
-            <div class="mx-auto w-16 h-16 rounded-full bg-[#972C1D]
+            <div class="mx-auto w-48 h-48
                  flex items-center justify-center
-                 shadow-[0_10px_25px_rgba(151,44,29,.35)]">
+                 ">
 
-              <img src="/agap icon.svg" class="h-7 brightness-200" alt="AGAP" />
+              <img src="/agap icon.svg" class="h-46" alt="AGAP" />
 
             </div>
 
