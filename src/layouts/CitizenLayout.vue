@@ -33,16 +33,16 @@
       <nav class="max-w-md mx-auto glass-dock rounded-full p-2 flex items-center justify-around pointer-events-auto shadow-m3-lg">
         <router-link
           to="/app"
-          v-slot="{ isActive }"
+          v-slot="{ isExactActive }"
           class="relative flex flex-col items-center py-1.5 px-3 rounded-full transition-all duration-200"
         >
           <div :class="[
             'flex flex-col items-center justify-center transition-all',
-            isActive ? 'text-[#902715]' : 'text-[#717171] hover:text-[#0A0A0A]'
+            isExactActive ? 'text-[#902715]' : 'text-[#717171] hover:text-[#0A0A0A]'
           ]">
             <div :class="[
               'w-10 h-7 rounded-full flex items-center justify-center mb-0.5 transition-all',
-              isActive ? 'bg-[#902715]/15 scale-105' : 'bg-transparent'
+              isExactActive ? 'bg-[#902715]/15 scale-105' : 'bg-transparent'
             ]">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 00-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 00-1 1m-6 0h6"/></svg>
             </div>
@@ -61,12 +61,15 @@
           ]">
             <div :class="[
               'w-10 h-7 rounded-full flex items-center justify-center mb-0.5 transition-all relative',
-              isActive ? 'bg-[#902715] text-[#F7FB41] shadow-m3-sm scale-105' : 'bg-[#902715]/10 text-[#902715]'
+              isActive ? 'bg-[#902715] text-[#F7FB41] shadow-m3-sm scale-105' : 'bg-transparent text-[#902715]'
             ]">
-              <span class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#902715] animate-ping"></span>
+              <span v-if="isActive" class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#902715] animate-ping"></span>
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
             </div>
-            <span class="text-[10px] font-bold tracking-tight text-[#902715]">{{ $t('nav.sos') }}</span>
+            <span :class="[
+              'text-[10px] font-bold tracking-tight',
+              isActive ? 'text-[#902715]' : 'text-[#717171]'
+            ]">{{ $t('nav.sos') }}</span>
           </div>
         </router-link>
 
