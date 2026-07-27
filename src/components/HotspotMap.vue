@@ -1,111 +1,111 @@
 <template>
-  <div class="space-y-4 flex flex-col h-full">
+  <div class="space-y-6 flex flex-col h-full">
     <!-- Top Bar Controls -->
-    <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex flex-wrap items-center justify-between gap-3 shadow">
-      <div class="flex items-center space-x-3 text-xs font-semibold text-slate-300">
-        <span class="text-slate-400">Map Layers:</span>
-        <label class="flex items-center space-x-1.5 cursor-pointer">
-          <input type="checkbox" v-model="showSOS" class="rounded bg-slate-950 border-slate-700 text-red-600 focus:ring-0" />
-          <span class="text-red-400">SOS Alerts</span>
+    <div class="p-5 bg-white border border-[#1F3A4B]/15 rounded-3xl flex flex-wrap items-center justify-between gap-4 shadow-sm admin-card">
+      <div class="flex items-center space-x-5 text-xs font-black text-[#1F3A4B]">
+        <span class="text-[#902715] uppercase text-[10px] tracking-wider font-black">Map Layers:</span>
+        <label class="flex items-center space-x-2 cursor-pointer">
+          <input type="checkbox" v-model="showSOS" class="rounded-md accent-[#902715] focus:ring-0 cursor-pointer" />
+          <span class="text-[#902715] font-black">SOS Alerts</span>
         </label>
-        <label class="flex items-center space-x-1.5 cursor-pointer">
-          <input type="checkbox" v-model="showReports" class="rounded bg-slate-950 border-slate-700 text-amber-500 focus:ring-0" />
-          <span class="text-amber-400">Community Reports</span>
+        <label class="flex items-center space-x-2 cursor-pointer">
+          <input type="checkbox" v-model="showReports" class="rounded-md accent-[#8A4B08] focus:ring-0 cursor-pointer" />
+          <span class="text-[#8A4B08] font-black">Community Reports</span>
         </label>
-        <label class="flex items-center space-x-1.5 cursor-pointer">
-          <input type="checkbox" v-model="showBoundary" class="rounded bg-slate-950 border-slate-700 text-blue-500 focus:ring-0" />
-          <span class="text-blue-400">City Boundary</span>
+        <label class="flex items-center space-x-2 cursor-pointer">
+          <input type="checkbox" v-model="showBoundary" class="rounded-md accent-[#1F3A4B] focus:ring-0 cursor-pointer" />
+          <span class="text-[#1F3A4B] font-black">City Boundary</span>
         </label>
       </div>
 
       <div class="flex items-center space-x-2">
         <button
           @click="recenterMap"
-          class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow transition-colors"
+          class="px-5 py-2.5 rounded-full bg-[#902715] hover:bg-[#a82e1a] text-white font-black text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all"
         >
           Recenter City Map
         </button>
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 flex-1 min-h-[480px]">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-1 min-h-[500px]">
       <!-- Leaflet Map Canvas -->
-      <div class="lg:col-span-3 relative rounded-xl overflow-hidden border border-slate-800 bg-slate-900 min-h-[480px] shadow-lg">
-        <div id="hotspot-density-map" class="w-full h-full min-h-[480px] z-10"></div>
+      <div class="lg:col-span-3 relative rounded-3xl overflow-hidden border border-[#1F3A4B]/15 bg-white min-h-[500px] shadow-sm">
+        <div id="hotspot-density-map" class="w-full h-full min-h-[500px] z-10"></div>
 
         <!-- Legend Overlay -->
-        <div class="absolute bottom-3 left-3 bg-slate-900/90 backdrop-blur-md p-3 rounded-xl border border-slate-800 text-xs text-slate-300 z-20 space-y-1.5 shadow-xl">
-          <div class="font-bold text-[11px] uppercase tracking-wider text-slate-400 mb-1">Density Severity</div>
-          <div class="flex items-center space-x-2">
-            <span class="w-3.5 h-3.5 rounded-full bg-red-500 border border-red-700 shadow-sm"></span>
-            <span>High Risk (&gt;4 incidents)</span>
+        <div class="absolute bottom-5 left-5 bg-white/95 backdrop-blur-xl p-5 rounded-2xl border border-[#1F3A4B]/15 text-xs text-[#0A0A0A] z-20 space-y-3 shadow-xl font-medium">
+          <div class="font-black text-[10px] uppercase tracking-wider text-[#902715]">Density Severity</div>
+          <div class="flex items-center space-x-2.5">
+            <span class="w-4 h-4 rounded-full bg-[#902715] shadow-sm"></span>
+            <span class="font-black text-[#902715]">High Risk (&gt;4 incidents)</span>
           </div>
-          <div class="flex items-center space-x-2">
-            <span class="w-3.5 h-3.5 rounded-full bg-amber-500 border border-amber-700 shadow-sm"></span>
-            <span>Moderate Risk (2–4 incidents)</span>
+          <div class="flex items-center space-x-2.5">
+            <span class="w-4 h-4 rounded-full bg-[#F7FB41] border border-[#8a7e00] shadow-sm"></span>
+            <span class="font-black text-[#8A4B08]">Moderate Risk (2–4 incidents)</span>
           </div>
-          <div class="flex items-center space-x-2">
-            <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 border border-emerald-700 shadow-sm"></span>
-            <span>Low Risk (1 incident)</span>
+          <div class="flex items-center space-x-2.5">
+            <span class="w-4 h-4 rounded-full bg-[#556B2F] shadow-sm"></span>
+            <span class="font-black text-[#556B2F]">Low Risk (1 incident)</span>
           </div>
-          <div class="border-t border-slate-800 pt-1.5 mt-1.5">
-            <div class="font-bold text-[11px] uppercase tracking-wider text-slate-400 mb-1">Incident Markers</div>
-            <div class="flex items-center space-x-2">
-              <span class="w-3 h-3 rounded-full bg-red-600 border border-red-800 shadow-sm"></span>
-              <span>SOS Alert (exact GPS)</span>
+          <div class="border-t border-[#1F3A4B]/15 pt-2.5">
+            <div class="font-black text-[10px] uppercase tracking-wider text-[#1F3A4B] mb-1">Incident Markers</div>
+            <div class="flex items-center space-x-2.5">
+              <span class="w-3.5 h-3.5 rounded-full bg-[#902715] shadow-sm"></span>
+              <span class="font-bold">SOS Alert (exact GPS)</span>
             </div>
-            <div class="flex items-center space-x-2">
-              <span class="w-3 h-3 rounded-full bg-amber-500 border border-amber-700 shadow-sm"></span>
-              <span>Community Report</span>
+            <div class="flex items-center space-x-2.5">
+              <span class="w-3.5 h-3.5 rounded-full bg-[#8A4B08] shadow-sm"></span>
+              <span class="font-bold">Community Report</span>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Top Hotspots Ranking Sidebar -->
-      <div class="bg-slate-900 rounded-xl border border-slate-800 p-4 space-y-3 flex flex-col shadow-lg">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Top Barangay Hotspots</h3>
-          <span class="text-[10px] px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-800 font-mono font-bold">
+      <div class="bg-white rounded-3xl border border-[#1F3A4B]/15 p-6 space-y-4 flex flex-col shadow-sm admin-card">
+        <div class="flex items-center justify-between border-b border-[#1F3A4B]/15 pb-3.5">
+          <h3 class="text-xs font-black uppercase tracking-wider text-[#1F3A4B]">Top Barangay Hotspots</h3>
+          <span class="text-[10px] px-3 py-1 rounded-full bg-[#902715] text-white font-black shadow-sm uppercase tracking-wider">
             LIVE DENSITY
           </span>
         </div>
 
-        <div v-if="hotspotList.length === 0" class="p-6 text-center text-slate-500 text-xs flex-1 flex items-center justify-center">
+        <div v-if="hotspotList.length === 0" class="p-8 text-center text-[#717171] text-xs flex-1 flex items-center justify-center font-bold">
           No incident density recorded in Santa Rosa barangays.
         </div>
 
-        <div v-else class="space-y-2 overflow-y-auto max-h-[420px] flex-1 pr-1">
+        <div v-else class="space-y-3 overflow-y-auto max-h-[440px] flex-1 pr-1">
           <div
             v-for="(spot, idx) in hotspotList"
             :key="spot.barangay"
             @click="focusBarangay(spot.barangay)"
-            class="p-3 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition-colors space-y-1.5"
+            class="p-4 rounded-2xl bg-white border border-[#1F3A4B]/15 border-l-4 border-l-[#1F3A4B] hover:border-[#902715] cursor-pointer transition-all space-y-2 hover:translate-x-1 shadow-sm"
           >
             <div class="flex items-center justify-between">
-              <div class="flex items-center space-x-2">
-                <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-300 font-bold text-[10px] flex items-center justify-center">
+              <div class="flex items-center space-x-2.5">
+                <span class="w-6 h-6 rounded-full bg-[#1F3A4B] text-[#F7FB41] font-black text-[10px] flex items-center justify-center shadow-sm">
                   #{{ idx + 1 }}
                 </span>
-                <span class="font-bold text-xs text-white">{{ spot.barangay }}</span>
+                <span class="font-black text-xs text-[#1F3A4B]">{{ spot.barangay }}</span>
               </div>
 
               <span
                 :class="[
-                  'px-2 py-0.5 text-[10px] font-extrabold rounded-full border',
-                  spot.total >= 5 ? 'bg-red-950 text-red-400 border-red-800' :
-                  spot.total >= 2 ? 'bg-amber-950 text-amber-400 border-amber-800' :
-                  'bg-emerald-950 text-emerald-300 border-emerald-800'
+                  'px-3 py-1 text-[10px] font-black rounded-full uppercase shadow-sm',
+                  spot.total >= 5 ? 'bg-[#902715] text-white' :
+                  spot.total >= 2 ? 'bg-[#F7FB41] text-[#0A0A0A] border border-[#8a7e00]' :
+                  'bg-[#556B2F] text-white'
                 ]"
               >
                 {{ spot.total }} Incidents
               </span>
             </div>
 
-            <div class="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
-              <span>SOS: <strong class="text-red-400">{{ spot.sosCount }}</strong></span>
-              <span>Reports: <strong class="text-amber-400">{{ spot.reportCount }}</strong></span>
-              <span class="text-blue-400 hover:underline">Focus Map →</span>
+            <div class="flex items-center justify-between text-[10px] text-[#717171] font-semibold pt-0.5">
+              <span>SOS: <strong class="text-[#902715]">{{ spot.sosCount }}</strong></span>
+              <span>Reports: <strong class="text-[#8a7e00]">{{ spot.reportCount }}</strong></span>
+              <span class="text-[#1F3A4B] hover:underline font-black">Focus Map →</span>
             </div>
           </div>
         </div>

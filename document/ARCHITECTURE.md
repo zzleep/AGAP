@@ -74,8 +74,13 @@ weatherStore.fetchWeather() -> rainfallRate -> flowStore.updateThresholds()
 ## Key Design Decisions
 
 - **Advisory-only Aegis**: Aegis never auto-acts; it recommends. Operator always gates.
-- **Atomic Claims**: SOS claims use status guards (`pending -> responding`) to prevent conflicts.
-- **Stale Claim Detection**: Claims older than 10 minutes are auto-reverted.
+- **Atomic Claims Mechanism**:
+  - **Single-Operator Concurrency Guard**: SOS claims execute an atomic SQL update guarded by status:
+    `UPDATE sos_reports SET status = 'responding', assigned_operator_id = opId, claimed_at = NOW() WHERE id = reportId AND status = 'pending';`
+  - **Zero-Conflict Guarantee**: If two operators attempt to claim the exact same report concurrently, row-level locking ensures only the first query updates 1 row; the second query matches 0 rows and returns an `already_claimed` warning to the client without throwing DB errors or duplicating dispatches.
+- **Stale Claim Reversion Daemon**:
+  - Claims older than 10 minutes (`r.status === 'responding' && claimed_at < 10 mins ago`) are automatically reverted by `sosStore.checkStaleClaims()` to `pending` with `assigned_operator_id = null`.
+  - Re-surfaces abandoned/stuck emergency alerts as unclaimed back to the live dispatch queue.
 - **Offline-first**: Bundled GeoJSON (flood zones, evac routes, boundaries) and markdown guides serve as fallback when Supabase is unreachable.
 - **Anonymous Reports**: Community reports don't require authentication; SOS uses a user_hash (localStorage) for deduplication.
 - **No AI on critical path**: SOS dispatch never depends on AI availability. AI is advisory-only.

@@ -1,46 +1,51 @@
 <template>
-  <div class="space-y-4">
+  <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-xl font-bold text-white">Live SOS Emergency Queue</h2>
-        <p class="text-xs text-slate-400">Realtime WebSocket feed from citizen PWA submissions</p>
+        <h2 class="font-expressive text-3xl font-black text-[#1F3A4B] tracking-tight">Live SOS Emergency Queue</h2>
+        <p class="text-xs text-[#902715] font-extrabold uppercase tracking-wider mt-0.5">Realtime WebSocket feed from citizen PWA submissions</p>
       </div>
-      <div class="flex items-center space-x-2">
-        <span class="px-2.5 py-1 text-xs font-bold rounded bg-red-950 text-red-400 border border-red-800/60 flex items-center shadow">
-          <span class="w-2 h-2 rounded-full bg-red-500 animate-ping mr-1.5"></span>
+      <div class="flex items-center space-x-3">
+        <span class="px-4 py-1.5 text-xs font-black rounded-full bg-[#902715] text-white flex items-center shadow-[0_4px_12px_rgba(144,39,21,0.25)]">
+          <span class="w-2.5 h-2.5 rounded-full bg-[#F7FB41] animate-ping mr-2"></span>
           REALTIME LIVE
         </span>
         <button
           @click="manualRefresh"
           :disabled="sosStore.isLoading"
-          class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-blue-400 font-bold text-xs border border-slate-700 transition-colors disabled:opacity-50"
+          class="px-4 py-2 rounded-full bg-[#1F3A4B] hover:bg-[#152a37] text-white font-black text-xs transition-all duration-200 flex items-center space-x-2 shadow-sm active:scale-95 disabled:opacity-50"
         >
-          {{ sosStore.isLoading ? 'Refreshing...' : '↻ Refresh' }}
+          <svg class="w-4 h-4 text-[#F7FB41]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>{{ sosStore.isLoading ? 'Refreshing...' : 'Refresh Queue' }}</span>
         </button>
       </div>
     </div>
 
     <!-- Cluster Alert Banner -->
-    <div v-if="sosStore.activeClusters.length > 0" class="space-y-2">
+    <div v-if="sosStore.activeClusters.length > 0" class="space-y-3">
       <div
         v-for="cluster in sosStore.activeClusters"
         :key="cluster.barangay"
-        class="p-4 rounded-xl bg-red-950/80 border-2 border-red-600 text-white flex items-center justify-between shadow-xl animate-pulse"
+        class="p-6 rounded-[2.5rem_1.25rem_2.5rem_1.25rem] bg-[#902715] text-white flex items-center justify-between shadow-[0_10px_28px_rgba(144,39,21,0.35)] border border-white/20 transition-all duration-300"
       >
-        <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 rounded-lg bg-red-600 flex items-center justify-center font-bold text-lg text-white shrink-0">
-            ⚠️
+        <div class="flex items-center space-x-4">
+          <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center font-bold text-white shrink-0 shadow-inner">
+            <svg class="w-7 h-7 text-[#F7FB41] animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
           </div>
           <div>
-            <h3 class="font-extrabold text-sm text-red-200 uppercase tracking-wide">
+            <h3 class="font-black text-base text-white uppercase tracking-wider">
               BARANGAY INCIDENT CLUSTER ALERT — {{ cluster.barangay }}
             </h3>
-            <p class="text-xs text-red-300">
+            <p class="text-xs text-white/90 mt-1 font-medium">
               High density emergency activity detected: {{ cluster.count }} active SOS reports in the past 30 minutes. Priority dispatch recommended.
             </p>
           </div>
         </div>
-        <span class="px-3 py-1 bg-red-600 text-white text-xs font-extrabold rounded-full shrink-0">
+        <span class="px-4 py-2 bg-[#F7FB41] text-[#0A0A0A] text-xs font-black rounded-full shrink-0 shadow-md">
           {{ cluster.count }} ALERTS
         </span>
       </div>
@@ -49,30 +54,31 @@
     <!-- Conflict Warning Toast Notification -->
     <div
       v-if="toastMessage"
-      class="p-3 rounded-lg bg-amber-950 border border-amber-600 text-amber-200 text-xs font-semibold flex items-center justify-between shadow-lg"
+      class="p-4 rounded-2xl bg-[#F7FB41] text-[#0A0A0A] border border-[#8a7e00] text-xs font-black flex items-center justify-between shadow-md"
     >
-      <div class="flex items-center space-x-2">
-        <svg class="w-5 h-5 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      <div class="flex items-center space-x-3">
+        <svg class="w-5 h-5 text-[#0A0A0A] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
         </svg>
         <span>{{ toastMessage }}</span>
       </div>
-      <button @click="toastMessage = ''" class="text-amber-400 hover:text-white text-xs font-bold px-2 py-0.5">
+      <button @click="toastMessage = ''" class="text-[#0A0A0A] underline hover:opacity-75 text-xs font-black px-2 py-0.5">
         Dismiss
       </button>
     </div>
 
     <!-- Active SOS Queue Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div class="space-y-3">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <!-- Queue Items Column (2 Cols wide on large screen) -->
+      <div class="lg:col-span-2 space-y-4">
         <div class="flex items-center justify-between">
-          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Incoming Alerts</h3>
-          <span class="text-[11px] text-slate-500 font-medium">
-            Assigned Area: <span class="text-amber-400 font-bold capitalize">{{ authStore.assignedArea }}</span>
+          <h3 class="text-xs font-black uppercase tracking-wider text-[#1F3A4B]">Incoming Alerts</h3>
+          <span class="text-xs text-[#717171] font-semibold">
+            Assigned Area: <span class="text-[#902715] font-black uppercase tracking-wider">{{ authStore.assignedArea }}</span>
           </span>
         </div>
 
-        <div v-if="sosStore.sortedQueue.length === 0" class="p-8 text-center bg-slate-900 rounded-xl border border-slate-800 text-slate-500 text-sm">
+        <div v-if="sosStore.sortedQueue.length === 0" class="p-12 text-center bg-white rounded-[2.5rem] border border-[#1F3A4B]/15 text-[#717171] text-sm font-bold shadow-sm">
           No pending SOS alerts at this moment.
         </div>
 
@@ -80,37 +86,37 @@
           v-for="item in sosStore.sortedQueue"
           :key="item.id"
           :class="[
-            'p-4 rounded-xl bg-slate-900 border transition-colors shadow-md space-y-3',
-            item.barangay === authStore.assignedArea ? 'border-amber-500/80 bg-slate-900/90' : 'border-slate-800 hover:border-slate-700'
+            'p-6 rounded-[2.25rem_1.25rem_2.25rem_1.25rem] bg-white border transition-all duration-200 shadow-[0_8px_24px_rgba(31,58,75,0.06)] space-y-4 admin-card',
+            item.barangay === authStore.assignedArea ? 'border-l-4 border-l-[#902715] border-[#1F3A4B]/15' : 'border-[#1F3A4B]/15 hover:border-[#1F3A4B]/30'
           ]"
         >
           <div class="flex items-start justify-between">
-            <div class="flex items-center space-x-2">
+            <div class="flex items-center space-x-3">
               <span
                 :class="[
-                  'w-3 h-3 rounded-full',
-                  item.status === 'pending' ? 'bg-red-500 animate-ping' :
-                  item.status === 'responding' ? 'bg-amber-500' : 'bg-emerald-500'
+                  'w-3.5 h-3.5 rounded-full shrink-0 shadow-sm',
+                  item.status === 'pending' ? 'bg-[#902715] animate-ping' :
+                  item.status === 'responding' ? 'bg-[#8a7e00]' : 'bg-[#556B2F]'
                 ]"
               ></span>
-              <h4 class="font-bold text-sm text-white">SOS Alert #{{ item.id.substring(0, 8) }}</h4>
-              <span v-if="item.barangay === authStore.assignedArea" class="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-amber-950 text-amber-300 border border-amber-800">
+              <h4 class="font-black text-base text-[#1F3A4B]">SOS Alert #{{ item.id.substring(0, 8) }}</h4>
+              <span v-if="item.barangay === authStore.assignedArea" class="px-3 py-1 text-[10px] font-black uppercase rounded-full bg-[#F7FB41] text-[#0A0A0A] border border-[#8a7e00] shadow-sm">
                 Area Match
               </span>
             </div>
-            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 capitalize">
+            <span class="text-[10px] font-black uppercase px-3 py-1 rounded-full bg-[#1F3A4B] text-white shadow-sm">
               {{ item.mode }}
             </span>
           </div>
 
-          <div class="text-xs text-slate-300 grid grid-cols-2 gap-2 bg-slate-950 p-2.5 rounded-lg border border-slate-800/60">
+          <div class="text-xs text-[#0A0A0A] grid grid-cols-2 gap-4 bg-[#EEF4FB] p-4 rounded-2xl border border-[#1F3A4B]/15 font-medium">
             <div>
-              <span class="text-slate-500 block text-[10px]">Barangay</span>
-              <span class="font-semibold text-white">{{ item.barangay }}</span>
+              <span class="text-[#717171] block text-[10px] uppercase font-black tracking-wider">Barangay</span>
+              <span class="font-black text-base text-[#1F3A4B]">{{ item.barangay }}</span>
             </div>
             <div>
-              <span class="text-slate-500 block text-[10px]">GPS Position</span>
-              <span class="font-mono text-amber-300">
+              <span class="text-[#717171] block text-[10px] uppercase font-black tracking-wider">GPS Position</span>
+              <span class="font-mono font-black text-[#902715] text-sm">
                 {{ typeof item.latitude === 'number' ? item.latitude.toFixed(4) : item.latitude }},
                 {{ typeof item.longitude === 'number' ? item.longitude.toFixed(4) : item.longitude }}
               </span>
@@ -118,58 +124,64 @@
           </div>
 
           <div class="flex items-center justify-between pt-1">
-            <span class="text-[11px] text-slate-500">Submitted: {{ formatTimeAgo(item.created_at) }}</span>
+            <span class="text-[11px] text-[#717171] font-semibold">Submitted: {{ formatTimeAgo(item.created_at) }}</span>
 
             <div class="flex items-center space-x-2">
               <button
                 v-if="item.status === 'pending'"
                 @click="claimAlert(item.id)"
-                class="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-xs shadow-md transition-colors"
+                class="px-5 py-2 rounded-full bg-[#902715] hover:bg-[#a82e1a] text-white font-black text-xs shadow-[0_4px_14px_rgba(144,39,21,0.35)] active:scale-95 transition-all duration-150"
               >
                 Atomic Claim
               </button>
 
               <template v-else-if="item.status === 'responding'">
-                <span class="text-xs font-bold text-amber-400 mr-1">
+                <span class="text-xs font-black text-[#1F3A4B] mr-2">
                   Responding ({{ item.assigned_operator_id || 'Unclaimed' }})
                 </span>
                 <button
                   @click="markResolved(item.id)"
-                  class="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow transition-colors"
+                  class="px-4 py-2 rounded-full bg-[#556B2F] hover:bg-[#435525] text-white font-black text-xs shadow-md active:scale-95 transition-all duration-150"
                 >
                   Mark Resolved
                 </button>
               </template>
 
-              <span v-else-if="item.status === 'resolved'" class="text-xs font-bold text-emerald-400">
-                ✓ Resolved
+              <span v-else-if="item.status === 'resolved'" class="text-xs font-black text-[#556B2F] flex items-center space-x-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Resolved</span>
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Map Quick Preview Card -->
-      <div class="bg-slate-900 rounded-xl border border-slate-800 p-4 min-h-[350px] flex flex-col justify-between">
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Tactical GIS Preview</h3>
-          <router-link to="/admin/hotspot-map" class="text-xs text-blue-400 hover:underline font-semibold">
-            Open Hotspot Map →
+      <!-- Tactical GIS Preview Sidebar Card (FIXED PROPORTIONED HEIGHT!) -->
+      <div class="lg:col-span-1 self-start h-auto bg-[#1F3A4B] rounded-[2.5rem_1.5rem_2.5rem_1.5rem] text-white p-6 shadow-[0_12px_32px_rgba(31,58,75,0.25)] border border-white/15 space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-black uppercase tracking-wider text-white/80">Tactical GIS Preview</h3>
+          <router-link to="/admin/hotspot-map" class="text-xs text-[#F7FB41] hover:underline font-black">
+            Open Map →
           </router-link>
         </div>
-        <div class="flex-1 bg-slate-950 rounded-lg border border-slate-800/80 p-6 flex flex-col items-center justify-center text-center space-y-3">
-          <div class="w-12 h-12 rounded-full bg-blue-950/60 border border-blue-800 flex items-center justify-center text-blue-400 text-xl font-bold">
-            🗺️
+
+        <div class="bg-white/10 rounded-[2rem] border border-white/15 p-6 flex flex-col items-center justify-center text-center space-y-3 backdrop-blur-sm">
+          <div class="w-14 h-14 rounded-2xl bg-[#F7FB41] text-[#0A0A0A] flex items-center justify-center shrink-0 shadow-md">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            </svg>
           </div>
           <div>
-            <h4 class="text-sm font-bold text-white mb-1">Santa Rosa Incident Grid</h4>
-            <p class="text-xs text-slate-400 max-w-xs">
+            <h4 class="text-base font-black text-white mb-1">Santa Rosa Incident Grid</h4>
+            <p class="text-xs text-white/90 font-medium leading-relaxed">
               View real-time spatial density clusters and barangay risk markers on the Hotspot Density Map.
             </p>
           </div>
           <router-link
             to="/admin/hotspot-map"
-            class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors shadow"
+            class="px-5 py-2.5 rounded-full bg-[#F7FB41] text-[#0A0A0A] hover:bg-[#eae035] text-xs font-black transition-all shadow-md active:scale-95 uppercase tracking-wider mt-1"
           >
             Launch Density Map
           </router-link>

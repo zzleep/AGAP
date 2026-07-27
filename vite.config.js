@@ -14,7 +14,7 @@ export default defineConfig({
       filename: 'sw.js',
       registerType: 'autoUpdate',
       injectRegister: 'auto',
-      includeAssets: ['favicon.svg', 'pwa-192x192.svg', 'pwa-512x512.svg', 'robots.txt'],
+      includeAssets: ['hero.svg', 'agap icon.svg', 'favicon.svg', 'pwa-192x192.svg', 'pwa-512x512.svg', 'robots.txt'],
       manifest: {
         name: 'AGAP - Santa Rosa Disaster Response',
         short_name: 'AGAP',
@@ -46,7 +46,7 @@ export default defineConfig({
       },
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json,md,woff2}'],
-        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024
       }
     })
   ],

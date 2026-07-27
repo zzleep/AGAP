@@ -1,48 +1,55 @@
 <template>
-  <div class="space-y-3 h-full flex flex-col">
-    <div class="flex items-center justify-between">
+  <div class="space-y-4 h-full flex flex-col">
+    <!-- Header Card -->
+    <div class="p-5 rounded-3xl bg-white border border-[#E0E0E0] shadow-m3-sm flex items-center justify-between">
       <div>
-        <h2 class="text-lg font-bold text-white">{{ $t('evacMap.title') }}</h2>
-        <p class="text-xs text-slate-400">{{ $t('evacMap.description') }}</p>
+        <h2 class="font-expressive font-black text-xl text-[#0A0A0A] tracking-tight">{{ $t('evacMap.title') }}</h2>
+        <p class="text-xs font-medium text-[#717171] mt-0.5">{{ $t('evacMap.description') }}</p>
       </div>
-      <span class="px-2 py-1 text-[11px] font-bold rounded bg-blue-900/60 text-blue-300 border border-blue-700/50">
+      <span class="px-3 py-1 text-xs font-extrabold rounded-full bg-[#902715]/10 text-[#902715] border border-[#902715]/20">
         {{ $t('evacMap.cityLabel') }}
       </span>
     </div>
 
-    <!-- Map Canvas Container -->
+    <!-- Map Canvas Container with Floating M3 Controls -->
     <div
       ref="mapWrapperEl"
-      class="relative flex-1 min-h-[360px] rounded-xl overflow-hidden border border-slate-700 bg-slate-800 flex items-center justify-center transition-all duration-200"
+      class="relative flex-1 min-h-[420px] rounded-3xl overflow-hidden border border-[#E0E0E0] bg-[#e5e7eb] flex items-center justify-center transition-all duration-200 shadow-m3-md"
       :class="isExpanded ? 'fixed inset-0 z-[9999] m-0 rounded-none border-0 min-h-0' : ''"
     >
-      <div ref="mapContainerEl" class="w-full h-full min-h-[360px] z-10"></div>
+      <div ref="mapContainerEl" class="w-full h-full min-h-[420px] z-10"></div>
 
-      <div v-if="mapError" class="absolute inset-0 z-20 flex items-center justify-center p-4 bg-slate-950/90 text-center">
-        <div class="max-w-sm space-y-2">
-          <p class="text-sm font-semibold text-white">Map unavailable</p>
-          <p class="text-xs text-slate-300">{{ mapError }}</p>
+      <div v-if="mapError" class="absolute inset-0 z-20 flex items-center justify-center p-6 bg-white/95 text-center">
+        <div class="max-w-sm space-y-3">
+          <div class="w-12 h-12 rounded-2xl bg-[#902715]/10 text-[#902715] mx-auto flex items-center justify-center font-bold">
+            !
+          </div>
+          <p class="text-base font-expressive font-extrabold text-[#0A0A0A]">Map unavailable</p>
+          <p class="text-xs text-[#717171] font-medium leading-relaxed">{{ mapError }}</p>
         </div>
       </div>
 
-      <div class="absolute top-3 right-3 z-30">
+      <!-- Top Control Floating Pill -->
+      <div class="absolute top-4 right-4 z-30">
         <button
           @click="toggleExpand"
-          class="px-3 py-1.5 rounded bg-slate-900/90 hover:bg-slate-800 text-white font-semibold text-xs border border-slate-600 shadow"
+          class="px-4 py-2 rounded-full bg-white/90 backdrop-blur-md hover:bg-white text-[#0A0A0A] font-bold text-xs border border-black/10 shadow-m3-md transition-transform active:scale-95 flex items-center space-x-1.5"
         >
-          {{ isExpanded ? 'Exit Fullscreen' : 'Expand Map' }}
+          <svg class="w-3.5 h-3.5 text-[#902715]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+          <span>{{ isExpanded ? 'Exit Fullscreen' : 'Expand Map' }}</span>
         </button>
       </div>
 
-      <div class="absolute bottom-3 left-3 right-3 bg-slate-900/90 backdrop-blur-md p-3 rounded-lg border border-slate-700 text-xs flex justify-between items-center z-20">
-        <div>
-          <span class="text-slate-400 block text-[10px]">{{ $t('evacMap.activeRiskFilter') }}</span>
+      <!-- Bottom Status & Recenter Floating Glass Dock -->
+      <div class="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-md p-4 rounded-3xl border border-black/10 text-xs flex justify-between items-center z-20 shadow-m3-lg">
+        <div class="space-y-0.5">
+          <span class="text-[#717171] block text-[10px] font-extrabold uppercase tracking-wider">{{ $t('evacMap.activeRiskFilter') }}</span>
           <span
-            class="font-bold uppercase"
+            class="font-expressive font-black text-sm uppercase tracking-wide"
             :class="{
-              'text-emerald-400': flow.mappedRiskLevel === 'low',
-              'text-amber-400': flow.mappedRiskLevel === 'moderate',
-              'text-red-400': flow.mappedRiskLevel === 'high'
+              'text-[#556B2F]': flow.mappedRiskLevel === 'low',
+              'text-[#D14D3E]': flow.mappedRiskLevel === 'moderate',
+              'text-[#902715]': flow.mappedRiskLevel === 'high'
             }"
           >
             {{ $t('evacMap.riskRoutes', { risk: $t('evacMap.' + flow.mappedRiskLevel) }) }}
@@ -50,7 +57,7 @@
         </div>
         <button
           @click="recenterMap"
-          class="px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-colors shadow"
+          class="px-4 py-2 rounded-full bg-[#902715] hover:bg-[#781f11] text-[#F7FB41] font-bold text-xs transition-colors shadow-m3-sm active:scale-95"
         >
           {{ $t('evacMap.recenter') }}
         </button>
