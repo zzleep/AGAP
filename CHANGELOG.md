@@ -40,9 +40,19 @@
 
 - **Removed unused `watch` import** — Cleaned up since the auto-surface watch was deleted.
 
+- **Bulk mode toggle in report selector** — Added a "Bulk Select" / "Single Mode" toggle button in the modal header. Default mode is single-click (click item → invoke Aegis). Bulk mode shows per-item checkboxes and a "Ask Aegis (N)" submit button in the footer. Toggling bulk mode off clears all selections.
+
+- **Fixed unclosed `</div>` causing build failure** — The modal header `<div>` was missing its closing tag, causing `RolldownError: Element is missing end tag`. Added the missing `</div>` and verified depth is balanced, build passes clean.
+
 #### `supabase/functions/aegis-advisor/index.ts`
 
 - **Confidence criteria in all 5 prompts** — Added explicit guidance to every scenario prompt: use HIGH with specific actionable data (3+ SOS, known hazard severity), MEDIUM with partial data, LOW only when minimal/vague. Default to HIGH with 3+ SOS and defined hazard. This prevents Gemini from defaulting to conservative "low" when sufficient data exists.
+
+- **Reduced token consumption** — Four changes to prevent free-tier quota exhaustion:
+  - Removed `gemini-2.5-flash` (expensive), reordered to `gemini-1.5-flash` first
+  - Reduced `maxOutputTokens` from 4096 → 1024, added `stopSequences` to stop generation early
+  - Fast-fail on 429 (quota exceeded): returns `"QUOTA_EXCEEDED"` error, main loop `break`s immediately instead of retrying other models and burning more quota
+  - Compressed all 5 scenario prompts ~40% by removing verbose role descriptions and flowery language while keeping essential meaning and data structure
 
 ### Verification
 
