@@ -365,20 +365,32 @@
               <div
                 v-for="cluster in sosStore.activeClusters"
                 :key="cluster.barangay"
-                @click="selectCluster(cluster)"
-                class="p-3.5 rounded-2xl bg-[#1F3A4B] text-white border border-[#1F3A4B] hover:border-[#F7FB41]/60 cursor-pointer transition-all active:scale-[0.98] group"
+                @click="toggleReportSelection(cluster, 'cluster')"
+                class="p-3.5 rounded-2xl bg-[#1F3A4B] text-white border cursor-pointer transition-all active:scale-[0.98] flex items-center space-x-3"
+                :class="isReportSelected(cluster, 'cluster') ? 'border-[#F7FB41]' : 'border-[#1F3A4B] hover:border-[#F7FB41]/60'"
               >
-                <div class="flex items-center justify-between">
-                  <span class="text-sm font-black">Barangay {{ cluster.barangay }}</span>
-                  <span class="px-2.5 py-0.5 rounded-full bg-[#902715] text-[10px] font-black uppercase tracking-wider text-white shadow-sm">
-                    {{ cluster.count }} reports
-                  </span>
+                <div
+                  @click.stop="toggleReportSelection(cluster, 'cluster')"
+                  class="w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all"
+                  :class="isReportSelected(cluster, 'cluster') ? 'bg-[#F7FB41] border-[#F7FB41]' : 'border-white/50 hover:border-[#F7FB41]'"
+                >
+                  <svg v-if="isReportSelected(cluster, 'cluster')" class="w-3 h-3 text-[#1F3A4B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                  </svg>
                 </div>
-                <p class="text-[10px] text-[#F7FB41] font-bold mt-1.5 flex items-center space-x-1">
-                  <span>{{ oldestReportTime(cluster.reports) }}</span>
-                  <span class="mx-1">·</span>
-                  <span>Cluster (3+ in 30min)</span>
-                </p>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm font-black">Barangay {{ cluster.barangay }}</span>
+                    <span class="px-2.5 py-0.5 rounded-full bg-[#902715] text-[10px] font-black uppercase tracking-wider text-white shadow-sm shrink-0 ml-2">
+                      {{ cluster.count }} reports
+                    </span>
+                  </div>
+                  <p class="text-[10px] text-[#F7FB41] font-bold mt-1.5 flex items-center space-x-1">
+                    <span>{{ oldestReportTime(cluster.reports) }}</span>
+                    <span class="mx-1">·</span>
+                    <span>Cluster (3+ in 30min)</span>
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -395,19 +407,31 @@
               <div
                 v-for="report in pendingSOSReports"
                 :key="report.id"
-                @click="selectSOS(report)"
-                class="p-3.5 rounded-2xl bg-white border border-[#1F3A4B]/15 hover:border-[#1F3A4B]/40 hover:bg-[#EEF4FB] cursor-pointer transition-all active:scale-[0.98] shadow-sm"
+                @click="toggleReportSelection(report, 'sos')"
+                class="p-3.5 rounded-2xl bg-white border cursor-pointer transition-all active:scale-[0.98] shadow-sm flex items-center space-x-3"
+                :class="isReportSelected(report, 'sos') ? 'border-[#902715] bg-[#902715]/5' : 'border-[#1F3A4B]/15 hover:border-[#1F3A4B]/40 hover:bg-[#EEF4FB]'"
               >
-                <div class="flex items-center justify-between">
-                  <span class="text-sm font-black text-[#1F3A4B]">Barangay {{ report.barangay }}</span>
-                  <span
-                    class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase shadow-sm"
-                    :class="report.status === 'pending' ? 'bg-[#F7FB41] text-[#0A0A0A] border border-[#8a7e00]' : 'bg-[#1F3A4B] text-white'"
-                  >
-                    {{ report.status }}
-                  </span>
+                <div
+                  @click.stop="toggleReportSelection(report, 'sos')"
+                  class="w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all"
+                  :class="isReportSelected(report, 'sos') ? 'bg-[#902715] border-[#902715]' : 'border-[#1F3A4B]/30 hover:border-[#902715]'"
+                >
+                  <svg v-if="isReportSelected(report, 'sos')" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                  </svg>
                 </div>
-                <p class="text-[10px] text-[#717171] font-bold mt-1">{{ formatTimeAgo(report.created_at) }}</p>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm font-black text-[#1F3A4B]">Barangay {{ report.barangay }}</span>
+                    <span
+                      class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase shadow-sm shrink-0 ml-2"
+                      :class="report.status === 'pending' ? 'bg-[#F7FB41] text-[#0A0A0A] border border-[#8a7e00]' : 'bg-[#1F3A4B] text-white'"
+                    >
+                      {{ report.status }}
+                    </span>
+                  </div>
+                  <p class="text-[10px] text-[#717171] font-bold mt-1">{{ formatTimeAgo(report.created_at) }}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -424,18 +448,30 @@
               <div
                 v-for="report in openCommunityReports"
                 :key="report.id"
-                @click="selectCommunityReport(report)"
-                class="p-3.5 rounded-2xl bg-white border border-[#1F3A4B]/15 hover:border-[#1F3A4B]/40 hover:bg-[#EEF4FB] cursor-pointer transition-all active:scale-[0.98] shadow-sm"
+                @click="toggleReportSelection(report, 'community')"
+                class="p-3.5 rounded-2xl bg-white border cursor-pointer transition-all active:scale-[0.98] shadow-sm flex items-center space-x-3"
+                :class="isReportSelected(report, 'community') ? 'border-[#902715] bg-[#902715]/5' : 'border-[#1F3A4B]/15 hover:border-[#1F3A4B]/40 hover:bg-[#EEF4FB]'"
               >
-                <div class="flex items-center justify-between">
-                  <span class="text-sm font-black text-[#1F3A4B]">Barangay {{ report.barangay }}</span>
-                  <span class="px-2.5 py-0.5 rounded-full bg-[#902715] text-white text-[10px] font-black uppercase shadow-sm">
-                    {{ report.ai_category || 'general' }}
-                  </span>
+                <div
+                  @click.stop="toggleReportSelection(report, 'community')"
+                  class="w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all"
+                  :class="isReportSelected(report, 'community') ? 'bg-[#902715] border-[#902715]' : 'border-[#1F3A4B]/30 hover:border-[#902715]'"
+                >
+                  <svg v-if="isReportSelected(report, 'community')" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                  </svg>
                 </div>
-                <p class="text-[10px] text-[#717171] font-bold mt-1 leading-relaxed line-clamp-2">
-                  {{ report.raw_description ? report.raw_description.slice(0, 80) + (report.raw_description.length > 80 ? '...' : '') : 'No description' }}
-                </p>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm font-black text-[#1F3A4B]">Barangay {{ report.barangay }}</span>
+                    <span class="px-2.5 py-0.5 rounded-full bg-[#902715] text-white text-[10px] font-black uppercase shadow-sm shrink-0 ml-2">
+                      {{ report.ai_category || 'general' }}
+                    </span>
+                  </div>
+                  <p class="text-[10px] text-[#717171] font-bold mt-1 leading-relaxed line-clamp-2">
+                    {{ report.raw_description ? report.raw_description.slice(0, 80) + (report.raw_description.length > 80 ? '...' : '') : 'No description' }}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -469,13 +505,25 @@
         </div>
 
         <!-- Footer -->
-        <div class="pt-4 border-t-2 border-[#1F3A4B]/20 flex justify-end shrink-0">
-          <button
-            @click="closeReportSelector"
-            class="px-6 py-3 rounded-full bg-[#902715] hover:bg-[#a82e1a] text-white font-black text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all"
-          >
-            Cancel
-          </button>
+        <div class="pt-4 border-t-2 border-[#1F3A4B]/20 flex items-center justify-between shrink-0">
+          <span v-if="selectedReportsCount > 0" class="text-xs font-black text-[#1F3A4B]">
+            {{ selectedReportsCount }} selected
+          </span>
+          <div class="flex items-center space-x-2 ml-auto">
+            <button
+              @click="closeReportSelector"
+              class="px-6 py-3 rounded-full bg-[#902715] hover:bg-[#a82e1a] text-white font-black text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              @click="submitBulkSelection"
+              :disabled="selectedReportsCount === 0"
+              class="px-6 py-3 rounded-full bg-[#1F3A4B] hover:bg-[#152733] text-white font-black text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Ask Aegis ({{ selectedReportsCount }})
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -502,6 +550,76 @@ const outcomeError = ref('')
 const historyLog = ref([])
 const showScenarioSelector = ref(false)
 const showReportSelector = ref(false)
+
+// Bulk selection for report selector modal
+const selectedReports = ref([])
+
+const selectedReportsCount = computed(() => selectedReports.value.length)
+
+function reportSelectionId(item, type) {
+  return type === 'cluster' ? `cluster:${item.barangay}` : `${type}:${item.id}`
+}
+
+function toggleReportSelection(item, type) {
+  const id = reportSelectionId(item, type)
+  const idx = selectedReports.value.findIndex(s => s.id === id)
+  if (idx >= 0) {
+    selectedReports.value = selectedReports.value.filter(s => s.id !== id)
+  } else {
+    selectedReports.value = [...selectedReports.value, { id, type, data: item }]
+  }
+}
+
+function isReportSelected(item, type) {
+  return selectedReports.value.some(s => s.id === reportSelectionId(item, type))
+}
+
+function clearReportSelection() {
+  selectedReports.value = []
+}
+
+function submitBulkSelection() {
+  const sel = selectedReports.value
+  if (sel.length === 0) return
+  showReportSelector.value = false
+
+  // Collect all SOS IDs from clusters + individual SOS reports
+  const sosIds = []
+  const barangays = []
+  let totalCount = 0
+  let weatherAlert = null
+
+  for (const s of sel) {
+    if (s.type === 'cluster') {
+      const c = s.data
+      sosIds.push(...(c.reports?.map(r => r.id) || []))
+      barangays.push(c.barangay)
+      totalCount += c.count || c.reports?.length || 0
+    } else if (s.type === 'sos') {
+      sosIds.push(s.data.id)
+      barangays.push(s.data.barangay)
+      totalCount += 1
+    } else if (s.type === 'community') {
+      barangays.push(s.data.barangay)
+      if (!weatherAlert) weatherAlert = s.data.raw_description
+    }
+  }
+
+  // Most common barangay
+  const modeBarangay = barangays.sort((a, b) =>
+    barangays.filter(v => v === a).length - barangays.filter(v => v === b).length
+  ).pop() || 'Tagapo'
+
+  clearReportSelection()
+  invokeAegis(
+    [...new Set(sosIds)], // deduplicate
+    modeBarangay,
+    totalCount || sel.length,
+    flowStore.zoneSeverity,
+    weatherAlert,
+    'flood'
+  )
+}
 
 // Bulk selection for history log
 const selectedHistoryIds = ref([])
@@ -605,42 +723,6 @@ function openReportSelector() {
 
 function closeReportSelector() {
   showReportSelector.value = false
-}
-
-async function selectCluster(cluster) {
-  showReportSelector.value = false
-  await invokeAegis(
-    cluster.reports.map(r => r.id),
-    cluster.barangay,
-    cluster.count,
-    flowStore.zoneSeverity,
-    null,
-    'flood'
-  )
-}
-
-async function selectSOS(report) {
-  showReportSelector.value = false
-  await invokeAegis(
-    [report.id],
-    report.barangay,
-    1,
-    flowStore.zoneSeverity,
-    null,
-    'flood'
-  )
-}
-
-async function selectCommunityReport(report) {
-  showReportSelector.value = false
-  await invokeAegis(
-    [report.id],
-    report.barangay,
-    1,
-    flowStore.zoneSeverity,
-    report.raw_description || 'Community report context',
-    'flood'
-  )
 }
 
 function oldestReportTime(reports) {
