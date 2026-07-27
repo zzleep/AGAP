@@ -11,13 +11,85 @@
       </span>
     </div>
 
+    <!-- Nearest evacuation guidance -->
+    <div class="rounded-3xl border border-[#E0E0E0] bg-white p-4 shadow-m3-sm">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p class="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#717171]">{{ $t('evacMap.nearestLabel') }}</p>
+          <h3 class="mt-1 font-expressive text-lg font-black text-[#0A0A0A]">
+            {{ nearestEvacCenter?.name || $t('evacMap.locating') }}
+          </h3>
+          <p class="mt-1 text-xs font-medium text-[#717171]">
+            <span v-if="userLocation">
+              {{ userLocation.barangay || $t('home.currentLocation') }} ·
+              {{ formatDistanceToKm(nearestEvacDistance) }} km away
+            </span>
+            <span v-else>{{ $t('evacMap.locationHint') }}</span>
+          </p>
+          <p v-if="nearestEvacRouteInfo" class="mt-1 text-[11px] font-semibold text-[#902715]">
+            {{ formatDistanceToKm(nearestEvacRouteInfo.distanceKm) }} km route · {{ formatDurationToMinutes(nearestEvacRouteInfo.durationMinutes) }} min walk
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-bold text-[#0A0A0A] shadow-m3-sm transition-transform active:scale-95"
+            :disabled="isLocating"
+            @click="refreshCurrentLocation"
+          >
+            {{ isLocating ? $t('evacMap.locating') : $t('evacMap.refreshLocation') }}
+          </button>
+          <button
+            v-if="nearestEvacCenter"
+            type="button"
+            class="rounded-full bg-[#902715] px-4 py-2 text-xs font-bold text-[#F7FB41] shadow-m3-sm transition-transform active:scale-95"
+            @click="focusNearestEvacCenter"
+          >
+            {{ $t('evacMap.focusNearest') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Adaptive Evacuation Autopilot -->
+    <div class="rounded-3xl border border-[#E0E0E0] bg-white p-4 shadow-m3-sm">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p class="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#717171]">Adaptive Evacuation Autopilot</p>
+          <h3 class="mt-1 font-expressive text-lg font-black text-[#0A0A0A]">Safety Score: {{ safetyScore }}/100</h3>
+          <p class="mt-1 text-xs font-medium text-[#717171]">{{ routeReason || 'Monitoring movement and hazards for safer reroutes.' }}</p>
+          <p class="mt-1 text-[11px] font-semibold text-[#902715]">Nearby incidents: {{ nearbyIncidentCount }} · Weather risk: {{ flow.mappedRiskLevel }}</p>
+          <p v-if="stuckAlert" class="mt-2 text-[11px] font-bold text-[#902715]">Potentially stuck in risk zone. Alert signal sent to responders.</p>
+        </div>
+        <button
+          type="button"
+          class="rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-bold text-[#0A0A0A] shadow-m3-sm transition-transform active:scale-95"
+          @click="runAutopilotCycle(true)"
+        >
+          Force Safety Recheck
+        </button>
+      </div>
+    </div>
+
     <!-- Map Canvas Container with Floating M3 Controls -->
     <div
       ref="mapWrapperEl"
-      class="relative flex-1 min-h-[420px] rounded-3xl overflow-hidden border border-[#E0E0E0] bg-[#e5e7eb] flex items-center justify-center transition-all duration-200 shadow-m3-md"
+      class="relative flex-1 min-h-[70vh] md:min-h-[78vh] rounded-3xl overflow-hidden border border-[#E0E0E0] bg-[#e5e7eb] transition-all duration-200 shadow-m3-md"
       :class="isExpanded ? 'fixed inset-0 z-[9999] m-0 rounded-none border-0 min-h-0' : ''"
     >
-      <div ref="mapContainerEl" class="w-full h-full min-h-[420px] z-10"></div>
+      <div ref="mapContainerEl" class="absolute inset-0 z-10"></div>
+
+      <div
+        v-if="userLocation && nearestEvacCenter"
+        class="absolute left-4 top-4 z-30 max-w-[18rem] rounded-3xl border border-black/10 bg-white/90 p-4 text-xs shadow-m3-lg backdrop-blur-md"
+      >
+        <p class="text-[10px] font-extrabold uppercase tracking-wider text-[#717171]">{{ $t('evacMap.routeGuide') }}</p>
+        <p class="mt-1 font-expressive text-sm font-black text-[#0A0A0A]">{{ nearestEvacCenter.name }}</p>
+        <p class="mt-1 text-[#717171]">
+          {{ $t('evacMap.fromYou') }} {{ formatDistanceToKm(nearestEvacDistance) }} km
+        </p>
+      </div>
 
       <div v-if="mapError" class="absolute inset-0 z-20 flex items-center justify-center p-6 bg-white/95 text-center">
         <div class="max-w-sm space-y-3">
@@ -73,11 +145,15 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { useFlowStore } from '@/stores/flowStore'
 import { supabase } from '@/lib/supabase'
+import { useGPS } from '@/composables/useGPS'
+import { EVAC_CENTERS } from '@/data/evac_deets.vue'
+import { BARANGAY_COORDS } from '@/data/barangay_coords'
 import santaRosaBoundaries from '@/data/santa_rosa_boundaries.json'
 import fallbackRoutes from '@/data/evac_routes.json'
 
 const { t } = useI18n()
 const flow = useFlowStore()
+const { cachedLocation, isLocating, initGPS, refreshLocation, startLiveTracking, stopLiveTracking } = useGPS()
 let map = null
 const SANTA_ROSA_CENTER = [121.1114, 14.3123]
 const routesData = ref([])
@@ -88,18 +164,55 @@ const mapError = ref('')
 const mapboxToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || import.meta.env.VITE_MAPBOX_TOKEN || ''
 const routeSourceIds = []
 const routeLayerIds = []
+const evacMarkers = []
+const incidentMarkers = []
+const evacRouteSourceId = 'evac-user-route'
+const evacRouteLayerId = 'evac-user-route-line'
+const evacRouteFallbackLayerId = 'evac-user-route-fallback'
+const routeIncidentCorridorKm = 0.6
+const userLocation = ref(null)
+const nearestEvacCenter = ref(null)
+const nearestEvacDistance = ref(null)
+const nearestEvacRouteInfo = ref(null)
+const activeRouteCoordinates = ref([])
+const safetyScore = ref(100)
+const nearbyIncidentCount = ref(0)
+const routeReason = ref('')
+const stuckAlert = ref(false)
+const lastAutopilotReason = ref('')
+let evacRouteAbortController = null
+let autopilotIntervalId = null
+let lastAutopilotRunAt = 0
+let lastMovementSnapshot = null
+let lastStuckSignalAt = 0
 
 onMounted(async () => {
+  await initGPS()
+  syncUserLocation()
+  startLiveTracking()
+  autopilotIntervalId = setInterval(() => {
+    runAutopilotCycle(false)
+  }, 15000)
   initMapboxMap()
   await loadEvacRoutes()
   renderRoutes()
   window.addEventListener('keydown', handleKeydown)
+  window.addEventListener('resize', handleViewportResize)
+  window.addEventListener('orientationchange', handleViewportResize)
   document.addEventListener('fullscreenchange', handleFullscreenChange)
 })
 
 onUnmounted(() => {
+  clearEvacRouteLine()
+  clearEvacMarkers()
+  clearIncidentMarkers()
+  if (evacRouteAbortController) evacRouteAbortController.abort()
+  if (autopilotIntervalId) clearInterval(autopilotIntervalId)
+  stopLiveTracking()
   if (map) map.remove()
   window.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('resize', handleViewportResize)
+  window.removeEventListener('orientationchange', handleViewportResize)
   document.removeEventListener('fullscreenchange', handleFullscreenChange)
   document.body.classList.remove('overflow-hidden')
 })
@@ -120,15 +233,27 @@ function initMapboxMap() {
     container: mapContainerEl.value,
     style: 'mapbox://styles/mapbox/streets-v12',
     center: SANTA_ROSA_CENTER,
-    zoom: 13,
+    zoom: 15,
     minZoom: 12,
     maxZoom: 16
   })
 
-  map.on('load', () => {
+  map.on('load', async () => {
     addBoundaryLayer()
+    renderEvacMarkers()
+    await renderEvacRouteLine()
+    await runAutopilotCycle(true)
     renderRoutes()
+    handleViewportResize()
     mapError.value = ''
+  })
+}
+
+function handleViewportResize() {
+  nextTick(() => {
+    if (map) {
+      map.resize()
+    }
   })
 }
 
@@ -230,6 +355,520 @@ function addBoundaryLayer() {
       'line-dasharray': [4, 4]
     }
   })
+}
+
+function renderEvacMarkers() {
+  if (!map) return
+
+  clearEvacMarkers()
+
+  EVAC_CENTERS.forEach(center => {
+    const popupHtml = `
+      <div class="p-1 text-slate-900 min-w-[180px]">
+        <h4 class="font-bold text-xs text-blue-900">${center.name}</h4>
+        <p class="text-[11px] text-slate-700 mt-0.5">${center.description || ''}</p>
+        <div class="mt-2 space-y-1 text-[11px] text-slate-700">
+          <p><strong>Floor area (in sqm):</strong> ${center.floorArea} </p>
+          <p><strong>Family size:</strong> ${center.FamilySize}</p>
+          <p><strong>Individual size:</strong> ${center.indivSize}</p>
+          <p><strong>CRs:</strong> F ${center.femaleCR} / M ${center.maleCR} / C ${center.commonCR}</p>
+        </div>
+      </div>
+    `
+
+    const marker = new mapboxgl.Marker({ color: '#902715' })
+      .setLngLat([center.coords.longitude, center.coords.latitude])
+      .setPopup(new mapboxgl.Popup({ offset: 18 }).setHTML(popupHtml))
+      .addTo(map)
+
+    evacMarkers.push(marker)
+  })
+}
+
+function syncUserLocation() {
+  if (!cachedLocation.value) return
+
+  const previousCenterId = nearestEvacCenter.value?.id || null
+  userLocation.value = cachedLocation.value
+  const result = findNearestEvacCenter(cachedLocation.value.latitude, cachedLocation.value.longitude)
+  nearestEvacCenter.value = result.center
+  nearestEvacDistance.value = result.distanceKm
+  if (previousCenterId !== (result.center?.id || null)) {
+    routeReason.value = `Nearest center changed to ${result.center?.name || 'new center'} based on your movement.`
+  }
+  renderEvacRouteLine()
+  runAutopilotCycle(false)
+}
+
+function findNearestEvacCenter(lat, lng) {
+  let nearestCenter = null
+  let nearestDistance = Infinity
+
+  EVAC_CENTERS.forEach(center => {
+    const distance = getDistanceKm(lat, lng, center.coords.latitude, center.coords.longitude)
+    if (distance < nearestDistance) {
+      nearestDistance = distance
+      nearestCenter = center
+    }
+  })
+
+  return {
+    center: nearestCenter,
+    distanceKm: nearestDistance
+  }
+}
+
+function getDistanceKm(lat1, lng1, lat2, lng2) {
+  const earthRadiusKm = 6371
+  const toRadians = degrees => (degrees * Math.PI) / 180
+  const deltaLat = toRadians(lat2 - lat1)
+  const deltaLng = toRadians(lng2 - lng1)
+  const a = Math.sin(deltaLat / 2) ** 2
+    + Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(deltaLng / 2) ** 2
+  return 2 * earthRadiusKm * Math.asin(Math.sqrt(a))
+}
+
+function getDistancePointToSegmentKm(point, start, end) {
+  const referenceLatRad = (point[1] * Math.PI) / 180
+  const kmPerLng = 111.32 * Math.cos(referenceLatRad)
+  const kmPerLat = 110.574
+
+  const px = point[0] * kmPerLng
+  const py = point[1] * kmPerLat
+  const sx = start[0] * kmPerLng
+  const sy = start[1] * kmPerLat
+  const ex = end[0] * kmPerLng
+  const ey = end[1] * kmPerLat
+
+  const dx = ex - sx
+  const dy = ey - sy
+  const lengthSquared = (dx * dx) + (dy * dy)
+
+  if (lengthSquared === 0) {
+    return Math.hypot(px - sx, py - sy)
+  }
+
+  const t = Math.max(0, Math.min(1, ((px - sx) * dx + (py - sy) * dy) / lengthSquared))
+  const projectionX = sx + (t * dx)
+  const projectionY = sy + (t * dy)
+  return Math.hypot(px - projectionX, py - projectionY)
+}
+
+function getDistanceToRouteKm(latitude, longitude, routeCoordinates) {
+  if (!Array.isArray(routeCoordinates) || routeCoordinates.length < 2) {
+    return Infinity
+  }
+
+  const point = [longitude, latitude]
+  let minimumDistanceKm = Infinity
+
+  for (let i = 0; i < routeCoordinates.length - 1; i += 1) {
+    const start = routeCoordinates[i]
+    const end = routeCoordinates[i + 1]
+    const segmentDistanceKm = getDistancePointToSegmentKm(point, start, end)
+    if (segmentDistanceKm < minimumDistanceKm) {
+      minimumDistanceKm = segmentDistanceKm
+    }
+  }
+
+  return minimumDistanceKm
+}
+
+function formatDistanceToKm(distanceKm) {
+  if (typeof distanceKm !== 'number' || Number.isNaN(distanceKm)) return '0.0'
+  return distanceKm < 1 ? distanceKm.toFixed(2) : distanceKm.toFixed(1)
+}
+
+function formatDurationToMinutes(durationMinutes) {
+  if (typeof durationMinutes !== 'number' || Number.isNaN(durationMinutes)) return '0'
+  return Math.max(1, Math.round(durationMinutes)).toString()
+}
+
+async function renderEvacRouteLine() {
+  if (!map || !userLocation.value || !nearestEvacCenter.value || !map.isStyleLoaded()) return
+
+  clearEvacRouteLine()
+
+  addUserLocationPoint()
+
+  if (evacRouteAbortController) evacRouteAbortController.abort()
+  evacRouteAbortController = new AbortController()
+
+  const origin = `${userLocation.value.longitude},${userLocation.value.latitude}`
+  const destination = `${nearestEvacCenter.value.coords.longitude},${nearestEvacCenter.value.coords.latitude}`
+  const directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/walking/${origin};${destination}?geometries=geojson&overview=full&steps=false&access_token=${encodeURIComponent(mapboxToken)}`
+
+  try {
+    const response = await fetch(directionsUrl, { signal: evacRouteAbortController.signal })
+    if (!response.ok) throw new Error(`Directions request failed (${response.status})`)
+
+    const payload = await response.json()
+    const route = payload?.routes?.[0]
+    if (!route?.geometry?.coordinates?.length) throw new Error('No route returned by Mapbox Directions')
+
+    nearestEvacRouteInfo.value = {
+      distanceKm: route.distance / 1000,
+      durationMinutes: route.duration / 60
+    }
+
+    if (lastAutopilotReason.value === 'reports') {
+      routeReason.value = `Route updated: nearby community incidents increased in ${userLocation.value.barangay || 'your area'}.`
+    } else if (lastAutopilotReason.value === 'weather') {
+      routeReason.value = `Route updated for ${flow.mappedRiskLevel} weather risk.`
+    }
+
+    addRouteLine({
+      type: 'Feature',
+      properties: {
+        name: nearestEvacCenter.value.name,
+        kind: 'nearest-evac-route'
+      },
+      geometry: route.geometry
+    })
+  } catch (err) {
+    if (err?.name === 'AbortError') return
+
+    console.warn('Using fallback evacuation route line:', err)
+    nearestEvacRouteInfo.value = null
+    routeReason.value = 'Road route unavailable; using direct fallback path.'
+    addRouteLine({
+      type: 'Feature',
+      properties: {
+        name: nearestEvacCenter.value.name,
+        kind: 'nearest-evac-route-fallback'
+      },
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [userLocation.value.longitude, userLocation.value.latitude],
+          [nearestEvacCenter.value.coords.longitude, nearestEvacCenter.value.coords.latitude]
+        ]
+      }
+    }, true)
+  }
+}
+
+function getWeatherPenalty() {
+  if (flow.mappedRiskLevel === 'high') return 38
+  if (flow.mappedRiskLevel === 'moderate') return 20
+  return 8
+}
+
+function normalizeBarangayName(name) {
+  return String(name || '').toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z0-9\s]/g, '').trim()
+}
+
+function resolveIncidentCoordinates(report) {
+  const directLat = typeof report.latitude === 'number' ? report.latitude : null
+  const directLng = typeof report.longitude === 'number' ? report.longitude : null
+  if (directLat !== null && directLng !== null) {
+    return { latitude: directLat, longitude: directLng }
+  }
+
+  const matchByBarangay = BARANGAY_COORDS[report.barangay]
+  if (matchByBarangay) {
+    return { latitude: matchByBarangay.lat, longitude: matchByBarangay.lng }
+  }
+
+  const normalizedTarget = normalizeBarangayName(report.barangay)
+  if (!normalizedTarget) return null
+
+  for (const [name, coords] of Object.entries(BARANGAY_COORDS)) {
+    const normalizedName = normalizeBarangayName(name)
+    if (normalizedName.includes(normalizedTarget) || normalizedTarget.includes(normalizedName)) {
+      return { latitude: coords.lat, longitude: coords.lng }
+    }
+  }
+
+  return null
+}
+
+function getIncidentMarkerColor(priority) {
+  if (priority === 'critical') return '#b91c1c'
+  if (priority === 'high') return '#dc2626'
+  if (priority === 'medium') return '#f97316'
+  if (priority === 'low') return '#eab308'
+  return '#f97316'
+}
+
+function clearIncidentMarkers() {
+  while (incidentMarkers.length) {
+    const marker = incidentMarkers.pop()
+    marker.remove()
+  }
+}
+
+function renderIncidentMarkers(reports) {
+  if (!map) return
+
+  clearIncidentMarkers()
+
+  reports.forEach(report => {
+    const coords = resolveIncidentCoordinates(report)
+    if (!coords) return
+
+    const popupHtml = `
+      <div class="p-1 text-slate-900 min-w-[200px]">
+        <h4 class="font-bold text-xs text-[#902715]">Unresolved Incident</h4>
+        <p class="text-[11px] text-slate-700 mt-0.5"><strong>Barangay:</strong> ${report.barangay || 'Unknown'}</p>
+        <p class="text-[11px] text-slate-700"><strong>Priority:</strong> ${report.ai_priority || 'unknown'}</p>
+        <p class="text-[11px] text-slate-700"><strong>Status:</strong> ${report.status || 'open'}</p>
+        <p class="text-[11px] text-slate-700 mt-1">${report.raw_description || 'No description provided.'}</p>
+      </div>
+    `
+
+    const marker = new mapboxgl.Marker({ color: getIncidentMarkerColor(report.ai_priority) })
+      .setLngLat([coords.longitude, coords.latitude])
+      .setPopup(new mapboxgl.Popup({ offset: 14 }).setHTML(popupHtml))
+      .addTo(map)
+
+    incidentMarkers.push(marker)
+  })
+}
+
+async function getNearbyIncidentSummary() {
+  if (!userLocation.value) {
+    nearbyIncidentCount.value = 0
+    clearIncidentMarkers()
+    return { count: 0, criticalLike: 0 }
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('community_reports')
+      .select('id, ai_priority, status, barangay, created_at, raw_description')
+      .in('status', ['open', 'in_review'])
+      .order('created_at', { ascending: false })
+      .limit(120)
+
+    if (error) throw error
+
+    const reports = (data || []).map(report => {
+      const coords = resolveIncidentCoordinates(report)
+      if (!coords) return null
+
+      const distanceKm = getDistanceKm(
+        userLocation.value.latitude,
+        userLocation.value.longitude,
+        coords.latitude,
+        coords.longitude
+      )
+
+      return {
+        ...report,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        distanceKm,
+        distanceToRouteKm: getDistanceToRouteKm(
+          coords.latitude,
+          coords.longitude,
+          activeRouteCoordinates.value
+        )
+      }
+    }).filter(Boolean)
+
+    const routeBasedFilteringReady = activeRouteCoordinates.value.length >= 2
+    const nearbyReports = reports.filter(report => {
+      if (routeBasedFilteringReady) {
+        return report.distanceToRouteKm <= routeIncidentCorridorKm
+      }
+      return report.distanceKm <= 3.5
+    })
+    nearbyIncidentCount.value = nearbyReports.length
+    renderIncidentMarkers(nearbyReports)
+
+    const criticalLike = nearbyReports.filter(r => r.ai_priority === 'high' || r.ai_priority === 'critical').length
+    return { count: nearbyReports.length, criticalLike }
+  } catch (err) {
+    console.warn('Autopilot incident scan fallback:', err)
+    nearbyIncidentCount.value = 0
+    clearIncidentMarkers()
+    return { count: 0, criticalLike: 0 }
+  }
+}
+
+function updateMovementSnapshot() {
+  if (!userLocation.value) return
+
+  if (!lastMovementSnapshot) {
+    lastMovementSnapshot = {
+      latitude: userLocation.value.latitude,
+      longitude: userLocation.value.longitude,
+      timestamp: Date.now()
+    }
+    return
+  }
+
+  const movedKm = getDistanceKm(
+    lastMovementSnapshot.latitude,
+    lastMovementSnapshot.longitude,
+    userLocation.value.latitude,
+    userLocation.value.longitude
+  )
+
+  const elapsedMs = Date.now() - lastMovementSnapshot.timestamp
+  const highRisk = flow.mappedRiskLevel === 'high'
+
+  if (highRisk && elapsedMs >= 120000 && movedKm < 0.03) {
+    stuckAlert.value = true
+    sendStuckSignal()
+  } else if (movedKm >= 0.03) {
+    stuckAlert.value = false
+    lastMovementSnapshot = {
+      latitude: userLocation.value.latitude,
+      longitude: userLocation.value.longitude,
+      timestamp: Date.now()
+    }
+  }
+}
+
+async function sendStuckSignal() {
+  if (!userLocation.value) return
+
+  const now = Date.now()
+  if (now - lastStuckSignalAt < 10 * 60 * 1000) return
+
+  lastStuckSignalAt = now
+  const userHash = localStorage.getItem('agap_user_hash') || `usr_${Math.random().toString(36).slice(2, 10)}`
+  localStorage.setItem('agap_user_hash', userHash)
+
+  try {
+    await supabase.from('sos_reports').insert([{
+      latitude: userLocation.value.latitude,
+      longitude: userLocation.value.longitude,
+      barangay: userLocation.value.barangay || 'Unknown',
+      user_hash: userHash,
+      mode: 'autopilot_stuck'
+    }])
+  } catch (err) {
+    console.warn('Autopilot stuck signal failed:', err)
+  }
+}
+
+async function runAutopilotCycle(forceReroute) {
+  if (!userLocation.value || !nearestEvacCenter.value) return
+
+  const now = Date.now()
+  if (!forceReroute && now - lastAutopilotRunAt < 8000) return
+  lastAutopilotRunAt = now
+
+  const weatherPenalty = getWeatherPenalty()
+  const reportSummary = await getNearbyIncidentSummary()
+  const incidentPenalty = Math.min(42, (reportSummary.count * 4) + (reportSummary.criticalLike * 8))
+  const routePenalty = nearestEvacRouteInfo.value ? 0 : 10
+
+  safetyScore.value = Math.max(0, 100 - weatherPenalty - incidentPenalty - routePenalty)
+
+  if (reportSummary.criticalLike >= 2) {
+    lastAutopilotReason.value = 'reports'
+  } else if (flow.mappedRiskLevel === 'high') {
+    lastAutopilotReason.value = 'weather'
+  } else {
+    lastAutopilotReason.value = ''
+  }
+
+  if (forceReroute || lastAutopilotReason.value) {
+    await renderEvacRouteLine()
+  }
+
+  updateMovementSnapshot()
+}
+
+function addRouteLine(feature, useFallback = false) {
+  if (!map) return
+
+  activeRouteCoordinates.value = feature?.geometry?.type === 'LineString'
+    ? (feature.geometry.coordinates || [])
+    : []
+
+  if (map.getLayer(evacRouteLayerId)) map.removeLayer(evacRouteLayerId)
+  if (map.getLayer(evacRouteFallbackLayerId)) map.removeLayer(evacRouteFallbackLayerId)
+  if (map.getSource(evacRouteSourceId)) map.removeSource(evacRouteSourceId)
+
+  map.addSource(evacRouteSourceId, {
+    type: 'geojson',
+    data: feature
+  })
+
+  map.addLayer({
+    id: useFallback ? evacRouteFallbackLayerId : evacRouteLayerId,
+    type: 'line',
+    source: evacRouteSourceId,
+    paint: {
+      'line-color': '#902715',
+      'line-width': useFallback ? 3 : 5,
+      'line-opacity': 0.95,
+      ...(useFallback ? { 'line-dasharray': [2, 2] } : {})
+    }
+  })
+}
+
+function addUserLocationPoint() {
+  if (!map) return
+
+  if (map.getLayer('user-location-point')) map.removeLayer('user-location-point')
+  if (map.getSource('user-location-point')) map.removeSource('user-location-point')
+
+  map.addSource('user-location-point', {
+    type: 'geojson',
+    data: {
+      type: 'Feature',
+      properties: { name: 'Current Location' },
+      geometry: {
+        type: 'Point',
+        coordinates: [userLocation.value.longitude, userLocation.value.latitude]
+      }
+    }
+  })
+
+  map.addLayer({
+    id: 'user-location-point',
+    type: 'circle',
+    source: 'user-location-point',
+    paint: {
+      'circle-color': '#1d4ed8',
+      'circle-radius': 7,
+      'circle-stroke-width': 3,
+      'circle-stroke-color': '#ffffff'
+    }
+  })
+}
+
+function clearEvacRouteLine() {
+  if (!map) return
+
+  activeRouteCoordinates.value = []
+
+  if (map.getLayer('user-location-point')) map.removeLayer('user-location-point')
+  if (map.getSource('user-location-point')) map.removeSource('user-location-point')
+
+  if (map.getLayer(evacRouteLayerId)) map.removeLayer(evacRouteLayerId)
+  if (map.getLayer(evacRouteFallbackLayerId)) map.removeLayer(evacRouteFallbackLayerId)
+  if (map.getSource(evacRouteSourceId)) map.removeSource(evacRouteSourceId)
+}
+
+async function refreshCurrentLocation() {
+  await refreshLocation(true)
+}
+
+function focusNearestEvacCenter() {
+  if (!map || !userLocation.value || !nearestEvacCenter.value) return
+
+  const bounds = new mapboxgl.LngLatBounds()
+  bounds.extend([userLocation.value.longitude, userLocation.value.latitude])
+  bounds.extend([nearestEvacCenter.value.coords.longitude, nearestEvacCenter.value.coords.latitude])
+  map.fitBounds(bounds, {
+    padding: 80,
+    duration: 800,
+    maxZoom: 15
+  })
+}
+
+function clearEvacMarkers() {
+  while (evacMarkers.length) {
+    const marker = evacMarkers.pop()
+    marker.remove()
+  }
 }
 
 function clearRouteLayers() {
@@ -349,9 +988,14 @@ function handleFullscreenChange() {
 
 watch(() => flow.mappedRiskLevel, () => {
   renderRoutes()
+  runAutopilotCycle(true)
 })
 
 watch(routesData, () => {
   renderRoutes()
+})
+
+watch(cachedLocation, () => {
+  syncUserLocation()
 })
 </script>

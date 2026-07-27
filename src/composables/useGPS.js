@@ -11,6 +11,7 @@ const isLocating = ref(false)
 const toastMessage = ref('')
 let refreshInterval = null
 let serviceWorkerListenerReady = false
+let locationWatchId = null
 
 async function getDB() {
   return openDB(DB_NAME, 1, {
@@ -110,6 +111,16 @@ export function useGPS() {
     })
   }
 
+  function buildLocationFromPosition(pos) {
+    return {
+      latitude: pos.coords.latitude,
+      longitude: pos.coords.longitude,
+      accuracy: pos.coords.accuracy,
+      barangay: findNearestBarangay(pos.coords.latitude, pos.coords.longitude),
+      timestamp: Date.now()
+    }
+  }
+
   async function initGPS() {
     registerServiceWorkerGPSRefresh()
     const existing = await loadFromCache()
@@ -136,13 +147,7 @@ export function useGPS() {
     const pos = await acquirePosition(20000, 10000)
 
     if (pos) {
-      const loc = {
-        latitude: pos.coords.latitude,
-        longitude: pos.coords.longitude,
-        accuracy: pos.coords.accuracy,
-        barangay: findNearestBarangay(pos.coords.latitude, pos.coords.longitude),
-        timestamp: Date.now()
-      }
+      const loc = buildLocationFromPosition(pos)
       await saveToCache(loc)
       isLocating.value = false
       if (!existing) {
@@ -179,13 +184,7 @@ export function useGPS() {
     const pos = await acquirePosition(20000, 10000)
 
     if (pos) {
-      const loc = {
-        latitude: pos.coords.latitude,
-        longitude: pos.coords.longitude,
-        accuracy: pos.coords.accuracy,
-        barangay: findNearestBarangay(pos.coords.latitude, pos.coords.longitude),
-        timestamp: Date.now()
-      }
+      const loc = buildLocationFromPosition(pos)
       await saveToCache(loc)
       isLocating.value = false
       if (manual) showToast(t('gps.locationRefreshed'))
@@ -205,12 +204,42 @@ export function useGPS() {
     }, 60000)
   }
 
+  function startLiveTracking() {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) return
+    if (locationWatchId !== null) return
+
+    locationWatchId = navigator.geolocation.watchPosition(
+      async (pos) => {
+        const loc = buildLocationFromPosition(pos)
+        await saveToCache(loc)
+      },
+      (err) => {
+        console.warn('Live GPS tracking failed:', err)
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 5000,
+        timeout: 15000
+      }
+    )
+  }
+
+  function stopLiveTracking() {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) return
+    if (locationWatchId === null) return
+
+    navigator.geolocation.clearWatch(locationWatchId)
+    locationWatchId = null
+  }
+
   return {
     cachedLocation,
     isLocating,
     toastMessage,
     initGPS,
     refreshLocation,
-    startBackgroundRefresh
+    startBackgroundRefresh,
+    startLiveTracking,
+    stopLiveTracking
   }
 }
