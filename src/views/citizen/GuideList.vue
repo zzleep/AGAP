@@ -1,8 +1,8 @@
 <template>
   <div class="space-y-4">
-    <div>
-      <h2 class="text-xl font-bold text-white">{{ $t('guideList.title') }}</h2>
-      <p class="text-xs text-slate-400">{{ $t('guideList.subtitle') }}</p>
+    <div class="p-5 rounded-3xl bg-white border border-[#E0E0E0] shadow-m3-sm space-y-1">
+      <h2 class="font-expressive font-black text-2xl text-[#0A0A0A] tracking-tight">{{ $t('guideList.title') }}</h2>
+      <p class="text-xs font-medium text-[#717171]">{{ $t('guideList.subtitle') }}</p>
     </div>
 
     <div class="space-y-3">
@@ -10,17 +10,19 @@
         v-for="guide in guides.guides"
         :key="guide.id"
         :to="`/app/guides/${guide.id}`"
-        class="block p-4 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700/80 transition-all hover:border-slate-600"
+        class="group block p-5 rounded-3xl bg-white hover:bg-[#f9ebe8] border border-[#E0E0E0] hover:border-[#f3d3cd] shadow-m3-sm transition-all active:scale-98"
       >
         <div class="flex items-start justify-between">
-          <div>
-            <span class="inline-block px-2 py-0.5 text-[10px] uppercase font-bold rounded bg-slate-700 text-blue-300 mb-1">
+          <div class="space-y-1.5">
+            <span class="inline-block px-3 py-1 text-[10px] uppercase font-extrabold rounded-full bg-[#902715]/10 text-[#902715] tracking-wider">
               {{ guide.category }}
             </span>
-            <h3 class="font-bold text-sm text-white group-hover:text-blue-400">{{ guide.title }}</h3>
-            <p class="text-xs text-slate-400 mt-1 line-clamp-2">{{ guide.summary }}</p>
+            <h3 class="font-expressive font-extrabold text-base text-[#0A0A0A] group-hover:text-[#902715] leading-snug transition-colors">{{ guide.title }}</h3>
+            <p class="text-xs font-medium text-[#717171] line-clamp-2 leading-relaxed">{{ guide.summary }}</p>
           </div>
-          <svg class="w-5 h-5 text-slate-500 shrink-0 ml-2 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          <div class="w-8 h-8 rounded-full bg-[#EBEBEB] group-hover:bg-[#902715] text-[#717171] group-hover:text-[#F7FB41] flex items-center justify-center shrink-0 ml-3 transition-colors shadow-m3-sm">
+            <svg class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+          </div>
         </div>
       </router-link>
     </div>

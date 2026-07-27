@@ -56,12 +56,10 @@ export function useSOS() {
     if (typeof window !== 'undefined' && !('SyncManager' in window) && typeof navigator !== 'undefined' && navigator.sendBeacon) {
       const beaconUrl = `${url}?apikey=${SUPABASE_ANON_KEY}`
       const blob = new Blob([body], { type: 'application/json' })
-      const queued = navigator.sendBeacon(beaconUrl, blob)
-      if (queued) {
-        sosStore.deliveryState = 'sent'
-      } else {
-        sosStore.deliveryState = 'queued'
-      }
+      navigator.sendBeacon(beaconUrl, blob)
+      // sendBeacon only confirms that the browser accepted the request, not that
+      // CDRRMO received it. Keep the resident-facing state conservative.
+      sosStore.deliveryState = 'queued'
       return record
     }
 

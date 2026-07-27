@@ -1,103 +1,172 @@
 <template>
-  <div class="space-y-4">
-    <div class="p-4 rounded-xl bg-slate-800 border border-slate-700">
-      <h2 class="text-xl font-bold text-white mb-1">{{ $t('sos.title') }}</h2>
-      <p class="text-xs text-slate-400">
-        {{ $t('sos.description') }}
-      </p>
+  <section class="sos-screen space-y-4" aria-labelledby="sos-heading">
+    <!-- Header -->
+    <div class="text-center">
+      <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-[#902715]">AGAP SOS</p>
+      <h2 id="sos-heading" class="font-expressive mt-2 text-3xl font-black tracking-tight text-[#0A0A0A]">{{ $t('sos.title') }}</h2>
+      <p class="mx-auto mt-2 max-w-[18rem] text-sm font-medium leading-relaxed text-[#717171]">{{ $t('sos.description') }}</p>
     </div>
 
-    <!-- Cached GPS Info Display -->
-    <div v-if="cachedLocation" class="p-3 rounded-lg bg-slate-800/70 border border-slate-700/70 flex items-center justify-between text-xs">
-      <div>
-        <span class="text-slate-400 block text-[10px] uppercase font-semibold">{{ $t('sos.cachedGpsPosition') }}</span>
-        <span class="font-mono text-slate-200">
-          {{ cachedLocation.latitude.toFixed(5) }}, {{ cachedLocation.longitude.toFixed(5) }}
-        </span>
-        <span class="text-slate-400 ml-2">({{ cachedLocation.barangay }})</span>
-      </div>
+    <!-- Delivery Message Banner (Dark Olive Background with White Text for High Readability) -->
+    <div v-if="deliveryMessage" class="sos-delivery-status" :class="deliveryTone" role="status" aria-live="polite">
+      <span class="font-expressive text-base font-extrabold block text-white">{{ deliveryMessage }}</span>
+      <span class="mt-1 block text-xs font-medium text-white/90 leading-relaxed">{{ deliveryDetail }}</span>
+    </div>
+
+    <!-- Clean Modern M3 Expressive Tactile SOS Button -->
+    <div class="flex flex-1 items-center justify-center py-5">
       <button
-        @click="refreshLocation(true)"
-        :disabled="isLocating"
-        class="px-2.5 py-1 text-[11px] rounded bg-slate-700 hover:bg-slate-600 text-blue-300 border border-slate-600 transition-colors disabled:opacity-50"
+        type="button"
+        class="sos-hold-button"
+        :class="{ 'is-holding': isHolding, 'is-busy': isBusy }"
+        :disabled="isBusy"
+        :aria-label="$t('sos.holdSosAria')"
+        @pointerdown="startHold"
+        @pointerup="cancelHold"
+        @pointercancel="cancelHold"
+        @pointerleave="cancelHold"
+        @lostpointercapture="cancelHold"
+        @keydown.space.prevent="startKeyboardHold"
+        @keyup.space.prevent="cancelHold"
+        @keydown.enter.prevent="startKeyboardHold"
+        @keyup.enter.prevent="cancelHold"
       >
-        {{ isLocating ? $t('sos.locating') : $t('sos.refreshGps') }}
+        <!-- Outer Progress Track Ring -->
+        <svg class="sos-hold-button__progress" viewBox="0 0 100 100" aria-hidden="true">
+          <circle class="sos-hold-button__progress-track" cx="50" cy="50" r="46" pathLength="100" />
+          <circle class="sos-hold-button__progress-value" cx="50" cy="50" r="46" pathLength="100" :style="{ strokeDashoffset: 100 - holdProgress }" />
+        </svg>
+
+        <!-- Clean Surface Content -->
+        <span class="sos-hold-button__surface space-y-1">
+          <svg class="h-8 w-8 text-[#F7FB41]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span class="font-expressive text-5xl font-black tracking-tight text-white leading-none">SOS</span>
+          <span class="font-expressive text-xs font-bold uppercase tracking-wider text-[#F7FB41] pt-1 block">{{ holdLabel }}</span>
+          <span class="text-[11px] font-semibold text-white/70 block">{{ holdTimeLabel }}</span>
+        </span>
       </button>
     </div>
 
-    <!-- Status Ticker Card -->
-    <div v-if="sos.currentSOS" class="p-4 rounded-xl bg-slate-800/90 border border-slate-700 space-y-2">
-      <div class="flex items-center justify-between">
-        <span class="text-xs font-semibold text-slate-400">{{ $t('sos.dispatchStatus') }}</span>
-        <span
-          :class="[
-            'px-2.5 py-0.5 text-xs font-bold rounded-full uppercase',
-            sos.deliveryState === 'sent' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' :
-            sos.deliveryState === 'queued' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' :
-            'bg-blue-500/20 text-blue-400 border border-blue-500/40 animate-pulse'
-          ]"
-        >
-          <template v-if="sos.deliveryState === 'sent'">{{ $t('sos.sent') }} ✓</template>
-          <template v-else-if="sos.deliveryState === 'queued'">{{ $t('sos.queued') }}</template>
-          <template v-else-if="sos.deliveryState === 'sending'">{{ $t('sos.sending') }}</template>
-          <template v-else>{{ sos.deliveryState }}</template>
-        </span>
-      </div>
-      <div class="text-xs text-slate-300 space-y-1">
-        <p><strong>{{ $t('sos.coordinates') }}</strong> {{ sos.currentSOS.latitude.toFixed(5) }}, {{ sos.currentSOS.longitude.toFixed(5) }}</p>
-        <p><strong>{{ $t('sos.barangay') }}</strong> {{ sos.currentSOS.barangay }}</p>
-        <p><strong>{{ $t('sos.userIdHash') }}</strong> <code class="text-[10px] bg-slate-900 px-1 py-0.5 rounded text-amber-300">{{ sos.currentSOS.user_hash }}</code></p>
-        <p><strong>{{ $t('sos.timestamp') }}</strong> {{ new Date(sos.currentSOS.created_at).toLocaleTimeString() }}</p>
-      </div>
-    </div>
-
-    <!-- Dispatch Action Button -->
-    <div class="space-y-3">
-      <button
-        @click="handleSOSDispatch"
-        :disabled="isLocating || sos.isPending"
-        class="w-full py-5 rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-black text-lg tracking-wider shadow-xl shadow-red-950/60 flex items-center justify-center transition-all active:scale-95"
-      >
-        <span v-if="isLocating">{{ $t('sos.acquiringSignal') }}</span>
-        <span v-else-if="sos.isPending">{{ $t('sos.transmittingSignal') }}</span>
-        <span v-else-if="sos.deliveryState === 'queued'">{{ $t('sos.resendSos') }}</span>
-        <span v-else>{{ $t('sos.sendSos') }}</span>
-      </button>
-
-      <div class="p-3 rounded-lg bg-slate-800/60 text-[11px] text-slate-400 text-center border border-slate-700/50">
-        {{ $t('sos.signalMode') }} <span class="font-bold text-slate-200 uppercase">{{ connectivity.mode }}</span> — {{ $t('sos.signalModeDetail') }}
-      </div>
-    </div>
-  </div>
+    <!-- Instruction Indicator Pill -->
+    <p v-if="isHolding || isBusy" class="min-h-5 text-center text-xs font-bold text-[#902715] bg-[#f9ebe8] px-4 py-2 rounded-full border border-[#f3d3cd] max-w-xs mx-auto" aria-live="polite">
+      {{ holdInstruction }}
+    </p>
+  </section>
 </template>
 
 <script setup>
+import { computed, onBeforeUnmount, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useSOSStore } from '@/stores/sosStore'
-import { useConnectivityStore } from '@/stores/connectivityStore'
 import { useSOS } from '@/composables/useSOS'
 import { useGPS } from '@/composables/useGPS'
 import { findNearestBarangay } from '@/data/barangay_coords'
 
+const HOLD_DURATION_MS = 2000
 const sos = useSOSStore()
-const connectivity = useConnectivityStore()
+const { t } = useI18n()
 const { dispatchSOS } = useSOS()
-const { cachedLocation, isLocating, refreshLocation } = useGPS()
+const { isLocating, refreshLocation } = useGPS()
 
-async function handleSOSDispatch() {
-  let coords = await refreshLocation(true)
+const holdProgress = ref(0)
+const isHolding = ref(false)
+const isDispatching = ref(false)
+let holdFrame = null
+let holdStartedAt = 0
+let activePointerId = null
 
-  if (!coords) {
-    const fallbackLat = 14.3123
-    const fallbackLng = 121.1114
-    coords = {
-      latitude: fallbackLat,
-      longitude: fallbackLng,
-      accuracy: 0,
-      barangay: findNearestBarangay(fallbackLat, fallbackLng),
-      isFallback: true
-    }
-  }
+const isBusy = computed(() => isLocating.value || sos.isPending || isDispatching.value)
+const holdLabel = computed(() => {
+  if (isLocating.value) return t('sos.findingLocation')
+  if (sos.isPending || isDispatching.value) return t('sos.sendingRequest')
+  return isHolding.value ? t('sos.keepHolding') : t('sos.holdToSend')
+})
+const holdTimeLabel = computed(() => isHolding.value ? `${Math.ceil((100 - holdProgress.value) / 50) || 1}s` : 'Press & Hold 2s')
+const holdInstruction = computed(() => {
+  if (isLocating.value) return t('sos.findingLocation')
+  if (sos.isPending || isDispatching.value) return t('sos.sendingRequest')
+  return isHolding.value ? t('sos.keepHolding') : t('sos.description')
+})
+const deliveryMessage = computed(() => {
+  if (sos.deliveryState === 'sent') return t('sos.sentMessage')
+  if (sos.deliveryState === 'queued') return t('sos.queuedMessage')
+  return ''
+})
+const deliveryDetail = computed(() => sos.deliveryState === 'sent' ? t('sos.sentDetail') : t('sos.queuedDetail'))
+const deliveryTone = computed(() => sos.deliveryState === 'sent'
+  ? 'bg-[#556B2F] border-[#425324] text-white shadow-m3-md'
+  : 'bg-[#902715] border-[#781f11] text-white shadow-m3-md')
 
-  await dispatchSOS(coords)
+function startHold(event) {
+  if (isBusy.value || isHolding.value) return
+  if (event?.button !== undefined && event.button !== 0) return
+
+  event?.preventDefault?.()
+  activePointerId = event?.pointerId ?? null
+  event?.currentTarget?.setPointerCapture?.(activePointerId)
+  isHolding.value = true
+  holdStartedAt = performance.now()
+  animateHold(holdStartedAt)
 }
+
+function startKeyboardHold() {
+  startHold()
+}
+
+function animateHold(now) {
+  holdProgress.value = Math.min(100, ((now - holdStartedAt) / HOLD_DURATION_MS) * 100)
+  if (holdProgress.value >= 100) {
+    finishHold()
+    return
+  }
+  holdFrame = requestAnimationFrame(animateHold)
+}
+
+function cancelHold(event) {
+  if (activePointerId !== null && event?.pointerId !== undefined && event.pointerId !== activePointerId) return
+  if (isDispatching.value) return
+  clearHold()
+}
+
+function clearHold() {
+  if (holdFrame) cancelAnimationFrame(holdFrame)
+  holdFrame = null
+  activePointerId = null
+  isHolding.value = false
+  holdProgress.value = 0
+}
+
+async function finishHold() {
+  if (!isHolding.value || isDispatching.value) return
+  if (holdFrame) cancelAnimationFrame(holdFrame)
+  holdFrame = null
+  activePointerId = null
+  isHolding.value = false
+  holdProgress.value = 100
+  isDispatching.value = true
+
+  try {
+    let coords = await refreshLocation(true)
+    if (!coords) {
+      const fallbackLat = 14.3123
+      const fallbackLng = 121.1114
+      coords = {
+        latitude: fallbackLat,
+        longitude: fallbackLng,
+        accuracy: 0,
+        barangay: findNearestBarangay(fallbackLat, fallbackLng),
+        isFallback: true
+      }
+    }
+    await dispatchSOS(coords)
+  } finally {
+    isDispatching.value = false
+    holdProgress.value = 0
+  }
+}
+
+onBeforeUnmount(clearHold)
 </script>
+

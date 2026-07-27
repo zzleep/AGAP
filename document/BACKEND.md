@@ -85,6 +85,17 @@
 - **Authenticated SELECT/UPDATE** for admin operations
 - **Public read** on `evac_routes`, `flood_zones`, `weather_cache`
 
+### Atomic Claim & Stale Reversion Protocol
+
+1. **Atomic Status Guard**:
+   - Updates use conditional `.eq('status', 'pending')` guards on `sos_reports`.
+   - Ensures indivisible PostgreSQL row locking.
+   - On lock conflict, returns 0 modified rows (`already_claimed`) to notify losing operators gracefully.
+
+2. **Stale Claim Reversion**:
+   - Queries `sos_reports` where `status = 'responding'` and `claimed_at < NOW() - INTERVAL '10 MINUTES'`.
+   - Reverts state back to `pending` and `assigned_operator_id = NULL` to prevent orphaned alerts.
+
 ### Realtime Publication
 
 Tables added to `supabase_realtime`:

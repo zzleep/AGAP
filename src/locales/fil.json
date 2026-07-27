@@ -12,6 +12,15 @@
     "operatorPortal": "Portal ng Operator"
   },
   "home": {
+    "rainAlert": "Ulat ng ulan",
+    "rain": "Ulan",
+    "rainCues": {
+      "watch": "Bantayan ang panahon",
+      "warning": "Manatiling alerto",
+      "danger": "Pumunta sa ligtas na lugar"
+    },
+    "stayReady": "Maging handa",
+    "quickActions": "Tulong at impormasyon, isang pindot lang.",
     "currentWeather": "Ulat ng Panahon Ngayon",
     "rainfallRate": "Bilis ng Ulan",
     "currentLocation": "Kasalukuyang Lokasyon",
@@ -23,17 +32,27 @@
     "noCachedLocation": "Wala pang naka-cache na lokasyon. Pindutin ang \"I-refresh ang Lokasyon\" para mag-save.",
     "emergencyAssistance": "Tulong Pang-emergency",
     "emergencyDescription": "Pindutin ang button sa ibaba para humingi ng agarang tulong mula sa CDRRMO. Gumagana kahit mahina ang signal o offline.",
-    "triggerSos": "MAG-SOS NGAYON",
+    "triggerSos": "Emergency SOS",
     "evacuationRoutes": "Mga Ruta ng Evacuation",
     "flowEnginePaths": "Ligtas na ruta gamit ang Flow Engine",
     "disasterGuides": "Mga Gabay sa Sakuna",
     "offlineSops": "Mga SOP at checklist na pwedeng gamitin kahit walang internet",
     "flowEngine": "Flow Engine",
-    "rainfallRisk": "Antas ng ulan at kalagayan ng ruta"
+    "rainfallRisk": "Antas ng ulan at kalagayan ng ruta",
+    "reportIssue": "Mag-ulat ng problema"
   },
   "sos": {
-    "title": "Isang Pindot na SOS Pang-emergency",
-    "description": "Ipinapadala ang iyong lokasyon sa mga operator ng CDRRMO sa Santa Rosa.",
+    "title": "Kailangan ng agarang tulong?",
+    "description": "Hawakan ang SOS button nang 2 segundo para humingi ng tulong.",
+    "holdToSend": "Hawakan para ipadala",
+    "keepHolding": "Hawakan pa",
+    "findingLocation": "Hinahanap ang iyong lokasyon...",
+    "sendingRequest": "Ipinapadala ang iyong SOS...",
+    "holdSosAria": "Hawakan nang 2 segundo para magpadala ng SOS",
+    "sentMessage": "Naipadala ang iyong SOS request.",
+    "sentDetail": "Manatili sa ligtas na lugar kung maaari.",
+    "queuedMessage": "Naghihintay maipadala ang iyong SOS request.",
+    "queuedDetail": "Panatilihing bukas ang AGAP at kumonekta kapag maaari.",
     "cachedGpsPosition": "Naka-cache na GPS Position",
     "locating": "Hinahanap...",
     "refreshGps": "I-refresh ang GPS",

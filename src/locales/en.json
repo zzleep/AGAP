@@ -12,6 +12,15 @@
     "operatorPortal": "Operator Portal"
   },
   "home": {
+    "rainAlert": "Rain alert",
+    "rain": "Rain",
+    "rainCues": {
+      "watch": "Keep an eye on the weather",
+      "warning": "Stay alert",
+      "danger": "Find a safe place"
+    },
+    "stayReady": "Stay ready",
+    "quickActions": "Help and information, one tap away.",
     "currentWeather": "Current Weather Alert",
     "rainfallRate": "Rainfall Rate",
     "currentLocation": "Current Location",
@@ -23,17 +32,27 @@
     "noCachedLocation": "No cached location available yet. Press \"Refresh My Location\" to save.",
     "emergencyAssistance": "Emergency Assistance",
     "emergencyDescription": "Press the button below to request immediate CDRRMO emergency response. Works offline and on degraded signals.",
-    "triggerSos": "TRIGGER SOS EMERGENCY",
+    "triggerSos": "Emergency SOS",
     "evacuationRoutes": "Evacuation Routes",
     "flowEnginePaths": "Flow Engine predictive safe paths",
     "disasterGuides": "Disaster Guides",
     "offlineSops": "Offline response SOPs & checklists",
     "flowEngine": "Flow Engine",
-    "rainfallRisk": "Rainfall risk & route status"
+    "rainfallRisk": "Rainfall risk & route status",
+    "reportIssue": "Report an issue"
   },
   "sos": {
-    "title": "One-Touch SOS Emergency",
-    "description": "Dispatches your current GPS coordinates directly to Santa Rosa CDRRMO operators.",
+    "title": "Need urgent help?",
+    "description": "Hold the SOS button for 2 seconds to ask for help.",
+    "holdToSend": "Hold to send",
+    "keepHolding": "Keep holding",
+    "findingLocation": "Finding your location...",
+    "sendingRequest": "Sending your SOS...",
+    "holdSosAria": "Hold for 2 seconds to send an SOS request",
+    "sentMessage": "Your SOS request was sent.",
+    "sentDetail": "Stay where it is safe, if you can.",
+    "queuedMessage": "Your SOS request is waiting to be sent.",
+    "queuedDetail": "Keep AGAP open and reconnect when you can.",
     "cachedGpsPosition": "Cached GPS Position",
     "locating": "Locating...",
     "refreshGps": "Refresh GPS",

@@ -7,20 +7,309 @@
     height: 100%;
     margin: 0;
     padding: 0;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background-color: #0f172a;
-    color: #f8fafc;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: #F5F5F5;
+    color: #0A0A0A;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1, h2, h3, .font-expressive {
+    font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: -0.02em;
   }
 }
 
-/* Leaflet Map custom fixes */
+/* Material 3 Expressive Glass Dock */
+.glass-dock {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 10px 30px -5px rgba(10, 10, 10, 0.1), 0 4px 12px -2px rgba(10, 10, 10, 0.05);
+}
+
+/* Material 3 Card Radii */
+.m3-card {
+  border-radius: 1.75rem;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+
+.m3-card:active {
+  transform: scale(0.98);
+}
+
+.m3-pill {
+  border-radius: 9999px;
+}
+
+.m3-chip {
+  border-radius: 1rem;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Material 3 Expressive Bento Hero Weather Container */
+.rain-alert {
+  position: relative;
+  border-radius: 2rem;
+  background: #902715;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.expressive-tile {
+  border-radius: 2rem 1.45rem 1.85rem 1.55rem;
+  transition: transform 220ms cubic-bezier(0.2, 0.9, 0.25, 1.2), border-radius 220ms cubic-bezier(0.2, 0.9, 0.25, 1.2), box-shadow 220ms ease;
+}
+
+.expressive-tile--map {
+  border-radius: 1.5rem 2rem 1.45rem 1.85rem;
+}
+
+.expressive-tile--guides {
+  border-radius: 1.8rem 1.35rem 1.9rem 1.55rem;
+}
+
+.expressive-tile--report {
+  border-radius: 1.35rem 1.95rem 1.55rem 1.85rem;
+}
+
+.expressive-tile:hover,
+.expressive-tile:focus-visible {
+  transform: translateY(-3px) rotate(-0.35deg);
+  border-radius: 1.45rem 2rem 1.45rem 2rem;
+  box-shadow: 0 14px 24px -14px rgba(10, 10, 10, 0.34);
+}
+
+.expressive-tile:active {
+  transform: translateY(1px) scale(0.975);
+}
+
+.expressive-icon {
+  flex-shrink: 0;
+  transition: transform 220ms cubic-bezier(0.2, 0.9, 0.25, 1.2), border-radius 220ms cubic-bezier(0.2, 0.9, 0.25, 1.2);
+}
+
+.expressive-icon--drop { border-radius: 52% 48% 54% 46% / 44% 46% 54% 56%; }
+.expressive-icon--alert { border-radius: 52% 48% 44% 56% / 53% 44% 56% 47%; }
+.expressive-icon--map { border-radius: 45% 55% 48% 52% / 42% 50% 50% 58%; }
+.expressive-icon--book { border-radius: 55% 45% 50% 50% / 44% 55% 45% 56%; }
+.expressive-icon--report { border-radius: 48% 52% 44% 56% / 58% 44% 56% 42%; }
+
+.expressive-tile:hover .expressive-icon,
+.expressive-tile:focus-visible .expressive-icon {
+  transform: rotate(-7deg) scale(1.12);
+  border-radius: 50%;
+}
+
+/* Material 3 Expressive SOS Hold Button (Clean & Modern) */
+.sos-screen {
+  min-height: calc(100vh - 15rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.sos-delivery-status {
+  border-width: 1.5px;
+  border-radius: 1.75rem;
+  padding: 1.25rem 1.5rem;
+  text-align: center;
+  box-shadow: 0 8px 24px -4px rgba(10, 10, 10, 0.12);
+}
+
+.sos-hold-button {
+  position: relative;
+  isolation: isolate;
+  width: min(17rem, 82vw);
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 50%;
+  padding: 0.5rem;
+  color: #F7FB41;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  background: #781f11;
+  box-shadow: 0 12px 28px -8px rgba(144, 39, 21, 0.35);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.sos-hold-button__surface {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #902715;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+.sos-hold-button__surface > * {
+  position: relative;
+  z-index: 1;
+}
+
+.sos-hold-button__progress {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0.15rem;
+  pointer-events: none;
+  transform: rotate(-90deg);
+}
+
+.sos-hold-button__progress circle {
+  fill: none;
+  stroke-width: 4.5;
+}
+
+.sos-hold-button__progress-track {
+  stroke: rgba(255, 255, 255, 0.18);
+}
+
+.sos-hold-button__progress-value {
+  stroke: #F7FB41;
+  stroke-linecap: round;
+  stroke-dasharray: 100 100;
+  transition: stroke-dashoffset 40ms linear;
+}
+
+.sos-hold-button.is-holding {
+  transform: scale(0.96);
+  box-shadow: 0 8px 20px -6px rgba(144, 39, 21, 0.5);
+}
+
+.sos-hold-button:focus-visible {
+  outline: 4px solid #F7FB41;
+  outline-offset: 6px;
+}
+
+.sos-hold-button:disabled {
+  cursor: wait;
+  opacity: 0.8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sos-hold-button {
+    transition: none;
+  }
+}
+
+/* Leaflet Map custom fixes for Santa Rosa M3 theme */
 .leaflet-container {
   width: 100%;
   height: 100%;
-  background-color: #1e293b !important;
+  background-color: #e5e7eb !important;
+  border-radius: 1.5rem;
   z-index: 10;
 }
 
 .leaflet-tile {
-  filter: brightness(0.85) contrast(1.1);
+  filter: saturate(1.1) contrast(1.05);
+}
+
+/* ─── Admin M3 Expressive Design System (Light, Vibrant & Smooth Organic Curves) ─── */
+.admin-card {
+  background: #FFFFFF;
+  border: 1.5px solid rgba(31, 58, 75, 0.12);
+  border-radius: 2rem;
+  box-shadow: 0 10px 25px -5px rgba(31, 58, 75, 0.07);
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 220ms ease;
+}
+
+.admin-card:hover {
+  transform: translateY(-3px) scale(1.005);
+  box-shadow: 0 16px 32px -8px rgba(31, 58, 75, 0.12);
+}
+
+.admin-card:active {
+  transform: translateY(0) scale(0.985);
+}
+
+/* Smooth Asymmetric Curves (Toned down, no extreme corners) */
+.admin-card--expressive {
+  border-radius: 2.25rem 1.25rem 2.25rem 1.25rem;
+}
+
+.admin-card--expressive-alt {
+  border-radius: 1.25rem 2.25rem 1.25rem 2.25rem;
+}
+
+/* Expressive Stat KPI Cards (Bold Solid Saturated Blocks — Smooth Curves) */
+.admin-stat {
+  border-radius: 2.25rem;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 220ms ease;
+}
+
+.admin-stat:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 30px -6px rgba(31, 58, 75, 0.18);
+}
+
+.admin-stat--brandy {
+  background: #902715;
+  color: #FFFFFF;
+  border-radius: 2.25rem 1.25rem 2.25rem 1.25rem;
+  box-shadow: 0 10px 25px -5px rgba(144, 39, 21, 0.3);
+}
+
+.admin-stat--slate {
+  background: #1F3A4B;
+  color: #FFFFFF;
+  border-radius: 1.25rem 2.25rem 1.25rem 2.25rem;
+  box-shadow: 0 10px 25px -5px rgba(31, 58, 75, 0.25);
+}
+
+.admin-stat--canary {
+  background: #F7FB41;
+  color: #0A0A0A;
+  border-radius: 2.25rem 1.25rem 2.25rem 1.25rem;
+  box-shadow: 0 10px 25px -5px rgba(247, 251, 65, 0.35);
+}
+
+.admin-stat--copper {
+  background: #D14D3E;
+  color: #FFFFFF;
+  border-radius: 1.25rem 2.25rem 1.25rem 2.25rem;
+  box-shadow: 0 10px 25px -5px rgba(209, 77, 62, 0.3);
+}
+
+/* Admin nav pill tabs */
+.admin-nav-pill {
+  border-radius: 9999px;
+  transition: all 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.admin-nav-pill:hover {
+  transform: translateY(-1.5px);
+}
+
+.admin-nav-pill:active {
+  transform: scale(0.95);
+}
+
+/* Admin entry animation */
+@keyframes admin-fade-up {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.admin-animate-in {
+  animation: admin-fade-up 350ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-card, .admin-stat, .admin-nav-pill {
+    transition: none;
+  }
+  .admin-animate-in {
+    animation: none;
+  }
 }

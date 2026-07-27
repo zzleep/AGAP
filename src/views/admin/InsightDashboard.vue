@@ -1,64 +1,74 @@
 <template>
-  <div class="space-y-4">
+  <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-xl font-bold text-white">CDRRMO Operational Insight Dashboard</h2>
-        <p class="text-xs text-slate-400">30-day analytics, response metrics & AI-powered trend detection</p>
+        <h2 class="font-expressive text-3xl font-black text-[#1F3A4B] tracking-tight">CDRRMO Operational Insight Dashboard</h2>
+        <p class="text-xs text-[#902715] font-extrabold uppercase tracking-wider mt-0.5">30-day analytics, response metrics & AI-powered trend detection</p>
       </div>
       <button
         @click="generateInsight"
         :disabled="isGenerating"
-        class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors disabled:opacity-50 shadow-md"
+        class="px-5 py-2.5 rounded-full bg-[#1F3A4B] hover:bg-[#152733] text-white text-xs font-black transition-all shadow-md disabled:opacity-50 active:scale-95 flex items-center space-x-2 uppercase tracking-wider"
       >
-        {{ isGenerating ? '⏳ Generating...' : '🤖 Generate AI Insight' }}
+        <svg class="w-4 h-4 text-[#F7FB41]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        <span>{{ isGenerating ? 'Generating...' : 'Generate AI Insight' }}</span>
       </button>
     </div>
 
-    <!-- Stat Metric Cards -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-      <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
-        <span class="text-[10px] uppercase font-bold text-slate-400">Total SOS Alerts</span>
-        <p class="text-2xl font-black text-white mt-1">{{ metrics.totalSOS }}</p>
-        <span class="text-[10px] text-emerald-400">{{ metrics.sosResolvedRate }}% Resolved</span>
+    <!-- Stat Metric Cards (Expressive Solid Saturated Colors — NO PALE PASTELS) -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-5">
+      <!-- 1. Total SOS: Hero Card in Brandy Red solid! -->
+      <div class="p-6 rounded-[2.5rem_1.25rem_2.5rem_1.25rem] bg-[#902715] text-white shadow-[0_10px_25px_rgba(144,39,21,0.3)] admin-stat">
+        <span class="text-[10px] uppercase font-black text-white/80 tracking-wider">Total SOS Alerts</span>
+        <p class="text-4xl font-black text-white mt-1">{{ metrics.totalSOS }}</p>
+        <span class="text-xs font-black text-[#F7FB41] mt-2 inline-block shadow-sm">{{ metrics.sosResolvedRate }}% Resolved</span>
       </div>
-      <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
-        <span class="text-[10px] uppercase font-bold text-slate-400">Community Reports</span>
-        <p class="text-2xl font-black text-white mt-1">{{ metrics.totalReports }}</p>
-        <span class="text-[10px] text-blue-400">AI Triage Verified</span>
+
+      <!-- 2. Community Reports: Solid Canary Yellow Card! -->
+      <div class="p-6 rounded-[1.25rem_2.5rem_1.25rem_2.5rem] bg-[#F7FB41] text-[#0A0A0A] shadow-[0_10px_25px_rgba(247,251,65,0.35)] admin-stat">
+        <span class="text-[10px] uppercase font-black text-[#0A0A0A]/80 tracking-wider">Community Reports</span>
+        <p class="text-4xl font-black text-[#0A0A0A] mt-1">{{ metrics.totalReports }}</p>
+        <span class="text-xs font-black text-[#0A0A0A]/80 mt-2 inline-block">AI Triage Verified</span>
       </div>
-      <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
-        <span class="text-[10px] uppercase font-bold text-slate-400">Aegis Acceptance</span>
-        <p class="text-2xl font-black text-purple-400 mt-1">{{ metrics.aegisAcceptanceRate }}%</p>
-        <span class="text-[10px] text-slate-400">
+
+      <!-- 3. Aegis Acceptance: Solid Earthy Slate Blue card — breaks pattern! -->
+      <div class="p-6 rounded-[2.5rem_1.5rem_2.5rem_1.5rem] bg-[#1F3A4B] text-white shadow-[0_10px_25px_rgba(31,58,75,0.25)] admin-stat">
+        <span class="text-[10px] uppercase font-black text-[#F7FB41] tracking-wider">Aegis Acceptance</span>
+        <p class="text-4xl font-black text-[#F7FB41] mt-1">{{ metrics.aegisAcceptanceRate }}%</p>
+        <span class="text-[10px] text-white/80 font-bold block mt-2">
           {{ metrics.aegisApproved }} approved · {{ metrics.aegisModified }} modified · {{ metrics.aegisRejected }} rejected
         </span>
       </div>
-      <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
-        <span class="text-[10px] uppercase font-bold text-slate-400">Dismissed Reports</span>
-        <p class="text-2xl font-black text-amber-400 mt-1">{{ metrics.dismissedCount }}</p>
-        <span class="text-[10px] text-slate-400">Flagged as not actionable</span>
+
+      <!-- 4. Dismissed Reports: Solid Rosy Copper Card -->
+      <div class="p-6 rounded-[1.5rem_2.5rem_1.5rem_2.5rem] bg-[#D14D3E] text-white shadow-[0_10px_25px_rgba(209,77,62,0.3)] admin-stat">
+        <span class="text-[10px] uppercase font-black text-white/80 tracking-wider">Dismissed Reports</span>
+        <p class="text-4xl font-black text-white mt-1">{{ metrics.dismissedCount }}</p>
+        <span class="text-xs font-bold text-white/90 mt-2 inline-block">Flagged as not actionable</span>
       </div>
     </div>
 
     <!-- Charts Row -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Category Distribution -->
-      <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
-        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Report Categories</h3>
-        <div class="space-y-2">
-          <div v-for="cat in categoryData" :key="cat.name" class="space-y-1">
+      <div class="p-6 bg-white border border-[#1F3A4B]/15 rounded-3xl space-y-4 shadow-sm admin-card">
+        <h3 class="text-xs font-black uppercase tracking-wider text-[#1F3A4B]">Report Categories</h3>
+        <div class="space-y-3.5">
+          <div v-for="cat in categoryData" :key="cat.name" class="space-y-1.5">
             <div class="flex items-center justify-between text-xs">
               <div class="flex items-center space-x-2">
-                <span class="capitalize text-slate-300 font-semibold">{{ cat.label }}</span>
+                <span class="capitalize text-[#0A0A0A] font-black">{{ cat.label }}</span>
                 <span v-if="cat.trend > 20"
-                  class="px-1.5 py-0.5 text-[9px] font-bold rounded bg-red-950 text-red-400 border border-red-800 animate-pulse"
+                  class="px-2.5 py-0.5 text-[9px] font-black rounded-full bg-[#902715] text-white shadow-sm"
                 >
                   ↑ {{ cat.trend }}% WoW
                 </span>
               </div>
-              <span class="text-slate-400 font-mono">{{ cat.count }}</span>
+              <span class="text-[#902715] font-mono font-black">{{ cat.count }}</span>
             </div>
-            <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
+            <div class="h-3.5 bg-[#1F3A4B]/15 rounded-full overflow-hidden border border-[#1F3A4B]/20">
               <div
                 :class="['h-full rounded-full transition-all duration-500', cat.color]"
                 :style="{ width: cat.percentage + '%' }"
@@ -69,31 +79,31 @@
       </div>
 
       <!-- Priority Distribution -->
-      <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
-        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Priority Distribution</h3>
-        <div class="flex items-end justify-center space-x-4 h-40">
-          <div v-for="p in priorityData" :key="p.name" class="flex flex-col items-center space-y-1">
-            <span class="text-xs font-bold text-white">{{ p.count }}</span>
+      <div class="p-6 bg-white border border-[#1F3A4B]/15 rounded-3xl space-y-4 shadow-sm admin-card">
+        <h3 class="text-xs font-black uppercase tracking-wider text-[#1F3A4B]">Priority Distribution</h3>
+        <div class="flex items-end justify-center space-x-6 h-44 pt-4">
+          <div v-for="p in priorityData" :key="p.name" class="flex flex-col items-center space-y-2">
+            <span class="text-xs font-black text-[#1F3A4B]">{{ p.count }}</span>
             <div
-              :class="['w-12 rounded-t-lg transition-all duration-500', p.color]"
+              :class="['w-14 rounded-t-2xl transition-all duration-500 shadow-md', p.color]"
               :style="{ height: p.height + 'px' }"
             ></div>
-            <span class="text-[10px] text-slate-400 capitalize">{{ p.name }}</span>
+            <span class="text-[10px] font-black text-[#1F3A4B] capitalize tracking-wider">{{ p.name }}</span>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Resolution Rates -->
-    <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
-      <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Resolution Rates</h3>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div v-for="status in resolutionData" :key="status.name" class="space-y-1">
+    <div class="p-6 bg-white border border-[#1F3A4B]/15 rounded-3xl space-y-4 shadow-sm admin-card">
+      <h3 class="text-xs font-black uppercase tracking-wider text-[#1F3A4B]">Resolution Rates</h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div v-for="status in resolutionData" :key="status.name" class="space-y-2">
           <div class="flex items-center justify-between text-xs">
-            <span class="text-slate-300 capitalize font-semibold">{{ status.name }}</span>
-            <span class="text-slate-400 font-mono">{{ status.count }} ({{ status.percentage }}%)</span>
+            <span class="text-[#0A0A0A] capitalize font-black">{{ status.name }}</span>
+            <span class="text-[#902715] font-mono font-black">{{ status.count }} ({{ status.percentage }}%)</span>
           </div>
-          <div class="h-3 bg-slate-800 rounded-full overflow-hidden">
+          <div class="h-3.5 bg-[#1F3A4B]/15 rounded-full overflow-hidden border border-[#1F3A4B]/20">
             <div
               :class="['h-full rounded-full transition-all duration-500', status.color]"
               :style="{ width: status.percentage + '%' }"
@@ -104,74 +114,86 @@
     </div>
 
     <!-- Aegis Outcome Rate -->
-    <div class="p-4 rounded-xl bg-purple-950/30 border border-purple-800/40 space-y-3">
-      <h3 class="text-xs font-bold uppercase tracking-wider text-purple-300">Aegis Suggestion Outcomes</h3>
-      <div class="grid grid-cols-3 gap-3">
-        <div class="p-3 rounded-lg bg-emerald-950/40 border border-emerald-800/40 text-center">
-          <p class="text-xl font-black text-emerald-400">{{ metrics.aegisApproved }}</p>
-          <span class="text-[10px] text-emerald-300 uppercase font-bold">Approved</span>
+    <div class="p-6 rounded-[2.25rem_1.25rem_2.25rem_1.25rem] bg-[#1F3A4B] text-white border border-[#1F3A4B] space-y-4 shadow-md admin-card">
+      <h3 class="text-xs font-black uppercase tracking-wider text-[#F7FB41]">Aegis Suggestion Outcomes</h3>
+      <div class="grid grid-cols-3 gap-5">
+        <div class="p-5 rounded-2xl bg-white text-[#0A0A0A] text-center shadow-md border-2 border-[#556B2F]">
+          <p class="text-3xl font-black text-[#556B2F]">{{ metrics.aegisApproved }}</p>
+          <span class="text-[10px] text-[#556B2F] uppercase font-black tracking-wider">Approved</span>
         </div>
-        <div class="p-3 rounded-lg bg-amber-950/40 border border-amber-800/40 text-center">
-          <p class="text-xl font-black text-amber-400">{{ metrics.aegisModified }}</p>
-          <span class="text-[10px] text-amber-300 uppercase font-bold">Modified</span>
+        <div class="p-5 rounded-2xl bg-white text-[#0A0A0A] text-center shadow-md border-2 border-[#8A4B08]">
+          <p class="text-3xl font-black text-[#8A4B08]">{{ metrics.aegisModified }}</p>
+          <span class="text-[10px] text-[#8A4B08] uppercase font-black tracking-wider">Modified</span>
         </div>
-        <div class="p-3 rounded-lg bg-rose-950/40 border border-rose-800/40 text-center">
-          <p class="text-xl font-black text-rose-400">{{ metrics.aegisRejected }}</p>
-          <span class="text-[10px] text-rose-300 uppercase font-bold">Rejected</span>
+        <div class="p-5 rounded-2xl bg-white text-[#0A0A0A] text-center shadow-md border-2 border-[#D14D3E]">
+          <p class="text-3xl font-black text-[#D14D3E]">{{ metrics.aegisRejected }}</p>
+          <span class="text-[10px] text-[#D14D3E] uppercase font-black tracking-wider">Rejected</span>
         </div>
       </div>
     </div>
 
     <!-- AI Insight Card -->
-    <div class="p-4 rounded-xl bg-gradient-to-br from-blue-950/40 to-purple-950/40 border border-blue-800/40 space-y-3">
+    <div class="p-7 rounded-[2.25rem_1.25rem_2.25rem_1.25rem] bg-white border border-[#1F3A4B]/15 space-y-4 shadow-md admin-card">
       <div class="flex items-center justify-between">
-        <h3 class="text-xs font-bold uppercase tracking-wider text-blue-300">🤖 AI Insight — 30-Day Summary</h3>
-        <span v-if="insightData" class="text-[10px] text-slate-500">Generated by Gemini 2.0 Flash</span>
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-2xl bg-[#1F3A4B] text-[#F7FB41] flex items-center justify-center font-bold shadow-md shrink-0">
+            <svg class="w-5 h-5 text-[#F7FB41]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <h3 class="text-xs font-black uppercase tracking-wider text-[#1F3A4B]">AI Insight — 30-Day Summary</h3>
+        </div>
+        <span v-if="insightData" class="text-[10px] font-black text-[#902715] uppercase tracking-wider">Generated by Gemini 2.0 Flash</span>
       </div>
 
-      <div v-if="isGenerating" class="p-4 text-center">
-        <div class="w-6 h-6 mx-auto border-2 border-blue-400 border-t-transparent rounded-full animate-spin mb-2"></div>
-        <p class="text-xs text-blue-300">Analyzing 30 days of community report data...</p>
+      <div v-if="isGenerating" class="p-6 text-center">
+        <div class="w-7 h-7 mx-auto border-3 border-[#1F3A4B] border-t-transparent rounded-full animate-spin mb-3"></div>
+        <p class="text-xs text-[#1F3A4B] font-bold">Analyzing 30 days of community report data...</p>
       </div>
 
-      <div v-else-if="insightData" class="space-y-3">
-        <p class="text-sm text-slate-300 leading-relaxed whitespace-pre-line">{{ insightData.summary }}</p>
+      <div v-else-if="insightData" class="space-y-4">
+        <p class="text-sm text-[#0A0A0A] leading-relaxed whitespace-pre-line font-medium">{{ insightData.summary }}</p>
 
-        <div v-if="insightData.trends && insightData.trends.length > 0" class="space-y-1">
-          <span class="text-[10px] uppercase font-bold text-blue-400">Detected Trends</span>
-          <div class="flex flex-wrap gap-1.5">
+        <div v-if="insightData.trends && insightData.trends.length > 0" class="space-y-2">
+          <span class="text-[10px] uppercase font-black text-[#1F3A4B] tracking-wider">Detected Trends</span>
+          <div class="flex flex-wrap gap-2">
             <span v-for="trend in insightData.trends" :key="trend"
-              class="px-2 py-0.5 text-[10px] rounded bg-blue-950 text-blue-300 border border-blue-800/60"
+              class="px-3 py-1 text-xs rounded-full bg-white text-[#1F3A4B] font-bold border border-black/5 shadow-sm"
             >
               {{ trend }}
             </span>
           </div>
         </div>
 
-        <div v-if="insightData.recommendations && insightData.recommendations.length > 0" class="space-y-1">
-          <span class="text-[10px] uppercase font-bold text-purple-400">Recommendations</span>
-          <ul class="text-xs text-slate-300 space-y-1 list-disc list-inside">
+        <div v-if="insightData.recommendations && insightData.recommendations.length > 0" class="space-y-2">
+          <span class="text-[10px] uppercase font-black text-[#902715] tracking-wider">Recommendations</span>
+          <ul class="text-xs text-[#0A0A0A] space-y-1.5 list-disc list-inside font-medium">
             <li v-for="rec in insightData.recommendations" :key="rec">{{ rec }}</li>
           </ul>
         </div>
       </div>
 
-      <div v-else class="p-4 text-center text-xs text-slate-500">
+      <div v-else class="p-6 text-center text-xs text-[#717171] font-medium">
         Click "Generate AI Insight" to produce a Gemini-powered 30-day analysis.
       </div>
     </div>
 
     <!-- Week-over-Week Trend Alerts -->
-    <div v-if="trendAlerts.length > 0" class="space-y-2">
-      <h3 class="text-xs font-bold uppercase tracking-wider text-red-400">⚠️ Week-over-Week Trend Alerts (&gt;20% increase)</h3>
+    <div v-if="trendAlerts.length > 0" class="space-y-3">
+      <h3 class="text-xs font-black uppercase tracking-wider text-[#D14D3E] flex items-center space-x-1.5">
+        <svg class="w-4 h-4 text-[#D14D3E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <span>Week-over-Week Trend Alerts (&gt;20% increase)</span>
+      </h3>
       <div v-for="alert in trendAlerts" :key="alert.category"
-        class="p-3 rounded-lg bg-red-950/40 border border-red-800/40 flex items-center justify-between"
+        class="p-4 rounded-2xl bg-[#D14D3E]/10 border border-[#D14D3E]/20 flex items-center justify-between shadow-m3-sm"
       >
-        <div class="flex items-center space-x-2">
-          <span class="text-xs text-white font-semibold capitalize">{{ alert.category }}</span>
-          <span class="text-[10px] text-red-300">{{ alert.thisWeek }} reports this week vs {{ alert.lastWeek }} last week</span>
+        <div class="flex items-center space-x-2.5">
+          <span class="text-xs text-[#0A0A0A] font-black capitalize">{{ alert.category }}</span>
+          <span class="text-xs text-[#717171] font-medium">{{ alert.thisWeek }} reports this week vs {{ alert.lastWeek }} last week</span>
         </div>
-        <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-red-900 text-red-300">
+        <span class="px-3 py-1 text-xs font-black rounded-full bg-[#D14D3E] text-white shadow-sm">
           ↑ {{ alert.percentChange }}%
         </span>
       </div>
@@ -226,15 +248,15 @@ const metrics = computed(() => {
   }
 })
 
-// Category breakdown with colors
+// Category breakdown with colors (Santa Rosa Palette)
 const categoryData = computed(() => {
   const reports = reportStore.reports
   const total = reports.length || 1
   const categories = {
-    infrastructure: { label: 'Infrastructure', color: 'bg-blue-500', count: 0 },
-    environment: { label: 'Environment', color: 'bg-emerald-500', count: 0 },
-    bullying: { label: 'Bullying', color: 'bg-rose-500', count: 0 },
-    mental_health: { label: 'Mental Health', color: 'bg-purple-500', count: 0 }
+    infrastructure: { label: 'Infrastructure', color: 'bg-[#1F3A4B]', count: 0 },
+    environment: { label: 'Environment', color: 'bg-[#556B2F]', count: 0 },
+    bullying: { label: 'Bullying / Safety', color: 'bg-[#902715]', count: 0 },
+    mental_health: { label: 'Mental Health', color: 'bg-[#D14D3E]', count: 0 }
   }
 
   reports.forEach(r => {
@@ -250,7 +272,7 @@ const categoryData = computed(() => {
   }))
 })
 
-// Priority distribution
+// Priority distribution (Santa Rosa Palette)
 const priorityData = computed(() => {
   const reports = reportStore.reports
   const maxCount = Math.max(1, ...['low', 'medium', 'high', 'critical'].map(
@@ -258,11 +280,11 @@ const priorityData = computed(() => {
   ))
 
   return [
-    { name: 'low', count: reports.filter(r => r.ai_priority === 'low').length, color: 'bg-slate-600' },
-    { name: 'medium', count: reports.filter(r => r.ai_priority === 'medium').length, color: 'bg-amber-500' },
-    { name: 'high', count: reports.filter(r => r.ai_priority === 'high').length, color: 'bg-orange-500' },
-    { name: 'critical', count: reports.filter(r => r.ai_priority === 'critical').length, color: 'bg-red-500' }
-  ].map(p => ({ ...p, height: Math.max(8, (p.count / maxCount) * 120) }))
+    { name: 'low', count: reports.filter(r => r.ai_priority === 'low').length, color: 'bg-[#556B2F]' },
+    { name: 'medium', count: reports.filter(r => r.ai_priority === 'medium').length, color: 'bg-[#F7FB41]' },
+    { name: 'high', count: reports.filter(r => r.ai_priority === 'high').length, color: 'bg-[#902715]' },
+    { name: 'critical', count: reports.filter(r => r.ai_priority === 'critical').length, color: 'bg-[#D14D3E]' }
+  ].map(p => ({ ...p, height: Math.max(12, (p.count / maxCount) * 130) }))
 })
 
 // Resolution status breakdown
@@ -270,10 +292,10 @@ const resolutionData = computed(() => {
   const reports = reportStore.reports
   const total = reports.length || 1
   const statuses = [
-    { name: 'open', color: 'bg-blue-500' },
-    { name: 'in_review', color: 'bg-amber-500' },
-    { name: 'resolved', color: 'bg-emerald-500' },
-    { name: 'dismissed', color: 'bg-slate-500' }
+    { name: 'open', color: 'bg-[#1F3A4B]' },
+    { name: 'in_review', color: 'bg-[#F7FB41]' },
+    { name: 'resolved', color: 'bg-[#556B2F]' },
+    { name: 'dismissed', color: 'bg-[#717171]' }
   ]
 
   return statuses.map(s => {
