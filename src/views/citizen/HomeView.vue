@@ -1,33 +1,103 @@
 <template>
-  <div class="space-y-5">
-    <!-- Hero Weather Warning Card (Material 3 Expressive Bento Hero Layout) -->
-    <section class="rain-alert p-5 text-white shadow-m3-md border border-white/10 bg-[#902715]">
-      <div class="flex items-start justify-between gap-3">
+  <div class="space-y-3">
+    <!-- Hero Weather Card (Adaptive Material 3 Expressive Hero Surface) -->
+    <section
+      :class="[
+        'p-5 text-white shadow-m3-md border border-white/10 rounded-[2rem] transition-all duration-700 ease-in-out overflow-hidden relative space-y-3.5',
+        activeTheme.bgClass
+      ]"
+    >
+      <!-- Background Ambient Glow Effect -->
+      <div class="absolute -right-12 -bottom-12 w-40 h-40 rounded-full bg-white/10 blur-3xl pointer-events-none"></div>
+
+      <!-- Top Hero Row: Icon + Temp + Condition Stack & High-Value Stat -->
+      <div class="flex items-center justify-between gap-2.5 relative z-10">
         <!-- Weather Badge Icon + Temperature & Condition Stack -->
-        <div class="flex items-center gap-3.5 min-w-0">
-          <div class="w-12 h-12 rounded-2xl bg-[#F7FB41] text-[#902715] flex items-center justify-center shadow-m3-sm shrink-0">
-            <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M7 16a4 4 0 010-8 5.5 5.5 0 0110.5 1.5A3.5 3.5 0 1118 16H7zm2 3v1m4-1v1m4-1v1" />
+        <div class="flex items-center gap-3 min-w-0">
+          <!-- M3 Organic Icon Badge (Strict 48px Container & 24px SVG) -->
+          <div
+            :class="[
+              'w-12 h-12 p-2.5 rounded-2xl flex items-center justify-center shadow-m3-sm shrink-0 transition-all duration-500',
+              activeTheme.badgeBg
+            ]"
+          >
+            <!-- 1. Sun Icon (Clear Day) -->
+            <svg v-if="activeTheme.iconType === 'sun'" class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+
+            <!-- 2. Crescent Moon Icon (Calm Night) -->
+            <svg v-else-if="activeTheme.iconType === 'moon'" class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+
+            <!-- 3. Rain Icon (Showers / Rain) -->
+            <svg v-else-if="activeTheme.iconType === 'rain'" class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M7 16a4 4 0 010-8 5.5 5.5 0 0110.5 1.5A3.5 3.5 0 1118 16H7zm2 3v2m4-2v2m4-2v2" />
+            </svg>
+
+            <!-- 4. Thunderstorm Icon (Storm / Heavy Rain) -->
+            <svg v-else-if="activeTheme.iconType === 'thunderstorm'" class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+
+            <!-- 5. Cool Breeze Icon (Cold Weather <= 24°C) -->
+            <svg v-else-if="activeTheme.iconType === 'breeze'" class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9 16c.85 0 1.574-.46 1.9-1.12" />
+            </svg>
+
+            <!-- 6. Heat Icon (Extreme Heat >= 33°C) -->
+            <svg v-else-if="activeTheme.iconType === 'heat'" class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M17.657 18.364A8 8 0 016.343 7.05m11.314 11.314a8 8 0 00-11.314-11.314m11.314 11.314L6.343 7.05" />
+            </svg>
+
+            <!-- 7. Cloudy Icon (Overcast) -->
+            <svg v-else class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z" />
             </svg>
           </div>
+
           <div class="min-w-0">
-            <div class="flex items-baseline gap-2">
-              <span class="font-expressive text-3xl font-black text-[#F7FB41] tracking-tight leading-none">{{ currentTemp }}</span>
-              <span class="text-[10px] font-extrabold uppercase tracking-wider text-white/70">Santa Rosa</span>
+            <div class="flex items-baseline gap-1.5 min-w-0">
+              <span :class="['font-expressive text-3xl font-black tracking-tight leading-none shrink-0', activeTheme.tempColor]">
+                {{ currentTemp }}
+              </span>
+              <h2 class="font-expressive text-base font-black tracking-tight text-white leading-tight line-clamp-1">
+                {{ weatherCondition }}
+              </h2>
             </div>
-            <h2 class="font-expressive truncate text-lg font-black tracking-tight text-white mt-1 leading-none">{{ weatherCondition }}</h2>
+            <span :class="['text-[10px] font-black uppercase tracking-widest block mt-0.5', activeTheme.subtitleColor]">
+              Santa Rosa City
+            </span>
           </div>
         </div>
 
-        <!-- Expressive Status Pill Chip -->
-        <span :class="['shrink-0 rounded-full px-3.5 py-1.5 text-xs font-black tracking-tight text-center shadow-m3-sm', alertTone]">
-          {{ alertCue }}
-        </span>
+        <!-- Top Right: High-Value Context Chip (Risk Badge if elevated; Humidity if normal) -->
+        <div class="shrink-0">
+          <span
+            v-if="weather.riskCategory !== 'watch'"
+            :class="[
+              'rounded-full px-3 py-1 text-xs font-black tracking-wide shadow-m3-sm uppercase',
+              weather.riskCategory === 'danger' ? 'bg-[#D14D3E] text-white animate-pulse' : 'bg-[#F7FB41] text-[#902715]'
+            ]"
+          >
+            {{ weather.riskCategory }} Risk
+          </span>
+          <span v-else class="text-xs font-black text-white/90 px-2.5 py-1 rounded-full bg-black/20 backdrop-blur-xs border border-white/10 shrink-0">
+            Humidity {{ weather.currentWeather.humidity || 85 }}%
+          </span>
+        </div>
       </div>
+
+      <!-- Bottom: Direct Plain-Language Citizen Guidance -->
+      <p class="text-xs font-medium text-white/90 leading-snug pt-0.5 relative z-10">
+        {{ citizenAdvice }}
+      </p>
     </section>
 
-    <div class="pt-2">
-      <h2 class="font-expressive text-2xl font-black tracking-tight text-[#0A0A0A]">{{ $t('home.stayReady') }}</h2>
+    <!-- Stay Ready Header Block (Compact Tight Spacing) -->
+    <div class="pt-0.5">
+      <h2 class="font-expressive text-xl font-black tracking-tight text-[#0A0A0A]">{{ $t('home.stayReady') }}</h2>
       <p class="mt-0.5 text-xs font-medium text-[#717171]">{{ $t('home.quickActions') }}</p>
     </div>
 
@@ -102,12 +172,116 @@ const { t } = useI18n()
 
 const currentTemp = computed(() => weather.currentWeather.temp ? `${Math.round(weather.currentWeather.temp)}°C` : '28°C')
 const weatherCondition = computed(() => weather.currentWeather.condition || t('home.rain'))
-const alertCue = computed(() => t(`home.rainCues.${weather.riskCategory}`))
-const alertTone = computed(() => ({
-  watch: 'bg-white/15 text-white',
-  warning: 'bg-[#F7FB41] text-[#902715]',
-  danger: 'bg-[#D14D3E] text-white'
-}[weather.riskCategory] || 'bg-white/15 text-white'))
+
+// ── Plain-Language Citizen Safety Guidance ──
+const citizenAdvice = computed(() => {
+  const rate = weather.rainfallRate || 0
+  const risk = weather.riskCategory
+  if (risk === 'danger' || rate >= 15) {
+    return 'Possible flooding in low-lying barangays. Avoid submerged roads & stay on high ground.'
+  }
+  if (risk === 'warning' || rate > 0) {
+    return 'Expect light to moderate rain showers. Drive carefully on wet streets.'
+  }
+  if (weatherThemeKey.value === 'heat') {
+    return 'High heat index today. Stay hydrated and avoid prolonged direct sun exposure.'
+  }
+  if (weatherThemeKey.value === 'cold') {
+    return 'Cool & breezy weather across Santa Rosa. Pleasant outdoor conditions.'
+  }
+  if (isNight.value) {
+    return 'Calm night skies. City emergency response teams remain on 24/7 standby.'
+  }
+  return 'Roads & evacuation routes are clear. Safe conditions across Santa Rosa City.'
+})
+
+// ── Adaptive Weather Theme Logic (Time of Day + Weather Condition + Temp) ──
+const isNight = computed(() => {
+  const icon = weather.currentWeather.icon || ''
+  if (icon.endsWith('n')) return true
+  const hour = new Date().getHours()
+  return hour < 6 || hour >= 18
+})
+
+const weatherThemeKey = computed(() => {
+  const cond = (weather.currentWeather.condition || '').toLowerCase()
+  const temp = weather.currentWeather.temp ?? 28
+  const rainfall = weather.rainfallRate || 0
+
+  if (cond.includes('thunder') || cond.includes('storm') || rainfall >= 15) {
+    return 'thunderstorm'
+  }
+  if (cond.includes('rain') || cond.includes('drizzle') || rainfall > 0) {
+    return 'rain'
+  }
+  if (temp <= 24) {
+    return 'cold'
+  }
+  if (temp >= 33) {
+    return 'heat'
+  }
+  if (isNight.value) {
+    return 'clear_night'
+  }
+  if (cond.includes('cloud')) {
+    return 'cloudy'
+  }
+  return 'clear_day'
+})
+
+const THEMES = {
+  thunderstorm: {
+    bgClass: 'bg-gradient-to-br from-[#3D0C1A] via-[#902715] to-[#1F3A4B]',
+    badgeBg: 'bg-[#F7FB41] text-[#902715]',
+    tempColor: 'text-[#F7FB41]',
+    subtitleColor: 'text-white/80',
+    iconType: 'thunderstorm'
+  },
+  rain: {
+    bgClass: 'bg-gradient-to-br from-[#122B38] via-[#1F3A4B] to-[#2A4D64]',
+    badgeBg: 'bg-[#E3EBF0] text-[#1F3A4B]',
+    tempColor: 'text-[#F7FB41]',
+    subtitleColor: 'text-white/80',
+    iconType: 'rain'
+  },
+  cold: {
+    bgClass: 'bg-gradient-to-br from-[#0F232E] via-[#1A3848] to-[#2D546B]',
+    badgeBg: 'bg-[#70D6FF] text-[#0F232E]',
+    tempColor: 'text-[#70D6FF]',
+    subtitleColor: 'text-white/80',
+    iconType: 'breeze'
+  },
+  heat: {
+    bgClass: 'bg-gradient-to-br from-[#7A1D0B] via-[#902715] to-[#D14D3E]',
+    badgeBg: 'bg-[#F7FB41] text-[#902715]',
+    tempColor: 'text-[#F7FB41]',
+    subtitleColor: 'text-white/90',
+    iconType: 'heat'
+  },
+  clear_night: {
+    bgClass: 'bg-gradient-to-br from-[#0A1118] via-[#142332] to-[#1F3A4B]',
+    badgeBg: 'bg-[#F7FB41] text-[#0A1118]',
+    tempColor: 'text-[#F7FB41]',
+    subtitleColor: 'text-white/80',
+    iconType: 'moon'
+  },
+  cloudy: {
+    bgClass: 'bg-gradient-to-br from-[#2C3E50] via-[#1F3A4B] to-[#4A6572]',
+    badgeBg: 'bg-[#E3EBF0] text-[#1F3A4B]',
+    tempColor: 'text-white',
+    subtitleColor: 'text-white/80',
+    iconType: 'cloud'
+  },
+  clear_day: {
+    bgClass: 'bg-gradient-to-br from-[#902715] via-[#A8321A] to-[#D14D3E]',
+    badgeBg: 'bg-[#F7FB41] text-[#902715]',
+    tempColor: 'text-[#F7FB41]',
+    subtitleColor: 'text-white/90',
+    iconType: 'sun'
+  }
+}
+
+const activeTheme = computed(() => THEMES[weatherThemeKey.value] || THEMES.clear_day)
 
 onMounted(() => {
   weather.fetchWeather()

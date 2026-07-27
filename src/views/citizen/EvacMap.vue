@@ -1,92 +1,105 @@
 <template>
-  <div class="space-y-4 h-full flex flex-col">
-    <!-- Header Card -->
-    <div class="p-5 rounded-3xl bg-white border border-[#E0E0E0] shadow-m3-sm flex items-center justify-between">
-      <div>
-        <h2 class="font-expressive font-black text-xl text-[#0A0A0A] tracking-tight">{{ $t('evacMap.title') }}</h2>
-        <p class="text-xs font-medium text-[#717171] mt-0.5">{{ $t('evacMap.description') }}</p>
-      </div>
-      <span class="px-3 py-1 text-xs font-extrabold rounded-full bg-[#902715]/10 text-[#902715] border border-[#902715]/20">
-        {{ $t('evacMap.cityLabel') }}
-      </span>
-    </div>
-
-    <!-- Nearest evacuation guidance -->
-    <div class="rounded-3xl border border-[#E0E0E0] bg-white p-4 shadow-m3-sm">
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p class="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#717171]">{{ $t('evacMap.nearestLabel') }}</p>
-          <h3 class="mt-1 font-expressive text-lg font-black text-[#0A0A0A]">
+  <div class="space-y-3 h-full flex flex-col">
+    <!-- Streamlined M3 Expressive Evacuation Card -->
+    <div class="rounded-3xl border border-[#E0E0E0] bg-white p-4 shadow-m3-sm space-y-3">
+      <!-- Line 1: Title + Location Refresh Action -->
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <span class="text-[10px] font-black uppercase tracking-[0.18em] text-[#717171] block">
+            {{ $t('evacMap.nearestLabel') }}
+          </span>
+          <h2 class="font-expressive font-black text-xl text-[#0A0A0A] tracking-tight leading-tight truncate mt-0.5">
             {{ nearestEvacCenter?.name || $t('evacMap.locating') }}
-          </h3>
-          <p class="mt-1 text-xs font-medium text-[#717171]">
-            <span v-if="userLocation">
-              {{ userLocation.barangay || $t('home.currentLocation') }} ·
-              {{ formatDistanceToKm(nearestEvacDistance) }} km away
-            </span>
-            <span v-else>{{ $t('evacMap.locationHint') }}</span>
-          </p>
-          <p v-if="nearestEvacRouteInfo" class="mt-1 text-[11px] font-semibold text-[#902715]">
-            {{ formatDistanceToKm(nearestEvacRouteInfo.distanceKm) }} km route · {{ formatDurationToMinutes(nearestEvacRouteInfo.durationMinutes) }} min walk
-          </p>
+          </h2>
         </div>
 
-        <div class="flex items-center gap-2">
-          <button
-            type="button"
-            class="rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-bold text-[#0A0A0A] shadow-m3-sm transition-transform active:scale-95"
-            :disabled="isLocating"
-            @click="refreshCurrentLocation"
-          >
-            {{ isLocating ? $t('evacMap.locating') : $t('evacMap.refreshLocation') }}
-          </button>
-          <button
-            v-if="nearestEvacCenter"
-            type="button"
-            class="rounded-full bg-[#902715] px-4 py-2 text-xs font-bold text-[#F7FB41] shadow-m3-sm transition-transform active:scale-95"
-            @click="focusNearestEvacCenter"
-          >
-            {{ $t('evacMap.focusNearest') }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Adaptive Evacuation Autopilot -->
-    <div class="rounded-3xl border border-[#E0E0E0] bg-white p-4 shadow-m3-sm">
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p class="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#717171]">Adaptive Evacuation Autopilot</p>
-          <h3 class="mt-1 font-expressive text-lg font-black text-[#0A0A0A]">Safety Score: {{ safetyScore }}/100</h3>
-          <p class="mt-1 text-xs font-medium text-[#717171]">{{ routeReason || 'Monitoring movement and hazards for safer reroutes.' }}</p>
-          <p class="mt-1 text-[11px] font-semibold text-[#902715]">Nearby incidents: {{ nearbyIncidentCount }} · Weather risk: {{ flow.mappedRiskLevel }}</p>
-          <p v-if="stuckAlert" class="mt-2 text-[11px] font-bold text-[#902715]">Potentially stuck in risk zone. Alert signal sent to responders.</p>
-        </div>
+        <!-- Single Purposeful Refresh Icon Button -->
         <button
           type="button"
-          class="rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-bold text-[#0A0A0A] shadow-m3-sm transition-transform active:scale-95"
-          @click="runAutopilotCycle(true)"
+          class="p-2.5 rounded-full border border-[#E0E0E0] bg-white text-[#0A0A0A] shadow-m3-sm transition-transform active:scale-95 hover:bg-[#F5F5F5] hover:border-[#902715]/40 shrink-0"
+          :disabled="isLocating"
+          title="Refresh location and safety score"
+          @click="refreshLocationAndSafety"
         >
-          Force Safety Recheck
+          <svg class="w-4 h-4 text-[#902715]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
         </button>
+      </div>
+
+      <!-- Line 2: Location Subtitle & Walk Time -->
+      <div class="flex flex-wrap items-center gap-2 text-xs font-semibold text-[#717171]">
+        <span v-if="userLocation">
+          {{ userLocation.barangay || $t('home.currentLocation') }} · {{ formatDistanceToKm(nearestEvacDistance) }} km away
+        </span>
+        <span v-else>{{ $t('evacMap.locationHint') }}</span>
+        <span v-if="nearestEvacRouteInfo" class="px-2.5 py-0.5 rounded-full bg-[#902715]/10 text-[#902715] font-extrabold text-[11px]">
+          {{ formatDistanceToKm(nearestEvacRouteInfo.distanceKm) }} km route · {{ formatDurationToMinutes(nearestEvacRouteInfo.durationMinutes) }} min walk
+        </span>
+      </div>
+
+      <p v-if="stuckAlert" class="text-[11px] font-extrabold text-[#902715] flex items-center gap-1.5 pt-0.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Potentially stuck in risk zone. Alert sent.
+      </p>
+
+      <!-- Line 3: Integrated Horizontal M3 Safety Bar & Context Chips -->
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#F0F0F0]">
+        <!-- Left: Integrated Safety Bar -->
+        <div class="flex items-center gap-2.5">
+          <div class="flex items-baseline gap-1">
+            <span class="text-[10px] font-black uppercase tracking-wider text-[#717171]">Safety</span>
+            <span class="font-expressive font-black text-lg leading-none" :style="{ color: safetyMeterColor }">{{ safetyScore }}</span>
+          </div>
+
+          <!-- M3 5-Segment Progress Bar -->
+          <div class="flex items-center gap-1 w-20">
+            <div
+              v-for="seg in 5"
+              :key="seg"
+              class="h-1.5 flex-1 rounded-full transition-all duration-500"
+              :style="{ backgroundColor: seg * 20 <= safetyScore ? safetyMeterColor : '#E0E0E0' }"
+            ></div>
+          </div>
+
+          <span
+            class="px-2 py-0.5 text-[9px] font-black uppercase rounded-full text-white shadow-xs"
+            :style="{ backgroundColor: safetyMeterColor }"
+          >
+            {{ safetyMeterLabel }}
+          </span>
+        </div>
+
+        <!-- Right: Risk Context Badges (No Emojis) -->
+        <div class="flex items-center gap-1.5 text-[10px] font-extrabold text-[#1F3A4B]">
+          <span class="px-2.5 py-1 rounded-full bg-[#1F3A4B]/5 border border-[#1F3A4B]/15">
+            {{ nearbyIncidentCount }} Incidents
+          </span>
+          <span class="px-2.5 py-1 rounded-full bg-[#1F3A4B]/5 border border-[#1F3A4B]/15 capitalize">
+            {{ flow.mappedRiskLevel }} Risk
+          </span>
+        </div>
       </div>
     </div>
 
     <!-- Map Canvas Container with Floating M3 Controls -->
     <div
       ref="mapWrapperEl"
-      class="relative flex-1 min-h-[70vh] md:min-h-[78vh] rounded-3xl overflow-hidden border border-[#E0E0E0] bg-[#e5e7eb] transition-all duration-200 shadow-m3-md"
+      class="relative flex-1 min-h-[62vh] md:min-h-[76vh] rounded-3xl overflow-hidden border border-[#E0E0E0] bg-[#e5e7eb] transition-all duration-200 shadow-m3-md"
       :class="isExpanded ? 'fixed inset-0 z-[9999] m-0 rounded-none border-0 min-h-0' : ''"
     >
       <div ref="mapContainerEl" class="absolute inset-0 z-10"></div>
 
       <div
         v-if="userLocation && nearestEvacCenter"
-        class="absolute left-4 top-4 z-30 max-w-[18rem] rounded-3xl border border-black/10 bg-white/90 p-4 text-xs shadow-m3-lg backdrop-blur-md"
+        class="absolute left-3 top-3 z-30 max-w-[16rem] rounded-2xl border border-black/10 bg-white/90 p-3 text-xs shadow-m3-lg backdrop-blur-md"
       >
-        <p class="text-[10px] font-extrabold uppercase tracking-wider text-[#717171]">{{ $t('evacMap.routeGuide') }}</p>
-        <p class="mt-1 font-expressive text-sm font-black text-[#0A0A0A]">{{ nearestEvacCenter.name }}</p>
-        <p class="mt-1 text-[#717171]">
+        <p class="text-[9px] font-extrabold uppercase tracking-wider text-[#717171]">{{ $t('evacMap.routeGuide') }}</p>
+        <p class="mt-0.5 font-expressive text-sm font-black text-[#0A0A0A]">{{ nearestEvacCenter.name }}</p>
+        <p class="mt-0.5 text-[#717171]">
           {{ $t('evacMap.fromYou') }} {{ formatDistanceToKm(nearestEvacDistance) }} km
         </p>
       </div>
@@ -102,20 +115,20 @@
       </div>
 
       <!-- Top Control Floating Pill -->
-      <div class="absolute top-4 right-4 z-30">
+      <div class="absolute top-3 right-3 z-30">
         <button
           @click="toggleExpand"
-          class="px-4 py-2 rounded-full bg-white/90 backdrop-blur-md hover:bg-white text-[#0A0A0A] font-bold text-xs border border-black/10 shadow-m3-md transition-transform active:scale-95 flex items-center space-x-1.5"
+          class="px-3.5 py-1.5 rounded-full bg-white/90 backdrop-blur-md hover:bg-white text-[#0A0A0A] font-bold text-[11px] border border-black/10 shadow-m3-md transition-transform active:scale-95 flex items-center space-x-1.5"
         >
           <svg class="w-3.5 h-3.5 text-[#902715]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-          <span>{{ isExpanded ? 'Exit Fullscreen' : 'Expand Map' }}</span>
+          <span>{{ isExpanded ? 'Exit Fullscreen' : 'Expand' }}</span>
         </button>
       </div>
 
       <!-- Bottom Status & Recenter Floating Glass Dock -->
-      <div class="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-md p-4 rounded-3xl border border-black/10 text-xs flex justify-between items-center z-20 shadow-m3-lg">
+      <div class="absolute bottom-3 left-3 right-3 bg-white/90 backdrop-blur-md p-3 rounded-2xl border border-black/10 text-xs flex justify-between items-center z-20 shadow-m3-lg">
         <div class="space-y-0.5">
-          <span class="text-[#717171] block text-[10px] font-extrabold uppercase tracking-wider">{{ $t('evacMap.activeRiskFilter') }}</span>
+          <span class="text-[#717171] block text-[9px] font-extrabold uppercase tracking-wider">{{ $t('evacMap.activeRiskFilter') }}</span>
           <span
             class="font-expressive font-black text-sm uppercase tracking-wide"
             :class="{
@@ -129,7 +142,7 @@
         </div>
         <button
           @click="recenterMap"
-          class="px-4 py-2 rounded-full bg-[#902715] hover:bg-[#781f11] text-[#F7FB41] font-bold text-xs transition-colors shadow-m3-sm active:scale-95"
+          class="px-3.5 py-1.5 rounded-full bg-[#902715] hover:bg-[#781f11] text-[#F7FB41] font-bold text-[11px] transition-colors shadow-m3-sm active:scale-95"
         >
           {{ $t('evacMap.recenter') }}
         </button>
@@ -139,7 +152,7 @@
 </template>
 
 <script setup>
-import { onMounted, watch, ref, onUnmounted, nextTick } from 'vue'
+import { onMounted, watch, ref, onUnmounted, nextTick, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
@@ -185,6 +198,23 @@ let autopilotIntervalId = null
 let lastAutopilotRunAt = 0
 let lastMovementSnapshot = null
 let lastStuckSignalAt = 0
+
+// ── Safety Meter computed properties ──
+const safetyMeterColor = computed(() => {
+  const s = safetyScore.value
+  if (s >= 70) return '#556B2F'   // Dark Olive green — safe
+  if (s >= 40) return '#D14D3E'   // Rosy Copper amber — caution
+  return '#902715'                // Brandy Red — danger
+})
+
+const safetyMeterLabel = computed(() => {
+  const s = safetyScore.value
+  if (s >= 80) return 'Excellent'
+  if (s >= 60) return 'Good'
+  if (s >= 40) return 'Caution'
+  if (s >= 20) return 'Warning'
+  return 'Danger'
+})
 
 onMounted(async () => {
   await initGPS()
@@ -845,6 +875,11 @@ function clearEvacRouteLine() {
   if (map.getLayer(evacRouteLayerId)) map.removeLayer(evacRouteLayerId)
   if (map.getLayer(evacRouteFallbackLayerId)) map.removeLayer(evacRouteFallbackLayerId)
   if (map.getSource(evacRouteSourceId)) map.removeSource(evacRouteSourceId)
+}
+
+async function refreshLocationAndSafety() {
+  await refreshLocation(true)
+  await runAutopilotCycle(true)
 }
 
 async function refreshCurrentLocation() {

@@ -15,9 +15,9 @@
     "rainAlert": "Rain alert",
     "rain": "Rain",
     "rainCues": {
-      "watch": "Keep an eye on the weather",
-      "warning": "Stay alert",
-      "danger": "Find a safe place"
+      "watch": "Fair Weather · Safe",
+      "warning": "Rain Alert · Stay Ready",
+      "danger": "Heavy Storm · Take Shelter"
     },
     "stayReady": "Stay ready",
     "quickActions": "Help and information, one tap away.",
@@ -124,9 +124,9 @@
   },
   "communityReport": {
     "title": "Community Incident Report",
-    "description": "100% Anonymous reporting with automated Gemini 2.0 AI triage",
-    "anonymityTitle": "App-Layer Anonymity Protected",
-    "anonymityDescription": "No user account or device GPS coordinates required. Your privacy is guaranteed.",
+    "description": "Report anonymously to the authorities",
+    "anonymityTitle": "Your identity is secured.",
+    "anonymityDescription": "We don't include any personal details on your report. Your privacy is guaranteed.",
     "selectBarangay": "Select Barangay Location",
     "incidentDescription": "Incident Description",
     "descriptionPlaceholder": "Describe the incident (e.g. submerged road on creek bridge, fallen tree touching powerlines, clogged main canal)...",
