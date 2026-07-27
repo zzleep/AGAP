@@ -10,3 +10,5 @@ dist/
 .agents/
 AGAP_Blueprint.md
 tests/
+.teams/
+
