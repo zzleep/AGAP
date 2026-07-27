@@ -1,5 +1,65 @@
 # Changelog
 
+## Report Selector Modal + Bulk History Actions + Gemini Confidence Fixes (2026-07-27)
+
+### Problem
+
+1. **No manual Aegis invocation** — The "Ask Aegis" button was hidden when an active recommendation existed, and Aegis auto-surfaced on cluster formation with no opt-out. Operators couldn't choose which reports to analyze or when to invoke Aegis.
+
+2. **No bulk history management** — The advisory history log was read-only. Operators had no way to clean up old entries or export data for offline analysis.
+
+3. **Always "low" confidence** — Gemini prompts lacked confidence criteria, so the model defaulted to conservative "low" on every recommendation. When Gemini was unreachable, the UI showed "low" with no explanation.
+
+4. **Vue 3 Set reactivity crash** — Using `ref(new Set())` for bulk selection state caused `TypeError: invalid .size` during template re-renders, crashing the panel when Aegis auto-surfaced.
+
+### Changes Made
+
+#### `src/views/admin/AegisPanel.vue`
+
+- **Report selector modal** — Replaced the single `askAegis()` function with a full-screen modal picker showing three sections: SOS clusters (3+ in 30min), individual SOS reports, and community reports. Each section lists available items with click-to-select. Includes a "Ask without specific report" option for default context (Tagapo, watch severity). Closes via backdrop click, Cancel button, or X button.
+
+- **Ask Aegis button always visible** — Removed `v-if="!activeRecommendation && !isLoading"` so the button is always accessible regardless of panel state.
+
+- **Removed auto-surface watch** — Deleted the `watch(() => sosStore.activeClusters, ...)` that auto-invoked Aegis when a cluster formed. Also removed the mount-time auto-invoke in `onMounted`. Aegis now only runs on explicit operator action.
+
+- **Bulk selection on history log** — Added `selectedHistoryIds` array ref with per-entry checkboxes and a tri-state select-all button in the header (unchecked / partial / all). Clicking an entry row toggles its selection. Selected rows get a solid brandy-red border replacing the left accent bar.
+
+- **Bulk action bar** — Appears when 1+ entries are selected: shows count, "Clear" button, "Export JSON" button, and "Delete" button.
+
+- **Bulk delete** — "Delete" opens an inline confirmation bar with Cancel/Confirm Delete. Confirming calls `supabase.from('aegis_suggestions').delete().in('id', ids)`, clears selection, and refreshes history. Shows a spinner during deletion.
+
+- **Bulk export** — "Export JSON" creates a Blob download of all selected entries as `aegis-advisories-YYYY-MM-DD.json` with no server round-trip.
+
+- **Fallback warning banner** — When `activeRecommendation.fallback` is true, a red warning banner with triangle icon appears above the recommendation title reading "AI Service Unavailable — Showing standard dispatch fallback recommendation." Also shows `_debug` info if available.
+
+- **`fallback: true` on client errors** — Both the edge-function error fallback and the catch-block error fallback now include `fallback: true` so the warning banner displays correctly.
+
+- **Set → Array for Vue 3 compatibility** — Changed `selectedHistoryIds` from `ref(new Set())` to `ref([])` with `.includes()` / `.filter()` / spread operations. Fixes `TypeError: invalid .size` on template re-render.
+
+- **ReportStore integration** — Added `useReportStore()` import and `openCommunityReports` / `hasAnyReports` computed properties for the report selector modal.
+
+- **Removed unused `watch` import** — Cleaned up since the auto-surface watch was deleted.
+
+#### `supabase/functions/aegis-advisor/index.ts`
+
+- **Confidence criteria in all 5 prompts** — Added explicit guidance to every scenario prompt: use HIGH with specific actionable data (3+ SOS, known hazard severity), MEDIUM with partial data, LOW only when minimal/vague. Default to HIGH with 3+ SOS and defined hazard. This prevents Gemini from defaulting to conservative "low" when sufficient data exists.
+
+### Verification
+
+- Build passes clean (122 modules, 0 errors)
+- Ask Aegis button is always visible — no longer hidden during loading or active recommendations
+- Clicking Ask Aegis opens the report selector modal with correct count per section
+- Selecting a cluster/SOS/community report closes the modal and invokes Aegis with the correct parameters
+- No automatic Aegis invocation on cluster formation or page mount — only on explicit button click
+- History entries are clickable with working checkboxes and tri-state select-all
+- Bulk action bar appears/disappears correctly with selection state
+- Bulk delete removes selected entries from `aegis_suggestions` and refreshes the list
+- Bulk export downloads a valid JSON file with the selected entry data
+- Fallback warning banner shows when Gemini is unreachable (edge function returns `fallback: true`)
+- No `TypeError: invalid .size` errors in console during panel rendering
+
+---
+
 ## Filipino (Tagalog) i18n Support (2026-07-27)
 
 ### Problem
