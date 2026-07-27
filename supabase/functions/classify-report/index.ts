@@ -56,41 +56,59 @@ Report Description: "${raw_description}"`
       ai_plausibility: "plausible"
     }
 
-    if (GEMINI_API_KEY) {
-      try {
-        const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: systemPrompt }] }],
-            generationConfig: { responseMimeType: "application/json" }
-          })
-        }
-        )
+    const MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
 
-        if (response.ok) {
-          const geminiData = await response.json()
-          const textOutput = geminiData.candidates?.[0]?.content?.parts?.[0]?.text
-          if (textOutput) {
-            try {
-              const parsed = JSON.parse(textOutput)
+    if (GEMINI_API_KEY) {
+      for (const model of MODELS) {
+        try {
+          const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: systemPrompt }] }],
+                generationConfig: { temperature: 0.2, maxOutputTokens: 1024 }
+              })
+            }
+          )
+
+          if (response.ok) {
+            const geminiData = await response.json()
+            const textOutput = geminiData.candidates?.[0]?.content?.parts?.[0]?.text
+            if (textOutput) {
+              // Try direct parse
+              let parsed: any = null
+              try { parsed = JSON.parse(textOutput) } catch { /* not json directly */ }
+              // Try extracting from markdown code block
+              if (!parsed) {
+                const m = textOutput.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
+                if (m) { try { parsed = JSON.parse(m[1]) } catch {} }
+              }
+              // Try finding any {...} block
+              if (!parsed) {
+                const m = textOutput.match(/\{[\s\S]*\}/)
+                if (m) { try { parsed = JSON.parse(m[0]) } catch {} }
+              }
+
               if (
                 parsed &&
+                typeof parsed.ai_category === "string" &&
                 VALID_CATEGORIES.includes(parsed.ai_category) &&
                 VALID_PRIORITIES.includes(parsed.ai_priority) &&
                 VALID_PLAUSIBILITIES.includes(parsed.ai_plausibility)
               ) {
                 aiResult = parsed
+                break // success — stop trying models
               }
-            } catch (e) {
-              console.error("Failed to parse Gemini JSON:", e)
             }
+          } else {
+            const errText = await response.text()
+            console.warn(`${model} returned ${response.status}: ${errText.slice(0, 200)}`)
           }
+        } catch (e) {
+          console.warn(`${model} classification unavailable:`, e)
         }
-      } catch (e) {
-        console.warn("Gemini classification unavailable; using baseline triage:", e)
       }
     }
 

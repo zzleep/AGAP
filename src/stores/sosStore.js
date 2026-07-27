@@ -18,7 +18,8 @@ export const useSOSStore = defineStore('sos', () => {
   // Keep this store-level clock alive for the lifetime of the app so Aegis
   // does not remain surfaced after the 30-minute window has elapsed.
   if (typeof window !== 'undefined') {
-    window.setInterval(() => {
+    if (window._agapClockInterval) clearInterval(window._agapClockInterval)
+    window._agapClockInterval = window.setInterval(() => {
       clusterClock.value = Date.now()
     }, 30 * 1000)
   }
@@ -31,7 +32,7 @@ export const useSOSStore = defineStore('sos', () => {
     const authStore = useAuthStore()
     const area = authStore.assignedArea
 
-    return [...activeReports.value].sort((a, b) => {
+    return [...activeReports.value].filter(Boolean).sort((a, b) => {
       // 1. Pending status prioritized over non-pending
       if (a.status === 'pending' && b.status !== 'pending') return -1
       if (a.status !== 'pending' && b.status === 'pending') return 1
@@ -44,9 +45,9 @@ export const useSOSStore = defineStore('sos', () => {
       }
 
       // 3. Oldest unclaimed first (ascending order)
-      const aTime = Date.parse(a.created_at || '')
-      const bTime = Date.parse(b.created_at || '')
-      return (Number.isFinite(aTime) ? aTime : 0) - (Number.isFinite(bTime) ? bTime : 0)
+      const aTime = a.created_at ? Date.parse(a.created_at) : Date.now()
+      const bTime = b.created_at ? Date.parse(b.created_at) : Date.now()
+      return aTime - bTime
     })
   })
 
@@ -89,6 +90,7 @@ export const useSOSStore = defineStore('sos', () => {
           const index = activeReports.value.findIndex(r => r.id === payload.new.id)
           if (index !== -1) {
             activeReports.value[index] = payload.new
+            activeReports.value = [...activeReports.value] // trigger reactivity
           } else {
             activeReports.value.unshift(payload.new)
           }
@@ -122,7 +124,9 @@ export const useSOSStore = defineStore('sos', () => {
       const { data, error } = await supabase
         .from('sos_reports')
         .select('*')
+        .gte('created_at', new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString())
         .order('created_at', { ascending: false })
+        .limit(200)
       if (!error && data) {
         activeReports.value = data
       }

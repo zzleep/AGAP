@@ -224,3 +224,112 @@ The operator Live SOS Feed (`/admin/sos-feed`) only fetched SOS records **once o
 - Operator feed now has two update paths: Realtime (instant) + polling (every 10s)
 - If Supabase Realtime is unavailable, SOS will appear within 10 seconds
 - Console shows HTTP status when a SOS POST fails, helping diagnose RLS or schema issues
+
+---
+
+## Multi-Scenario Aegis Advisory + Bug Fixes (2026-07-27)
+
+### Features
+
+#### 5 Selectable Disaster Scenarios
+
+The Aegis AI Command Panel previously had a single "Simulate Scenario" button that hardcoded one flood scenario (3 SOS, Tagapo, danger flood). Operators can now pick from 5 distinct disaster scenarios, each triggering a tailored AI advisory:
+
+| Scenario | Icon | Preset | Aegis Advisory Mode |
+|----------|------|--------|---------------------|
+| Flood | 🌊 | 3 SOS, Tagapo, danger flood, 18.5mm/hr rain | Water rescue, boat deployment, evacuation centers |
+| Earthquake | 🏚️ | 5 SOS, Malitlit, no flood, M5.2 aftershock | USAR, structural assessment, medical triage |
+| Typhoon | 🌀 | 4 SOS, Dila, warning flood, Signal #3 120km/h | Pre-emptive evacuation, shelter management |
+| Fire | 🔥 | 2 SOS, Market Area, no flood, structural fire | Fire suppression, perimeter evacuation, burn triage |
+| Landslide | ⛰️ | 3 SOS, Sinalhan, watch flood, 48hr continuous rain | Geohazard assessment, route closure, slope monitoring |
+
+**Files changed:**
+- `src/views/admin/AegisPanel.vue` — replaced single simulate button with scenario selector dropdown (5-card grid), passes `scenario_type` to Edge Function, renders colored scenario badge in recommendation card
+- `supabase/functions/aegis-advisor/index.ts` — added `scenario_type` input, 5 prompt builders dispatched via lookup table, console warning for unknown types, `scenario_type` in response/raw_inputs/fallback
+
+#### `aegis_suggestions` Schema Extension
+
+- `supabase/migrations/20260727000000_init_agap.sql` — Added `scenario_type TEXT` column, `CREATE INDEX` on `outcome`, `CREATE INDEX USING GIN` on `related_sos_ids` array
+
+### Bug Fixes
+
+#### High Severity
+
+1. **Edge Function: `catch` returned raw `{error}` instead of structured `fallbackAdvisory`**
+   - `rawInputs` was declared inside `try` — `catch` couldn't access it
+   - `catch` returned `{ error: err.message }` with `status: 500` — the frontend expected `recommended_action`, `target_barangay`, `reasoning`, etc., causing a potential NPE in `AegisPanel.vue`
+   - **Fix:** Moved `rawInputs`, `scenarioType`, `clusterBarangay` to outer scope; `catch` now calls `fallbackAdvisory()` returning a consistent structured response
+
+2. **Edge Function: Duplicate `buildPrompt()` function**
+   - Old `buildPrompt()` was not removed when the new one with `console.warn` was added
+   - **Fix:** Removed the duplicate
+
+3. **Edge Function: Variable references pointed to try-scoped destructured variables**
+   - `cluster_barangay || ''` and `scenario_type || 'flood'` in fallback paths referenced `try`-block locals, not outer-scope variables
+   - **Fix:** All references use outer-scope `clusterBarangay` and `scenarioType`
+
+4. **`AegisPanel.vue`: Client-side fallback missing `scenario_type`**
+   - When the Edge Function returned an HTTP error or threw an exception, the constructed fallback `activeRecommendation` object omitted `scenario_type` — the scenario badge would not render
+   - **Fix:** Added `scenario_type: scenarioType` to both error and catch fallback objects, plus inside `raw_inputs`
+
+5. **`AegisPanel.vue`: Dead code `lastRecommendationKey`**
+   - Declared but never used (the actual double-submit guard was `outcomeSubmitting` ref)
+   - **Fix:** Removed
+
+6. **`sosStore.js`: `setInterval` leak on Vite HMR**
+   - The 30-second clock polling interval was created at the top of the Pinia setup function with no cleanup. Under Vite HMR, each store re-init created a new interval without clearing the old one — orphaned intervals accumulated
+   - **Fix:** Stored interval ID on `window._agapClockInterval`, cleared before creating a new one
+
+7. **`sosStore.js`: `fetchActiveReports()` unbounded fetch**
+   - No `.limit()` or time filter — fetched every SOS report ever created. As the table grows this would consume excessive memory and slow down `sortedQueue`/`activeClusters` computed properties
+   - **Fix:** Added 48-hour `.gte('created_at', ...)` filter and `.limit(200)`
+
+8. **`sosStore.js`: `activeClusters` stale references after Realtime UPDATE**
+   - `activeReports.value[index] = payload.new` replaced the array element but did not trigger Vue reactivity for computed properties that already held shallow copies of the old objects via `groups[bgy].push(report)`
+   - **Fix:** Added `activeReports.value = [...activeReports.value]` after index assignment to force computed re-evaluation
+
+9. **`sosStore.js`: `sortedQueue` crashes on non-object elements**
+   - `.sort()` callback accessed `.status`, `.barangay`, `.created_at` without guarding for `null`/`undefined` elements
+   - **Fix:** Added `.filter(Boolean)` before the sort spread
+
+10. **`InsightDashboard.vue`: Realtime SOS subscription never activated**
+    - `sosStore.fetchActiveReports()` was called in `onMounted` but `sosStore.subscribeToRealtimeSOS()` was never called. SOS-derived metrics (total SOS, resolution rate) were frozen at initial fetch time
+    - **Fix:** Added `sosStore.subscribeToRealtimeSOS()` in `onMounted`
+
+11. **`InsightDashboard.vue`: Aegis suggestions fetched once, no refresh**
+    - `fetchAegisSuggestions()` was called once in `onMounted`. Operator actions on AegisPanel never updated dashboard metrics
+    - **Fix:** Added 60-second polling interval for `fetchAegisSuggestions` with `clearInterval` cleanup in `onUnmounted`
+
+#### Medium Severity
+
+12. **`flowStore.js`: `zoneSeverity` logic duplicated with `mappedRiskLevel`**
+    - Two separate functions implemented the same rainfall threshold logic but with different label spaces (`low/moderate/high` vs `watch/warning/danger`) and subtly inconsistent branching — guaranteed to diverge over time
+    - **Fix:** Derived `zoneSeverity` as a `computed` from `mappedRiskLevel` via `{ low: 'watch', moderate: 'warning', high: 'danger' }` mapping; removed duplicated threshold branching from `updateThresholds`
+
+13. **Edge Function: Double-defaulting on weather alert string**
+    - `weather_alert || 'No active alert'` was passed to `buildPrompt`, but each prompt builder also had its own `|| 'No active weather alert'` — the per-builder default never fired
+    - **Fix:** Pass `weather_alert` without caller-side default; let prompt builders handle it (they already have `|| 'No active weather alert'`)
+
+14. **Edge Function: Unknown `scenario_type` silently defaulted to flood**
+    - A misspelled or unsupported `scenario_type` (e.g., `"chemical_spill"`) would silently produce flood-specific recommendations with no indication of the mismatch
+    - **Fix:** Added `console.warn()` in `buildPrompt()` dispatch
+
+15. **`InsightDashboard.vue`: Null `created_at` → `NaN` → silent exclusion in WoW trend**
+    - `new Date(r.created_at).getTime()` returns `NaN` when `created_at` is null. `NaN - now` evaluates to `NaN`, and `NaN < oneWeek` is `false` — records with missing dates were silently dropped from week-over-week calculations
+    - **Fix:** Added `Number.isFinite` guard with ternary `r.created_at ? ... : NaN` pattern in both `trendAlerts` and `computeWoWTrend`
+
+16. **`sosStore.js`: Null `created_at` sorted as epoch (1970)**
+    - `Date.parse('')` returns `NaN`, `Number.isFinite` guard caught it and fell back to `0` — records with unknown timestamps sorted to absolute bottom
+    - **Fix:** Fall back to `Date.now()` so unknown-timing records float to top (most urgent)
+
+17. **Migration: Missing indexes on `outcome` and `related_sos_ids`**
+    - InsightDashboard filters suggestions by `outcome` client-side after fetching all rows (no index). Array queries on `related_sos_ids` required sequential scans
+    - **Fix:** Added `CREATE INDEX ... outcome` and `CREATE INDEX ... USING GIN related_sos_ids`
+
+### Verification
+- Production build passes clean (121 modules, 0 errors)
+- All 5 scenarios invoke Aegis with correct parameters and display scenario-tagged recommendations
+- `scenario_type` flows end-to-end: frontend selector → Edge Function body → Gemini prompt → response JSON → recommendation card badge + raw_inputs audit log
+- SOS store no longer leaks intervals on HMR, fecthes are bounded, computed properties have null guards
+- Dashboard SOS metrics stay fresh via Realtime subscription; Aegis metrics refresh every 60s
+- Migration appends all new schema changes without modifying existing SQL

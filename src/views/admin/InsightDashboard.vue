@@ -202,7 +202,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useReportStore } from '@/stores/reportStore'
 import { useSOSStore } from '@/stores/sosStore'
 import { supabase } from '@/lib/supabase'
@@ -213,11 +213,20 @@ const sosStore = useSOSStore()
 const isGenerating = ref(false)
 const insightData = ref(null)
 const aegisSuggestions = ref([])
+const aegisPollInterval = ref(null)
 
 onMounted(async () => {
   await reportStore.fetchReports()
   await sosStore.fetchActiveReports()
+  sosStore.subscribeToRealtimeSOS()
   await fetchAegisSuggestions()
+  aegisPollInterval.value = window.setInterval(fetchAegisSuggestions, 60000)
+})
+
+onUnmounted(() => {
+  if (aegisPollInterval.value) {
+    clearInterval(aegisPollInterval.value)
+  }
 })
 
 // Computed Metrics
@@ -313,11 +322,15 @@ const trendAlerts = computed(() => {
 
   const categories = ['infrastructure', 'environment', 'bullying', 'mental_health']
   categories.forEach(cat => {
-    const thisWeek = reports.filter(r =>
-      r.ai_category === cat && (now - new Date(r.created_at).getTime()) < oneWeek
-    ).length
+    const thisWeek = reports.filter(r => {
+      const reportTime = r.created_at ? new Date(r.created_at).getTime() : NaN
+      if (!Number.isFinite(reportTime)) return false
+      return r.ai_category === cat && (now - reportTime) < oneWeek
+    }).length
     const lastWeek = reports.filter(r => {
-      const age = now - new Date(r.created_at).getTime()
+      const reportTime = r.created_at ? new Date(r.created_at).getTime() : NaN
+      if (!Number.isFinite(reportTime)) return false
+      const age = now - reportTime
       return r.ai_category === cat && age >= oneWeek && age < oneWeek * 2
     }).length
 
@@ -337,11 +350,15 @@ function computeWoWTrend(category) {
   const oneWeek = 7 * 24 * 60 * 60 * 1000
   const reports = reportStore.reports
 
-  const thisWeek = reports.filter(r =>
-    r.ai_category === category && (now - new Date(r.created_at).getTime()) < oneWeek
-  ).length
+  const thisWeek = reports.filter(r => {
+    const reportTime = r.created_at ? new Date(r.created_at).getTime() : NaN
+    if (!Number.isFinite(reportTime)) return false
+    return r.ai_category === category && (now - reportTime) < oneWeek
+  }).length
   const lastWeek = reports.filter(r => {
-    const age = now - new Date(r.created_at).getTime()
+    const reportTime = r.created_at ? new Date(r.created_at).getTime() : NaN
+    if (!Number.isFinite(reportTime)) return false
+    const age = now - reportTime
     return r.ai_category === category && age >= oneWeek && age < oneWeek * 2
   }).length
 

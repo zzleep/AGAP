@@ -3,7 +3,10 @@ import { ref, computed } from 'vue'
 
 export const useFlowStore = defineStore('flow', () => {
   const rainfallRate = ref(12.5) // mm/hr
-  const zoneSeverity = ref('warning') // 'watch' | 'warning' | 'danger'
+  const zoneSeverity = computed(() => {
+    const map = { low: 'watch', moderate: 'warning', high: 'danger' }
+    return map[mappedRiskLevel.value] || 'warning'
+  })
   const activeRoute = ref(null)
   const floodZones = ref({
     type: 'FeatureCollection',
@@ -30,9 +33,6 @@ export const useFlowStore = defineStore('flow', () => {
 
   function updateThresholds(rainfall) {
     rainfallRate.value = rainfall
-    if (rainfall < 7.5) zoneSeverity.value = 'watch'
-    else if (rainfall <= 15) zoneSeverity.value = 'warning'
-    else zoneSeverity.value = 'danger'
     lastUpdated.value = Date.now()
   }
 
