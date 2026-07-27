@@ -9,9 +9,8 @@ const corsHeaders = {
 }
 
 const MODELS = [
-  'gemini-2.5-flash',
-  'gemini-2.0-flash',
   'gemini-1.5-flash',
+  'gemini-2.0-flash',
 ]
 
 function formatReasoning(text: string): string {
@@ -39,10 +38,13 @@ async function callGemini(model: string, prompt: string): Promise<{ ok: boolean;
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 4096 },
+        generationConfig: { temperature: 0.3, maxOutputTokens: 1024, stopSequences: ["\n\n\n"] },
       }),
     })
     if (!res.ok) {
+      if (res.status === 429) {
+        return { ok: false, error: "QUOTA_EXCEEDED" }
+      }
       const errText = await res.text()
       return { ok: false, error: `${model} returned ${res.status}: ${errText.slice(0, 500)}` }
     }
@@ -70,18 +72,12 @@ function extractJsonFromText(text: string): Record<string, unknown> | null {
 }
 
 function buildFloodPrompt(sosIds: string[], barangay: string, count: number, floodSeverity: string, weatherAlert: string): string {
-  return `You are Aegis, the AI advisory engine for Santa Rosa City CDRRMO (City Disaster Risk Reduction and Management Office). You provide disaster response recommendations that are ADVISORY ONLY — you never make decisions, only suggest actions for human operators to approve, modify, or reject.
+  return `You are Aegis, AI advisor for Santa Rosa CDRRMO. Provide advisory recommendations only — never decisions, only suggestions for human operators to approve or modify.
 
-Your role:
-- You are an AI water rescue and flood response advisor
-- Focus on water rescue operations, boat deployment, evacuation center activation, sandbag placement
-- Context: Rising flood waters, current-driven rescues, flood-prone areas
-- Recommend specific response actions (e.g., deploy rescue teams, pre-position boats, evacuate barangays)
-- Provide step-by-step reasoning that operators can verify against the raw data
-- Be specific about target barangays and resource allocation
-- Always err on the side of caution for life-safety situations
+Focus: water rescue, boat deployment, evacuation center activation, sandbag placement.
+Context: rising flood waters, current-driven rescues, flood-prone areas.
 
-Example recommendation: "Deploy 2 rubber boats to Barangay Tagapo for flood rescue operations. Activate Barangay Hall as evacuation center."
+Example: "Deploy 2 rubber boats to Barangay Tagapo for flood rescue. Activate Barangay Hall as evacuation center."
 
 Analyze the following situation:
 
@@ -97,23 +93,17 @@ Respond with valid JSON only, no markdown, no extra text. Use this exact structu
   "reasoning": "Step 1: [observation]\\nStep 2: [analysis]\\nStep 3: [conclusion]\\nStep 4: [recommended action rationale]",
   "confidence": "high|medium|low"
 }
-IMPORTANT: Confidence criteria — Use HIGH when you have specific, actionable data (confirmed cluster count, known hazard severity, clear weather alert). Use MEDIUM when data is present but incomplete (some SOS reports, general hazard known). Use LOW only when data is minimal or vague (no SOS cluster, no weather alert, unknown conditions). Default to HIGH when you have 3+ SOS reports and a defined hazard scenario.
-IMPORTANT: In the reasoning field, be sure to separate each step with the actual newline character (\n).`
+Confidence: HIGH = specific actionable data (confirmed cluster, known hazard, clear alert). MEDIUM = data present but incomplete. LOW = data minimal or vague. Default HIGH with 3+ SOS reports and defined hazard.
+IMPORTANT: In the reasoning field, separate each step with actual newline character (\n).`
 }
 
 function buildEarthquakePrompt(sosIds: string[], barangay: string, count: number, floodSeverity: string, weatherAlert: string): string {
-  return `You are Aegis, the AI advisory engine for Santa Rosa City CDRRMO (City Disaster Risk Reduction and Management Office). You provide disaster response recommendations that are ADVISORY ONLY — you never make decisions, only suggest actions for human operators to approve, modify, or reject.
+  return `You are Aegis, AI advisor for Santa Rosa CDRRMO. Provide advisory recommendations only — never decisions, only suggestions for human operators to approve or modify.
 
-Your role:
-- You are an AI urban search & rescue and structural assessment advisor
-- Focus on building collapse, casualty triage, structural inspection priorities, aftershock safety
-- Context: Potential trapped victims, damaged infrastructure, gas leaks, aftershock risks
-- Recommend specific response actions (e.g., dispatch USAR teams, establish triage areas, inspect structures)
-- Provide step-by-step reasoning that operators can verify against the raw data
-- Be specific about target barangays and resource allocation
-- Always err on the side of caution for life-safety situations
+Focus: urban search & rescue, structural assessment, casualty triage, aftershock safety.
+Context: building collapse, trapped victims, damaged infrastructure, gas leaks.
 
-Example recommendation: "Dispatch USAR team to Barangay Malitlit for structural assessment. Establish medical triage at Barangay Plaza."
+Example: "Dispatch USAR team to Barangay Malitlit for structural assessment. Establish medical triage at Barangay Plaza."
 
 Analyze the following situation:
 
@@ -129,23 +119,17 @@ Respond with valid JSON only, no markdown, no extra text. Use this exact structu
   "reasoning": "Step 1: [observation]\\nStep 2: [analysis]\\nStep 3: [conclusion]\\nStep 4: [recommended action rationale]",
   "confidence": "high|medium|low"
 }
-IMPORTANT: Confidence criteria — Use HIGH when you have specific, actionable data (confirmed cluster count, known hazard severity, clear weather alert). Use MEDIUM when data is present but incomplete (some SOS reports, general hazard known). Use LOW only when data is minimal or vague (no SOS cluster, no weather alert, unknown conditions). Default to HIGH when you have 3+ SOS reports and a defined hazard scenario.
-IMPORTANT: In the reasoning field, be sure to separate each step with the actual newline character (\n).`
+Confidence: HIGH = specific actionable data (confirmed cluster, known hazard, clear alert). MEDIUM = data present but incomplete. LOW = data minimal or vague. Default HIGH with 3+ SOS reports and defined hazard.
+IMPORTANT: In the reasoning field, separate each step with actual newline character (\n).`
 }
 
 function buildTyphoonPrompt(sosIds: string[], barangay: string, count: number, floodSeverity: string, weatherAlert: string): string {
-  return `You are Aegis, the AI advisory engine for Santa Rosa City CDRRMO (City Disaster Risk Reduction and Management Office). You provide disaster response recommendations that are ADVISORY ONLY — you never make decisions, only suggest actions for human operators to approve, modify, or reject.
+  return `You are Aegis, AI advisor for Santa Rosa CDRRMO. Provide advisory recommendations only — never decisions, only suggestions for human operators to approve or modify.
 
-Your role:
-- You are an AI pre-emptive evacuation and shelter management advisor
-- Focus on pre-emptive evacuation orders, shelter capacity management, power line hazards, tree clearing
-- Context: Strong winds, flying debris, power outages, coastal storm surge
-- Recommend specific response actions (e.g., evacuate coastal zones, open shelters, deploy clearing crews)
-- Provide step-by-step reasoning that operators can verify against the raw data
-- Be specific about target barangays and resource allocation
-- Always err on the side of caution for life-safety situations
+Focus: pre-emptive evacuation, shelter management, power line hazards, tree clearing.
+Context: strong winds, flying debris, power outages, coastal storm surge.
 
-Example recommendation: "Pre-emptively evacuate Barangay Dila coastal zone. Open 2 additional evacuation centers. Deploy line clearing crew."
+Example: "Pre-emptively evacuate Barangay Dila coastal zone. Open 2 additional evacuation centers. Deploy line clearing crew."
 
 Analyze the following situation:
 
@@ -161,23 +145,17 @@ Respond with valid JSON only, no markdown, no extra text. Use this exact structu
   "reasoning": "Step 1: [observation]\\nStep 2: [analysis]\\nStep 3: [conclusion]\\nStep 4: [recommended action rationale]",
   "confidence": "high|medium|low"
 }
-IMPORTANT: Confidence criteria — Use HIGH when you have specific, actionable data (confirmed cluster count, known hazard severity, clear weather alert). Use MEDIUM when data is present but incomplete (some SOS reports, general hazard known). Use LOW only when data is minimal or vague (no SOS cluster, no weather alert, unknown conditions). Default to HIGH when you have 3+ SOS reports and a defined hazard scenario.
-IMPORTANT: In the reasoning field, be sure to separate each step with the actual newline character (\n).`
+Confidence: HIGH = specific actionable data (confirmed cluster, known hazard, clear alert). MEDIUM = data present but incomplete. LOW = data minimal or vague. Default HIGH with 3+ SOS reports and defined hazard.
+IMPORTANT: In the reasoning field, separate each step with actual newline character (\n).`
 }
 
 function buildFirePrompt(sosIds: string[], barangay: string, count: number, floodSeverity: string, weatherAlert: string): string {
-  return `You are Aegis, the AI advisory engine for Santa Rosa City CDRRMO (City Disaster Risk Reduction and Management Office). You provide disaster response recommendations that are ADVISORY ONLY — you never make decisions, only suggest actions for human operators to approve, modify, or reject.
+  return `You are Aegis, AI advisor for Santa Rosa CDRRMO. Provide advisory recommendations only — never decisions, only suggestions for human operators to approve or modify.
 
-Your role:
-- You are an AI fire suppression and urban fire response advisor
-- Focus on fire containment strategy, adjacent building evacuation, medical support for burn victims, water supply
-- Context: Structural fire, fire spread risk, hazardous materials, crowd control
-- Recommend specific response actions (e.g., deploy fire trucks, evacuate perimeter, establish triage)
-- Provide step-by-step reasoning that operators can verify against the raw data
-- Be specific about target barangays and resource allocation
-- Always err on the side of caution for life-safety situations
+Focus: fire containment, building evacuation, burn victim medical support, water supply.
+Context: structural fire, fire spread risk, hazardous materials, crowd control.
 
-Example recommendation: "Deploy BFP fire trucks to Barangay Market Area. Evacuate 50m perimeter. Establish medical triage for burn victims."
+Example: "Deploy BFP fire trucks to Barangay Market Area. Evacuate 50m perimeter. Establish medical triage for burn victims."
 
 Analyze the following situation:
 
@@ -193,23 +171,17 @@ Respond with valid JSON only, no markdown, no extra text. Use this exact structu
   "reasoning": "Step 1: [observation]\\nStep 2: [analysis]\\nStep 3: [conclusion]\\nStep 4: [recommended action rationale]",
   "confidence": "high|medium|low"
 }
-IMPORTANT: Confidence criteria — Use HIGH when you have specific, actionable data (confirmed cluster count, known hazard severity, clear weather alert). Use MEDIUM when data is present but incomplete (some SOS reports, general hazard known). Use LOW only when data is minimal or vague (no SOS cluster, no weather alert, unknown conditions). Default to HIGH when you have 3+ SOS reports and a defined hazard scenario.
-IMPORTANT: In the reasoning field, be sure to separate each step with the actual newline character (\n).`
+Confidence: HIGH = specific actionable data (confirmed cluster, known hazard, clear alert). MEDIUM = data present but incomplete. LOW = data minimal or vague. Default HIGH with 3+ SOS reports and defined hazard.
+IMPORTANT: In the reasoning field, separate each step with actual newline character (\n).`
 }
 
 function buildLandslidePrompt(sosIds: string[], barangay: string, count: number, floodSeverity: string, weatherAlert: string): string {
-  return `You are Aegis, the AI advisory engine for Santa Rosa City CDRRMO (City Disaster Risk Reduction and Management Office). You provide disaster response recommendations that are ADVISORY ONLY — you never make decisions, only suggest actions for human operators to approve, modify, or reject.
+  return `You are Aegis, AI advisor for Santa Rosa CDRRMO. Provide advisory recommendations only — never decisions, only suggestions for human operators to approve or modify.
 
-Your role:
-- You are an AI geohazard assessment and landslide response advisor
-- Focus on slope stability monitoring, route closure decisions, pre-emptive evacuation of hillside communities, geotechnical assessment
-- Context: Continuous rain, saturated soil, tension cracks, blocked roads
-- Recommend specific response actions (e.g., close access roads, evacuate hillside areas, deploy geohazard teams)
-- Provide step-by-step reasoning that operators can verify against the raw data
-- Be specific about target barangays and resource allocation
-- Always err on the side of caution for life-safety situations
+Focus: slope stability monitoring, route closures, hillside evacuation, geotechnical assessment.
+Context: continuous rain, saturated soil, tension cracks, blocked roads.
 
-Example recommendation: "Close Barangay Sinalhan access road. Pre-emptively evacuate hillside households. Deploy geohazard assessment team."
+Example: "Close Barangay Sinalhan access road. Pre-emptively evacuate hillside households. Deploy geohazard assessment team."
 
 Analyze the following situation:
 
@@ -225,8 +197,8 @@ Respond with valid JSON only, no markdown, no extra text. Use this exact structu
   "reasoning": "Step 1: [observation]\\nStep 2: [analysis]\\nStep 3: [conclusion]\\nStep 4: [recommended action rationale]",
   "confidence": "high|medium|low"
 }
-IMPORTANT: Confidence criteria — Use HIGH when you have specific, actionable data (confirmed cluster count, known hazard severity, clear weather alert). Use MEDIUM when data is present but incomplete (some SOS reports, general hazard known). Use LOW only when data is minimal or vague (no SOS cluster, no weather alert, unknown conditions). Default to HIGH when you have 3+ SOS reports and a defined hazard scenario.
-IMPORTANT: In the reasoning field, be sure to separate each step with the actual newline character (\n).`
+Confidence: HIGH = specific actionable data (confirmed cluster, known hazard, clear alert). MEDIUM = data present but incomplete. LOW = data minimal or vague. Default HIGH with 3+ SOS reports and defined hazard.
+IMPORTANT: In the reasoning field, separate each step with actual newline character (\n).`
 }
 
 function buildPrompt(scenarioType: string, sosIds: string[], barangay: string, count: number, floodSeverity: string, weatherAlert: string): string {
@@ -281,6 +253,10 @@ Deno.serve(async (req) => {
     const errors: string[] = []
     for (const model of MODELS) {
       const result = await callGemini(model, prompt)
+      if (result.error === "QUOTA_EXCEEDED") {
+        errors.push(result.error)
+        break
+      }
       if (result.ok && result.data) {
         const text = result.data?.candidates?.[0]?.content?.parts?.[0]?.text
         if (text) {

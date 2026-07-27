@@ -341,15 +341,24 @@
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-[#1F3A4B]/15 pb-3.5 shrink-0">
           <h3 class="font-expressive text-xl font-black text-[#1F3A4B]">Select Report Source for Aegis Advisory</h3>
-          <button
-            @click="closeReportSelector"
-            class="w-10 h-10 rounded-full bg-[#902715] text-white flex items-center justify-center font-black transition-all hover:scale-105 shadow-md shrink-0 ml-3"
-          >
+          <div class="flex items-center space-x-2">
+            <button
+              @click="toggleBulkMode"
+              class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 border shrink-0"
+              :class="bulkMode ? 'bg-[#902715] text-white border-[#902715]' : 'bg-white text-[#1F3A4B] border-[#1F3A4B]/30 hover:bg-[#1F3A4B]/10'"
+            >
+              {{ bulkMode ? 'Single Mode' : 'Bulk Select' }}
+            </button>
+            <button
+              @click="closeReportSelector"
+              class="w-10 h-10 rounded-full bg-[#902715] text-white flex items-center justify-center font-black transition-all hover:scale-105 shadow-md shrink-0"
+            >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
+      </div>
 
         <!-- Scrollable Body -->
         <div class="space-y-4 overflow-y-auto pr-1 flex-1">
@@ -365,11 +374,13 @@
               <div
                 v-for="cluster in sosStore.activeClusters"
                 :key="cluster.barangay"
-                @click="toggleReportSelection(cluster, 'cluster')"
+                @click="bulkMode ? toggleReportSelection(cluster, 'cluster') : selectCluster(cluster)"
                 class="p-3.5 rounded-2xl bg-[#1F3A4B] text-white border cursor-pointer transition-all active:scale-[0.98] flex items-center space-x-3"
-                :class="isReportSelected(cluster, 'cluster') ? 'border-[#F7FB41]' : 'border-[#1F3A4B] hover:border-[#F7FB41]/60'"
+                :class="bulkMode && isReportSelected(cluster, 'cluster') ? 'border-[#F7FB41]' : 'border-[#1F3A4B] hover:border-[#F7FB41]/60'"
               >
+                <!-- Bulk checkbox -->
                 <div
+                  v-if="bulkMode"
                   @click.stop="toggleReportSelection(cluster, 'cluster')"
                   class="w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all"
                   :class="isReportSelected(cluster, 'cluster') ? 'bg-[#F7FB41] border-[#F7FB41]' : 'border-white/50 hover:border-[#F7FB41]'"
@@ -407,11 +418,13 @@
               <div
                 v-for="report in pendingSOSReports"
                 :key="report.id"
-                @click="toggleReportSelection(report, 'sos')"
+                @click="bulkMode ? toggleReportSelection(report, 'sos') : selectSOS(report)"
                 class="p-3.5 rounded-2xl bg-white border cursor-pointer transition-all active:scale-[0.98] shadow-sm flex items-center space-x-3"
-                :class="isReportSelected(report, 'sos') ? 'border-[#902715] bg-[#902715]/5' : 'border-[#1F3A4B]/15 hover:border-[#1F3A4B]/40 hover:bg-[#EEF4FB]'"
+                :class="bulkMode && isReportSelected(report, 'sos') ? 'border-[#902715] bg-[#902715]/5' : 'border-[#1F3A4B]/15 hover:border-[#1F3A4B]/40 hover:bg-[#EEF4FB]'"
               >
+                <!-- Bulk checkbox -->
                 <div
+                  v-if="bulkMode"
                   @click.stop="toggleReportSelection(report, 'sos')"
                   class="w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all"
                   :class="isReportSelected(report, 'sos') ? 'bg-[#902715] border-[#902715]' : 'border-[#1F3A4B]/30 hover:border-[#902715]'"
@@ -448,11 +461,13 @@
               <div
                 v-for="report in openCommunityReports"
                 :key="report.id"
-                @click="toggleReportSelection(report, 'community')"
+                @click="bulkMode ? toggleReportSelection(report, 'community') : selectCommunityReport(report)"
                 class="p-3.5 rounded-2xl bg-white border cursor-pointer transition-all active:scale-[0.98] shadow-sm flex items-center space-x-3"
-                :class="isReportSelected(report, 'community') ? 'border-[#902715] bg-[#902715]/5' : 'border-[#1F3A4B]/15 hover:border-[#1F3A4B]/40 hover:bg-[#EEF4FB]'"
+                :class="bulkMode && isReportSelected(report, 'community') ? 'border-[#902715] bg-[#902715]/5' : 'border-[#1F3A4B]/15 hover:border-[#1F3A4B]/40 hover:bg-[#EEF4FB]'"
               >
+                <!-- Bulk checkbox -->
                 <div
+                  v-if="bulkMode"
                   @click.stop="toggleReportSelection(report, 'community')"
                   class="w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all"
                   :class="isReportSelected(report, 'community') ? 'bg-[#902715] border-[#902715]' : 'border-[#1F3A4B]/30 hover:border-[#902715]'"
@@ -506,7 +521,7 @@
 
         <!-- Footer -->
         <div class="pt-4 border-t-2 border-[#1F3A4B]/20 flex items-center justify-between shrink-0">
-          <span v-if="selectedReportsCount > 0" class="text-xs font-black text-[#1F3A4B]">
+          <span v-if="bulkMode && selectedReportsCount > 0" class="text-xs font-black text-[#1F3A4B]">
             {{ selectedReportsCount }} selected
           </span>
           <div class="flex items-center space-x-2 ml-auto">
@@ -517,6 +532,7 @@
               Cancel
             </button>
             <button
+              v-if="bulkMode"
               @click="submitBulkSelection"
               :disabled="selectedReportsCount === 0"
               class="px-6 py-3 rounded-full bg-[#1F3A4B] hover:bg-[#152733] text-white font-black text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
@@ -550,6 +566,12 @@ const outcomeError = ref('')
 const historyLog = ref([])
 const showScenarioSelector = ref(false)
 const showReportSelector = ref(false)
+const bulkMode = ref(false)
+
+function toggleBulkMode() {
+  bulkMode.value = !bulkMode.value
+  if (!bulkMode.value) clearReportSelection()
+}
 
 // Bulk selection for report selector modal
 const selectedReports = ref([])
@@ -723,6 +745,45 @@ function openReportSelector() {
 
 function closeReportSelector() {
   showReportSelector.value = false
+}
+
+async function selectCluster(cluster) {
+  showReportSelector.value = false
+  clearReportSelection()
+  await invokeAegis(
+    cluster.reports.map(r => r.id),
+    cluster.barangay,
+    cluster.count,
+    flowStore.zoneSeverity,
+    null,
+    'flood'
+  )
+}
+
+async function selectSOS(report) {
+  showReportSelector.value = false
+  clearReportSelection()
+  await invokeAegis(
+    [report.id],
+    report.barangay,
+    1,
+    flowStore.zoneSeverity,
+    null,
+    'flood'
+  )
+}
+
+async function selectCommunityReport(report) {
+  showReportSelector.value = false
+  clearReportSelection()
+  await invokeAegis(
+    [report.id],
+    report.barangay,
+    1,
+    flowStore.zoneSeverity,
+    report.raw_description || 'Community report context',
+    'flood'
+  )
 }
 
 function oldestReportTime(reports) {
