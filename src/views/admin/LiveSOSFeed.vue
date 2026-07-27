@@ -10,6 +10,13 @@
           <span class="w-2 h-2 rounded-full bg-red-500 animate-ping mr-1.5"></span>
           REALTIME LIVE
         </span>
+        <button
+          @click="manualRefresh"
+          :disabled="sosStore.isLoading"
+          class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-blue-400 font-bold text-xs border border-slate-700 transition-colors disabled:opacity-50"
+        >
+          {{ sosStore.isLoading ? 'Refreshing...' : '↻ Refresh' }}
+        </button>
       </div>
     </div>
 
@@ -124,7 +131,7 @@
 
               <template v-else-if="item.status === 'responding'">
                 <span class="text-xs font-bold text-amber-400 mr-1">
-                  Responding ({{ item.assigned_operator_id || 'Op-01' }})
+                  Responding ({{ item.assigned_operator_id || 'Unclaimed' }})
                 </span>
                 <button
                   @click="markResolved(item.id)"
@@ -182,6 +189,13 @@ const authStore = useAuthStore()
 
 const toastMessage = ref('')
 let staleTimer = null
+let pollTimer = null
+
+async function manualRefresh() {
+  if (sosStore.fetchActiveReports) {
+    await sosStore.fetchActiveReports()
+  }
+}
 
 onMounted(async () => {
   if (sosStore.fetchActiveReports) {
@@ -193,6 +207,10 @@ onMounted(async () => {
   staleTimer = setInterval(() => {
     sosStore.checkStaleClaims()
   }, 30000)
+
+  pollTimer = setInterval(() => {
+    sosStore.fetchActiveReports()
+  }, 10000)
 })
 
 onUnmounted(() => {
@@ -200,11 +218,14 @@ onUnmounted(() => {
   if (staleTimer) {
     clearInterval(staleTimer)
   }
+  if (pollTimer) {
+    clearInterval(pollTimer)
+  }
 })
 
 async function claimAlert(id) {
   toastMessage.value = ''
-  const operatorId = authStore.profile?.id || authStore.user?.id || 'Op-01'
+  const operatorId = authStore.profile?.id || authStore.user?.id
   const result = await sosStore.claimReport(id, operatorId)
 
   if (!result.success && result.reason === 'already_claimed') {

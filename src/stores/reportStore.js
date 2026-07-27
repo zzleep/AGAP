@@ -3,32 +3,7 @@ import { ref, computed } from 'vue'
 import { supabase } from '@/lib/supabase'
 
 export const useReportStore = defineStore('report', () => {
-  const reports = ref([
-    {
-      id: 'rep_101',
-      raw_description: 'Submerged bridge on Tagapo creek road near Market. Water waist high.',
-      barangay: 'Tagapo',
-      ai_category: 'infrastructure',
-      ai_priority: 'high',
-      ai_department: 'CDRRMO / DPWH',
-      ai_reasoning: 'Road blockage due to deep flood hazard endangering commuters.',
-      ai_plausibility: 'verified',
-      status: 'open',
-      created_at: new Date(Date.now() - 3600000).toISOString()
-    },
-    {
-      id: 'rep_102',
-      raw_description: 'Tree branch touching power line near Balibago complex terminal.',
-      barangay: 'Balibago',
-      ai_category: 'environment',
-      ai_priority: 'medium',
-      ai_department: 'MERALCO / BFP',
-      ai_reasoning: 'Fire hazard and power disruption potential.',
-      ai_plausibility: 'unverified',
-      status: 'in_review',
-      created_at: new Date(Date.now() - 7200000).toISOString()
-    }
-  ])
+  const reports = ref([])
   const isSubmitting = ref(false)
   const reportChannel = ref(null)
 
@@ -123,7 +98,7 @@ export const useReportStore = defineStore('report', () => {
         .from('community_reports')
         .select('*')
         .order('created_at', { ascending: false })
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         reports.value = data.map(item => ({
           ...item,
           ai_plausibility: normalizePlausibility(item.ai_plausibility)

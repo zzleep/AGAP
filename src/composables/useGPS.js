@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { openDB } from 'idb'
+import { findNearestBarangay } from '@/data/barangay_coords'
 
 const DB_NAME = 'agap_gps_db'
 const STORE_NAME = 'locations'
@@ -72,6 +73,40 @@ export function useGPS() {
     }, 3000)
   }
 
+  function acquirePosition(highTimeoutMs, lowTimeoutMs) {
+    return new Promise((resolve) => {
+      if (typeof navigator === 'undefined' || !navigator.geolocation) {
+        resolve(null)
+        return
+      }
+
+      // Phase 1: High accuracy GPS (slower but more precise)
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (pos.coords.accuracy <= 100) {
+            resolve(pos)
+          } else {
+            // Accuracy > 100m — try low-accuracy fallback which may be faster/better indoors
+            navigator.geolocation.getCurrentPosition(
+              (pos2) => resolve(pos2),
+              () => resolve(pos),
+              { timeout: lowTimeoutMs, enableHighAccuracy: false }
+            )
+          }
+        },
+        () => {
+          // Phase 1 timed out or failed — try Phase 2: low accuracy (WiFi/cell, faster)
+          navigator.geolocation.getCurrentPosition(
+            (pos) => resolve(pos),
+            () => resolve(null),
+            { timeout: lowTimeoutMs, enableHighAccuracy: false }
+          )
+        },
+        { timeout: highTimeoutMs, enableHighAccuracy: true }
+      )
+    })
+  }
+
   async function initGPS() {
     registerServiceWorkerGPSRefresh()
     const existing = await loadFromCache()
@@ -80,11 +115,13 @@ export function useGPS() {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       isLocating.value = false
       if (!cachedLocation.value) {
+        const fallbackLat = 14.3123
+        const fallbackLng = 121.1114
         const fallback = {
-          latitude: 14.3123,
-          longitude: 121.1114,
+          latitude: fallbackLat,
+          longitude: fallbackLng,
           accuracy: 0,
-          barangay: 'Tagapo',
+          barangay: findNearestBarangay(fallbackLat, fallbackLng),
           timestamp: Date.now(),
           isFallback: true
         }
@@ -93,73 +130,69 @@ export function useGPS() {
       return
     }
 
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const loc = {
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-          accuracy: pos.coords.accuracy,
-          barangay: 'Tagapo',
-          timestamp: Date.now()
+    const pos = await acquirePosition(20000, 10000)
+
+    if (pos) {
+      const loc = {
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+        accuracy: pos.coords.accuracy,
+        barangay: findNearestBarangay(pos.coords.latitude, pos.coords.longitude),
+        timestamp: Date.now()
+      }
+      await saveToCache(loc)
+      isLocating.value = false
+      if (!existing) {
+        showToast('Location Saved')
+      }
+    } else {
+      console.warn('GPS initial position error, using fallback')
+      isLocating.value = false
+      if (!cachedLocation.value) {
+        const fallbackLat = 14.3123
+        const fallbackLng = 121.1114
+        const fallback = {
+          latitude: fallbackLat,
+          longitude: fallbackLng,
+          accuracy: 0,
+          barangay: findNearestBarangay(fallbackLat, fallbackLng),
+          timestamp: Date.now(),
+          isFallback: true
         }
-        await saveToCache(loc)
-        isLocating.value = false
-        if (!existing) {
-          showToast('Location Saved')
-        }
-      },
-      async (err) => {
-        console.warn('GPS initial position error, using fallback:', err.message)
-        isLocating.value = false
-        if (!cachedLocation.value) {
-          const fallback = {
-            latitude: 14.3123,
-            longitude: 121.1114,
-            accuracy: 0,
-            barangay: 'Tagapo',
-            timestamp: Date.now(),
-            isFallback: true
-          }
-          await saveToCache(fallback)
-        }
-      },
-      { timeout: 5000, enableHighAccuracy: true }
-    )
+        await saveToCache(fallback)
+      }
+    }
   }
 
   async function refreshLocation(manual = false) {
     isLocating.value = true
-    return new Promise((resolve) => {
-      if (typeof navigator === 'undefined' || !navigator.geolocation) {
-        isLocating.value = false
-        if (manual) showToast('GPS Lock Failed - Using Cached Location')
-        resolve(cachedLocation.value)
-        return
-      }
 
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const loc = {
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
-            accuracy: pos.coords.accuracy,
-            barangay: 'Tagapo',
-            timestamp: Date.now()
-          }
-          await saveToCache(loc)
-          isLocating.value = false
-          if (manual) showToast('Location Refreshed')
-          resolve(loc)
-        },
-        (err) => {
-          console.warn('GPS refresh error:', err.message)
-          isLocating.value = false
-          if (manual) showToast('GPS Lock Failed - Using Cached Location')
-          resolve(cachedLocation.value)
-        },
-        { timeout: 5000, enableHighAccuracy: true }
-      )
-    })
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      isLocating.value = false
+      if (manual) showToast('GPS Lock Failed - Using Cached Location')
+      return cachedLocation.value
+    }
+
+    const pos = await acquirePosition(20000, 10000)
+
+    if (pos) {
+      const loc = {
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+        accuracy: pos.coords.accuracy,
+        barangay: findNearestBarangay(pos.coords.latitude, pos.coords.longitude),
+        timestamp: Date.now()
+      }
+      await saveToCache(loc)
+      isLocating.value = false
+      if (manual) showToast('Location Refreshed')
+      return loc
+    }
+
+    console.warn('GPS refresh error: no position acquired')
+    isLocating.value = false
+    if (manual) showToast('GPS Lock Failed - Using Cached Location')
+    return cachedLocation.value
   }
 
   function startBackgroundRefresh() {
