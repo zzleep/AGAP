@@ -8,7 +8,7 @@
       v-if="route.name !== 'admin-login'"
       class="bg-white/85 backdrop-blur-xl border-b border-[#1F3A4B]/10 sticky top-0 z-40 shadow-[0_4px_20px_rgba(31,58,75,0.06)]"
     >
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+      <div class="w-full px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
         <!-- AGAP Logo + Branding -->
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-2xl bg-[#902715] flex items-center justify-center p-2 shadow-md shrink-0">
@@ -46,7 +46,7 @@
       </div>
 
       <!-- M3 Expressive Horizontal Nav Rail with High-Contrast Active Tabs -->
-      <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-3 flex gap-2 overflow-x-auto scrollbar-hide">
+      <nav class="w-full px-4 sm:px-6 lg:px-8 pb-3 flex gap-2 overflow-x-auto scrollbar-hide">
         <router-link
           v-for="tab in tabs"
           :key="tab.to"
@@ -62,11 +62,11 @@
       </nav>
     </header>
 
-    <!-- Main Admin Content Area -->
+    <!-- Main Admin Content Area (Expanded Edge-to-Edge Full Width) -->
     <main
       :class="[
-        'flex-1',
-        route.name === 'admin-login' ? '' : 'max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6'
+        'flex-1 w-full',
+        route.name === 'admin-login' ? '' : 'px-4 sm:px-6 lg:px-8 py-6'
       ]"
     >
       <router-view />
