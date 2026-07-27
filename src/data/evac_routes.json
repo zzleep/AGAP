@@ -1,0 +1,56 @@
+[
+  {
+    "id": "route-01",
+    "name": "Macabling Evacuation Corridor",
+    "barangay": "Macabling",
+    "risk_level": "low",
+    "geojson": {
+      "type": "Feature",
+      "properties": { "center": "Santa Rosa Multi-Purpose Complex" },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [121.102, 14.312],
+          [121.108, 14.315],
+          [121.114, 14.318]
+        ]
+      }
+    }
+  },
+  {
+    "id": "route-02",
+    "name": "Tagapo River Alternate Route",
+    "barangay": "Tagapo",
+    "risk_level": "moderate",
+    "geojson": {
+      "type": "Feature",
+      "properties": { "center": "Central Elementary School" },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [121.095, 14.305],
+          [121.101, 14.309],
+          [121.110, 14.312]
+        ]
+      }
+    }
+  },
+  {
+    "id": "route-03",
+    "name": "Coastal Balibago Emergency Cut",
+    "barangay": "Balibago",
+    "risk_level": "high",
+    "geojson": {
+      "type": "Feature",
+      "properties": { "center": "Balibago Complex Hub" },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [121.115, 14.295],
+          [121.122, 14.301],
+          [121.130, 14.308]
+        ]
+      }
+    }
+  }
+]

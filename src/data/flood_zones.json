@@ -1,0 +1,50 @@
+[
+  {
+    "type": "Feature",
+    "properties": {
+      "name": "Tagapo River Channel",
+      "severity": "danger",
+      "zone_name": "Tagapo Lowland Flood Zone"
+    },
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [[[121.095, 14.305], [121.115, 14.305], [121.115, 14.320], [121.095, 14.320], [121.095, 14.305]]]
+    }
+  },
+  {
+    "type": "Feature",
+    "properties": {
+      "name": "Balibago Creek Basin",
+      "severity": "warning",
+      "zone_name": "Balibago Flood Risk Area"
+    },
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [[[121.100, 14.290], [121.115, 14.290], [121.115, 14.302], [121.100, 14.302], [121.100, 14.290]]]
+    }
+  },
+  {
+    "type": "Feature",
+    "properties": {
+      "name": "Dita Low-Lying Area",
+      "severity": "watch",
+      "zone_name": "Dita Flood Watch Zone"
+    },
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [[[121.080, 14.310], [121.095, 14.310], [121.095, 14.325], [121.080, 14.325], [121.080, 14.310]]]
+    }
+  },
+  {
+    "type": "Feature",
+    "properties": {
+      "name": "Laguna de Bay Lakeshore",
+      "severity": "danger",
+      "zone_name": "Lakeshore Inundation Zone"
+    },
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [[[121.110, 14.325], [121.130, 14.325], [121.130, 14.340], [121.110, 14.340], [121.110, 14.325]]]
+    }
+  }
+]

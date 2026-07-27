@@ -9,7 +9,7 @@
 [![SDG 11](https://img.shields.io/badge/SDG-11-orange)](#)
 [![SDG 13](https://img.shields.io/badge/SDG-13-green)](#)
 
-> **AGAP (Advance Guidance & Assistance Platform)** is an AI-powered Progressive Web Application (PWA) that enhances disaster preparedness and emergency response through offline-first technology, real-time communication, geospatial intelligence, and explainable artificial intelligence.
+> **AGAP (Advance Guidance & Assistance Platform)** is an AI-powered Progressive Web Application (PWA) that enhances disaster preparedness and emergency response for Santa Rosa City through offline-first technology, real-time communication, geospatial intelligence, and explainable artificial intelligence.
 
 ---
 
@@ -42,14 +42,14 @@ AGAP is a Progressive Web Application designed to improve disaster resilience by
 
 The platform integrates:
 
-- One-Tap Emergency SOS reporting
-- Offline SMS emergency fallback
-- Weather monitoring and alerts
-- Interactive evacuation maps
-- Disaster preparedness guides
-- Anonymous community reporting
-- AI-assisted report classification
-- Explainable AI recommendations for emergency responders
+- One-Tap Emergency SOS reporting with offline background sync
+- Weather monitoring and alerts with multi-tier caching
+- Interactive evacuation and flood zone maps
+- Disaster preparedness guides (offline-accessible)
+- Anonymous community reporting with AI classification
+- Explainable AI advisory recommendations (Aegis)
+- Predictive Flow Engine for route risk assessment
+- Operational insight dashboard with trend detection
 
 By leveraging cloud services, geospatial technologies, and artificial intelligence, AGAP enables faster emergency response, improves coordination, and supports data-driven disaster management.
 
@@ -61,13 +61,13 @@ By leveraging cloud services, geospatial technologies, and artificial intelligen
 
 | Feature | Description |
 |---------|-------------|
-| Weather Alerts | Displays real-time weather forecasts and severe weather advisories. |
-| One-Tap Emergency SOS | Allows users to instantly report emergencies or indicate they are safe while transmitting GPS coordinates. |
-| SMS Emergency Fallback | Generates an emergency SMS message automatically when internet connectivity is unavailable. |
-| Evacuation Routes | Displays evacuation routes using interactive maps with offline support. |
-| Disaster Preparedness Guides | Provides offline-accessible disaster preparedness information. |
-| Anonymous Community Reporting | Enables residents to submit disaster-related concerns anonymously. |
-| Offline Mode | Core application features remain accessible without an internet connection. |
+| Weather Alerts | Displays real-time weather data with rainfall rate and risk severity. |
+| One-Tap Emergency SOS | Instantly reports emergencies with GPS coordinates; offline dispatch via Workbox BackgroundSync. |
+| Interactive Evacuation Map | Displays evacuation routes and flood zone overlays filtered by risk level. |
+| Flow Engine | Predictive routing dashboard with rainfall-to-severity thresholds and live ticker. |
+| Disaster Preparedness Guides | Offline-accessible SOPs for flood, typhoon, and earthquake scenarios. |
+| Anonymous Community Reporting | Enables residents to submit disaster-related concerns with AI triage. |
+| Offline Mode | Cached maps, guides, GPS coordinates, and SOS queue remain operational without internet. |
 
 ---
 
@@ -75,12 +75,13 @@ By leveraging cloud services, geospatial technologies, and artificial intelligen
 
 | Feature | Description |
 |---------|-------------|
-| Live SOS Monitoring | Receives emergency reports in real time using Supabase Realtime. |
-| SOS Map View | Displays active emergency reports on an interactive map. |
-| Community Insight Dashboard | Visualizes community reports, trends, and analytics. |
-| AI Report Classification | Automatically categorizes reports according to disaster type, urgency, and responsible department. |
-| Explainable AI Recommendation Engine (Aegis) | Generates emergency response recommendations with clear reasoning for decision-makers. |
-| Trend Detection | Identifies recurring issues and emerging disaster patterns using historical reports. |
+| Live SOS Monitoring | Receives emergency reports in real time via Supabase Realtime with atomic claim/resolve. |
+| SOS Cluster Detection | Automatically groups 3+ SOS in same barangay within 30 minutes. |
+| Community Reports Table | Multi-filter triage table with inline status and plausibility editing. |
+| Hotspot Map | Incident density visualization per barangay with severity legend. |
+| Aegis AI Advisory Panel | Gemini-powered recommendations that are advisory-only and human-gated. |
+| Insight Dashboard | Operational metrics, category/priority breakdowns, resolution rates, and AI-generated 30-day summaries. |
+| Stale Claim Reversion | Automatically reverts SOS claims older than 10 minutes. |
 
 ---
 
@@ -90,13 +91,12 @@ AGAP integrates **Google Gemini 2.0 Flash** through secure Supabase Edge Functio
 
 Current AI capabilities include:
 
-- Automatic disaster report classification
-- Community report summarization
-- Trend analysis
-- Priority assessment
-- Explainable emergency recommendations through the Aegis Recommendation Engine
+- Automatic disaster report classification (category, priority, department, plausibility)
+- Aegis advisory recommendation engine (advisory-only, never auto-acts)
+- 30-day community insight summarization and trend detection
+- Explainable reasoning with step-by-step justification
 
-Unlike traditional AI systems, AGAP provides transparent reasoning behind every recommendation, enabling emergency responders to understand why specific actions are suggested.
+Unlike traditional AI systems, AGAP provides transparent reasoning behind every recommendation, enabling emergency responders to understand why specific actions are suggested. AI is never on the critical path for SOS dispatch.
 
 ---
 
@@ -104,23 +104,23 @@ Unlike traditional AI systems, AGAP provides transparent reasoning behind every 
 
 ## Frontend
 
-- Vue 3
-- Vite
-- Progressive Web App (Vite PWA)
-- Tailwind CSS
-- Pinia
-- Vue Router
-- Leaflet.js
-- Workbox
+- Vue 3 (Composition API, `<script setup>`)
+- Vite 5
+- Progressive Web App (Vite Plugin PWA)
+- Tailwind CSS 3
+- Pinia (state management)
+- Vue Router 4
+- Leaflet.js + OpenStreetMap tiles
+- Workbox (BackgroundSync, CacheFirst tiles)
+- idb (IndexedDB wrapper)
 
 ## Backend
 
 - Supabase
-- PostgreSQL
-- Supabase Authentication
-- Supabase Realtime
-- Supabase Edge Functions
-- Supabase Storage
+- PostgreSQL (7 tables, RLS, Realtime)
+- Supabase Authentication (email/password)
+- Supabase Realtime (WebSocket subscriptions)
+- Supabase Edge Functions (Deno/TypeScript)
 
 ## Artificial Intelligence
 
@@ -131,7 +131,7 @@ Unlike traditional AI systems, AGAP provides transparent reasoning behind every 
 ## External Services
 
 - OpenWeatherMap API
-- Native SMS Intent
+- OpenStreetMap Tiles
 
 ---
 
@@ -141,69 +141,73 @@ AGAP is designed with disaster resilience as its primary objective.
 
 Even when internet connectivity becomes unavailable, users can continue accessing essential emergency services, including:
 
-- Disaster preparedness guides
-- Cached evacuation maps
-- Cached GPS location
-- SMS emergency reporting
+- Disaster preparedness guides (bundled markdown)
+- Cached evacuation maps and flood zones (bundled GeoJSON)
+- Cached GPS location (IndexedDB)
+- SOS queue (Workbox BackgroundSync, 24-hour retention)
 - Progressive Web App installation
 - Offline navigation interface
 
-Workbox handles caching of application assets while IndexedDB securely stores the user's latest GPS coordinates, ensuring emergency messages remain useful during communication outages.
+Workbox handles caching of application assets and Leaflet map tiles (30-day TTL, 1000-entry limit). IndexedDB securely stores the user's latest GPS coordinates, ensuring SOS messages remain useful during communication outages.
 
 ---
 
 # System Architecture
 
 ```
-Citizen Application (PWA)
-            │
-            ▼
-      Vue 3 + Vite PWA
-            │
-            ▼
-      Supabase Backend
-      ├── PostgreSQL
-      ├── Authentication
-      ├── Realtime
-      ├── Storage
-      └── Edge Functions
-            │
-            ▼
-     Gemini 2.0 Flash AI
-            │
-            ▼
-      Admin Dashboard
++-------------------------+    +-------------------------+
+|   Citizen Application   |    |   Admin Dashboard       |
+|   (Vue 3 PWA)           |    |   (Vue 3 PWA)           |
+|   /app/* routes         |    |   /admin/* routes       |
++-----------+-------------+    +------------+------------+
+            |                               |
+            v                               v
++-------------------------------------------------------+
+|                  Supabase Backend                       |
+|  ┌──────────┐ ┌──────────┐ ┌────────────────────────┐ |
+|  │PostgreSQL │ │   Auth   │ │    Edge Functions       │ |
+|  │ 7 tables  │ │  Email/  │ │  ┌──────────────────┐  │ |
+|  │ RLS +     │ │  Password│ │  │ classify-report  │  │ |
+|  │ Realtime  │ │          │ │  │ aegis-advisor    │  │ |
+|  │           │ │          │ │  │ generate-insight │  │ |
+|  └──────────┘ └──────────┘ │  └────────┬─────────┘  │ |
++----------------------------+-----------+--------------+
+                              ┌──────────┴──────────┐
+                              │  Gemini 2.0 Flash AI │
+                              └─────────────────────┘
 ```
 
 ---
 
 # Development Roadmap
 
-## Phase 1
+## Milestone 1-3 (Completed)
 
-- Progressive Web Application
-- Weather Alerts
-- One-Tap SOS
-- SMS Emergency Fallback
-- Disaster Preparedness Guides
-- Evacuation Maps
-- Community Reports
-- Live Admin Dashboard
+- Progressive Web Application shell
+- Weather alerts with multi-tier caching
+- One-Tap SOS with BackgroundSync
+- Disaster Preparedness Guides (3 bundled markdown SOPs)
+- Evacuation Maps with route overlays
+- Anonymous Community Reports with AI classification
+- Live Admin Dashboard with real-time subscriptions
+- Aegis AI Advisory engine (advisory-only, outcome-logged)
+- Insight Dashboard with computed metrics
 
-## Phase 2
+## Milestone 4-6 (Completed)
 
-- AI Report Classification
-- Community Insight Dashboard
-- Explainable AI Recommendation Engine
-- Trend Detection
-- Dashboard Analytics
+- Aegis fallback/outcome logging hardened
+- Flow Engine predictive routing (rainfall -> severity -> route risk)
+- Explicit Workbox worker for SOS BackgroundSync, tile caching, GPS refresh
+- Production build passing with clean smoke tests
+- PWA manifest, icons, service worker installable
 
-## Phase 3
+## Future
 
-- Predictive Safe Route Engine
-- Dynamic Flood Risk Overlay
-- Advanced AI Decision Support
-- Enhanced Disaster Simulation
+- Live Supabase/Edge Function verification with real secrets
+- Installed-PWA verification on device
+- Enhanced flood simulation scenarios
+- Push notifications
+- Multi-language support
 
 ---
 
@@ -212,21 +216,40 @@ Citizen Application (PWA)
 ```
 AGAP/
 │
-├── client/                 # Vue 3 Progressive Web Application
-├── admin/                  # Admin Dashboard
+├── src/                   # Vue 3 Application
+│   ├── main.js            # App entry point
+│   ├── App.vue            # Root component
+│   ├── lib/               # Supabase client
+│   ├── router/            # Vue Router config
+│   ├── stores/            # 7 Pinia stores
+│   ├── composables/       # 4 Vue composables
+│   ├── components/        # Reusable components
+│   ├── layouts/           # Citizen + Admin layouts
+│   ├── views/
+│   │   ├── citizen/       # 7 citizen pages
+│   │   └── admin/         # 6 admin pages
+│   ├── data/              # Bundled GeoJSON
+│   ├── guides/            # Markdown disaster guides
+│   └── assets/            # Global CSS
 ├── supabase/
-│   ├── migrations/
-│   ├── edge-functions/
-│   └── storage/
-├── public/
-├── assets/
-├── docs/
+│   ├── functions/         # 3 Edge Functions (Deno)
+│   └── migrations/        # DB schema + RLS + Realtime
+├── document/              # Documentation
+├── dist/                  # Production build output
+├── .env.example           # Environment template
+├── vite.config.js         # Build config + PWA
+├── tailwind.config.js     # Tailwind theme
 └── README.md
 ```
 
 ---
 
 # Installation
+
+## Prerequisites
+
+- Node.js 18+
+- npm
 
 ## Clone the repository
 
@@ -246,10 +269,25 @@ cd agap
 npm install
 ```
 
+## Configure environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your Supabase project credentials and API keys.
+
 ## Start the development server
 
 ```bash
 npm run dev
+```
+
+## Production build
+
+```bash
+npm run build
+npm run preview
 ```
 
 ---
@@ -258,14 +296,13 @@ npm run dev
 
 The following features are planned for future releases:
 
-- Predictive Safe Route Engine
-- Dynamic Flood Risk Visualization
-- AI-powered Resource Allocation
-- Push Notifications
-- Barangay-level Disaster Analytics
-- Multi-language Support
-- Disaster Drill Simulation
-- Enhanced Offline Mapping
+- Live Supabase Edge Function verification with real secrets
+- Installed-PWA end-to-end verification
+- Push notifications for critical alerts
+- Advanced flood simulation scenarios
+- Barangay-level disaster analytics
+- Multi-language support
+- Enhanced offline mapping with vector tiles
 
 ---
 
