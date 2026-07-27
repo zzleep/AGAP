@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { openDB } from 'idb'
 import { findNearestBarangay } from '@/data/barangay_coords'
 
@@ -22,6 +23,8 @@ async function getDB() {
 }
 
 export function useGPS() {
+  const { t } = useI18n()
+
   function registerServiceWorkerGPSRefresh() {
     if (serviceWorkerListenerReady || typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return
     serviceWorkerListenerReady = true
@@ -143,7 +146,7 @@ export function useGPS() {
       await saveToCache(loc)
       isLocating.value = false
       if (!existing) {
-        showToast('Location Saved')
+        showToast(t('gps.locationSaved'))
       }
     } else {
       console.warn('GPS initial position error, using fallback')
@@ -169,7 +172,7 @@ export function useGPS() {
 
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       isLocating.value = false
-      if (manual) showToast('GPS Lock Failed - Using Cached Location')
+      if (manual) showToast(t('gps.gpsLockFailed'))
       return cachedLocation.value
     }
 
@@ -185,13 +188,13 @@ export function useGPS() {
       }
       await saveToCache(loc)
       isLocating.value = false
-      if (manual) showToast('Location Refreshed')
+      if (manual) showToast(t('gps.locationRefreshed'))
       return loc
     }
 
     console.warn('GPS refresh error: no position acquired')
     isLocating.value = false
-    if (manual) showToast('GPS Lock Failed - Using Cached Location')
+    if (manual) showToast(t('gps.gpsLockFailed'))
     return cachedLocation.value
   }
 

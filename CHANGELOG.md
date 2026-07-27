@@ -1,5 +1,54 @@
 # Changelog
 
+## Filipino (Tagalog) i18n Support (2026-07-27)
+
+### Problem
+The AGAP citizen-facing UI was English-only. Filipino-speaking users — the primary target demographic in Santa Rosa, Laguna — had to navigate disaster response tools (SOS, evacuation maps, community reporting) in a language they may not be fully comfortable with, especially under high-stress emergency situations.
+
+### Changes Made
+
+#### New file: `src/locales/en.json`
+- Full English locale with 140+ translation keys covering all citizen-facing views: navigation, SOS, home, evacuation map, flow engine, guides, community reporting, connectivity banner, GPS status, and common terms
+
+#### New file: `src/locales/fil.json`
+- Complete Filipino (Tagalog) translation mirroring every key in `en.json` with culturally appropriate disaster-response terminology
+
+#### `src/main.js`
+- Added `vue-i18n` plugin initialization with `createI18n()`
+- Configured with `legacy: false` (Composition API mode), fallback locale `'en'`, and persisted locale from `localStorage`
+- Imports both locale files as message bundles
+
+#### New file: `src/stores/localeStore.js`
+- Pinia store encapsulating locale state management
+- `setLocale(loc)` — switches locale and persists choice to `localStorage`
+- `initLocale()` — restores saved locale on app init, defaults to Filipino
+
+#### `src/layouts/CitizenLayout.vue`
+- Replaced all hardcoded English text with `$t()` calls referencing locale keys (navigation bar, header subtitle, operator portal link)
+- Added language toggle button in the bottom nav bar showing `FIL`/`EN` badge
+- `toggleLanguage()` cycles between `'fil'` and `'en'`
+- Calls `localeStore.initLocale()` on mount
+
+#### `src/views/citizen/*.vue` (7 views)
+- `HomeView.vue` — all UI strings (weather, location, emergency assistance, evacuation routes) migrated to `$t('home.*')`
+- `SOSView.vue` — SOS dispatch UI, GPS signal status, and button text migrated to `$t('sos.*')`
+- `EvacMap.vue` — evacuation map labels, risk filters, route descriptions migrated to `$t('evacMap.*')`
+- `FlowEngine.vue` — rainfall thresholds, risk levels, and demo controls migrated to `$t('flowEngine.*')`
+- `GuideList.vue` and `GuideDetail.vue` — guide listing and detail view text migrated to `$t('guideList.*')` / `$t('guideDetail.*')`
+- `CommunityReportForm.vue` — full form labels, anonymity notice, captcha, AI triage display, and nag dialog migrated to `$t('communityReport.*')`
+
+#### `src/composables/useGPS.js`
+- Hardcoded toast notification strings replaced with i18n-aware `gps.locationSaved`, `gps.locationRefreshed`, `gps.gpsLockFailed` fallback keys
+
+### Verification
+- Filipino is the default locale on first launch (matching primary user base)
+- Language toggle in bottom nav instantly switches between FIL/EN without page reload
+- Locale choice persists across sessions via `localStorage`
+- English fallback ensures untranslated keys never display raw keys to the user
+- All 7 citizen views render correctly in both locales
+
+---
+
 ## GPS Accuracy Fix (2026-07-27)
 
 ### Problem

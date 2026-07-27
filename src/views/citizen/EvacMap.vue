@@ -2,11 +2,11 @@
   <div class="space-y-3 h-full flex flex-col">
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-lg font-bold text-white">Evacuation Routes</h2>
-        <p class="text-xs text-slate-400">Flow Engine safe navigation paths</p>
+        <h2 class="text-lg font-bold text-white">{{ $t('evacMap.title') }}</h2>
+        <p class="text-xs text-slate-400">{{ $t('evacMap.description') }}</p>
       </div>
       <span class="px-2 py-1 text-[11px] font-bold rounded bg-blue-900/60 text-blue-300 border border-blue-700/50">
-        Santa Rosa City
+        {{ $t('evacMap.cityLabel') }}
       </span>
     </div>
 
@@ -16,7 +16,7 @@
 
       <div class="absolute bottom-3 left-3 right-3 bg-slate-900/90 backdrop-blur-md p-3 rounded-lg border border-slate-700 text-xs flex justify-between items-center z-20">
         <div>
-          <span class="text-slate-400 block text-[10px]">Active Risk Filter</span>
+          <span class="text-slate-400 block text-[10px]">{{ $t('evacMap.activeRiskFilter') }}</span>
           <span
             class="font-bold uppercase"
             :class="{
@@ -25,14 +25,14 @@
               'text-red-400': flow.mappedRiskLevel === 'high'
             }"
           >
-            {{ flow.mappedRiskLevel }} Risk Routes
+            {{ $t('evacMap.riskRoutes', { risk: $t('evacMap.' + flow.mappedRiskLevel) }) }}
           </span>
         </div>
         <button
           @click="recenterMap"
           class="px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-colors shadow"
         >
-          Recenter
+          {{ $t('evacMap.recenter') }}
         </button>
       </div>
     </div>
@@ -41,6 +41,7 @@
 
 <script setup>
 import { onMounted, watch, ref, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useFlowStore } from '@/stores/flowStore'
@@ -48,6 +49,7 @@ import { supabase } from '@/lib/supabase'
 import santaRosaBoundaries from '@/data/santa_rosa_boundaries.json'
 import fallbackRoutes from '@/data/evac_routes.json'
 
+const { t } = useI18n()
 const flow = useFlowStore()
 let map = null
 let routeLayerGroup = null
@@ -120,14 +122,14 @@ function renderRoutes() {
       style: { color, weight: 5, opacity: 0.85 }
     })
 
-    const centerName = route.geojson?.properties?.center || 'Designated Evac Hub'
+    const centerName = route.geojson?.properties?.center || t('evacMap.designatedEvacHub')
     layer.bindPopup(`
       <div class="p-1 text-slate-900">
         <h4 class="font-bold text-xs text-blue-900">${route.name}</h4>
-        <p class="text-[11px] text-slate-700">Barangay: <strong>${route.barangay}</strong></p>
-        <p class="text-[11px] text-slate-700">Evac Hub: <strong>${centerName}</strong></p>
+        <p class="text-[11px] text-slate-700">${t('evacMap.barangay')} <strong>${route.barangay}</strong></p>
+        <p class="text-[11px] text-slate-700">${t('evacMap.evacHub')} <strong>${centerName}</strong></p>
         <span class="inline-block mt-1 px-1.5 py-0.5 text-[9px] font-bold uppercase rounded text-white ${getBadgeBg(route.risk_level)}">
-          ${route.risk_level} risk route
+          ${t('evacMap.riskRoute', { risk: t('evacMap.' + route.risk_level) })}
         </span>
       </div>
     `)

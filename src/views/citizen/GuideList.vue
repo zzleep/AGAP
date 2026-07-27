@@ -1,8 +1,8 @@
 <template>
   <div class="space-y-4">
     <div>
-      <h2 class="text-xl font-bold text-white">Disaster Preparedness Guides</h2>
-      <p class="text-xs text-slate-400">Offline response SOPs and checklists</p>
+      <h2 class="text-xl font-bold text-white">{{ $t('guideList.title') }}</h2>
+      <p class="text-xs text-slate-400">{{ $t('guideList.subtitle') }}</p>
     </div>
 
     <div class="space-y-3">
