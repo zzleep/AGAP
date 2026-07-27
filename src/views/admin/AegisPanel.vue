@@ -769,10 +769,9 @@ async function submitOutcome(outcome) {
       return
     }
 
-    selectedOutcome.value = outcome
     await fetchHistory()
-    // Disable further submissions for this advisory
-    outcomeSubmitting.value = true
+    // Auto-dismiss — the recommendation is done, show the history log with bulk actions
+    resetPanel()
   } catch (err) {
     console.warn('Failed to log Aegis outcome:', err)
     outcomeError.value = err.message || 'Unable to log operator outcome.'
