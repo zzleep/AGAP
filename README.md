@@ -8,6 +8,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![SDG 11](https://img.shields.io/badge/SDG-11-orange)](#)
 [![SDG 13](https://img.shields.io/badge/SDG-13-green)](#)
+[![Changelog](https://img.shields.io/badge/Changelog-📋-1F3A4B)](CHANGELOG.md)
 
 > **AGAP (Advance Guidance & Assistance Platform)** is an AI-powered Progressive Web Application (PWA) that enhances disaster preparedness and emergency response for Santa Rosa City through offline-first technology, real-time communication, geospatial intelligence, and explainable artificial intelligence.
 
