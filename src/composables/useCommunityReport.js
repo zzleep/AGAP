@@ -1,26 +1,6 @@
 import { ref } from 'vue'
 import { useReportStore } from '@/stores/reportStore'
-
-export const SANTA_ROSA_BARANGAYS = [
-  'Aplaya',
-  'Balibago',
-  'Caingins',
-  'Dila',
-  'Dita',
-  'Don Jose',
-  'Ibaba',
-  'Kanluran (Poblacion Ward 1)',
-  'Labas',
-  'Macabling',
-  'Malitlit',
-  'Malusak (Poblacion Ward 2)',
-  'Market Area (Poblacion Ward 8)',
-  'Pooc',
-  'Pulong Santa Cruz',
-  'Santo Domingo',
-  'Sinalhan',
-  'Tagapo'
-]
+import { BARANGAY_LIST } from '@/data/barangay_coords'
 
 export function useCommunityReport() {
   const reportStore = useReportStore()
@@ -116,7 +96,7 @@ export function useCommunityReport() {
     secondsRemaining,
     submissionSuccess,
     submittedData,
-    barangays: SANTA_ROSA_BARANGAYS,
+    barangays: BARANGAY_LIST,
     generateCaptcha,
     handleInitialSubmit,
     executeSubmission,

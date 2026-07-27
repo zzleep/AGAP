@@ -48,6 +48,17 @@
             <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 border border-emerald-700 shadow-sm"></span>
             <span>Low Risk (1 incident)</span>
           </div>
+          <div class="border-t border-slate-800 pt-1.5 mt-1.5">
+            <div class="font-bold text-[11px] uppercase tracking-wider text-slate-400 mb-1">Incident Markers</div>
+            <div class="flex items-center space-x-2">
+              <span class="w-3 h-3 rounded-full bg-red-600 border border-red-800 shadow-sm"></span>
+              <span>SOS Alert (exact GPS)</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="w-3 h-3 rounded-full bg-amber-500 border border-amber-700 shadow-sm"></span>
+              <span>Community Report</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -110,6 +121,7 @@ import 'leaflet/dist/leaflet.css'
 import { useSOSStore } from '@/stores/sosStore'
 import { useReportStore } from '@/stores/reportStore'
 import santaRosaBoundaries from '@/data/santa_rosa_boundaries.json'
+import { BARANGAY_COORDS } from '@/data/barangay_coords'
 
 const sosStore = useSOSStore()
 const reportStore = useReportStore()
@@ -121,37 +133,17 @@ const showBoundary = ref(true)
 let map = null
 let boundaryLayerGroup = null
 let densityMarkerGroup = null
+let incidentMarkerGroup = null
 
-const SANTA_ROSA_CENTER = [14.3123, 121.1114]
-
-const SANTA_ROSA_BARANGAY_COORDS = {
-  'Aplaya': { lat: 14.3265, lng: 121.1215 },
-  'Balibago': { lat: 14.2938, lng: 121.1095 },
-  'Caingins': { lat: 14.3210, lng: 121.1120 },
-  'Dila': { lat: 14.3005, lng: 121.1040 },
-  'Dita': { lat: 14.2830, lng: 121.1080 },
-  'Don Jose': { lat: 14.2485, lng: 121.0580 },
-  'Ibaba': { lat: 14.3160, lng: 121.1110 },
-  'Kanluran (Poblacion Ward 1)': { lat: 14.3140, lng: 121.1080 },
-  'Labas': { lat: 14.3080, lng: 121.1060 },
-  'Macabling': { lat: 14.3150, lng: 121.0970 },
-  'Malitlit': { lat: 14.2750, lng: 121.0820 },
-  'Malusak (Poblacion Ward 2)': { lat: 14.3145, lng: 121.1105 },
-  'Market Area (Poblacion Ward 8)': { lat: 14.3130, lng: 121.1130 },
-  'Pooc': { lat: 14.3010, lng: 121.0920 },
-  'Pulong Santa Cruz': { lat: 14.2880, lng: 121.0850 },
-  'Santo Domingo': { lat: 14.2580, lng: 121.0690 },
-  'Sinalhan': { lat: 14.3310, lng: 121.1160 },
-  'Tagapo': { lat: 14.3185, lng: 121.1025 }
-}
+const SANTA_ROSA_CENTER = [14.3157, 121.1122]
 
 const barangayDensityMap = computed(() => {
   const mapData = {}
 
-  Object.keys(SANTA_ROSA_BARANGAY_COORDS).forEach(bgy => {
+  Object.keys(BARANGAY_COORDS).forEach(bgy => {
     mapData[bgy] = {
       barangay: bgy,
-      coords: SANTA_ROSA_BARANGAY_COORDS[bgy],
+      coords: BARANGAY_COORDS[bgy],
       sosCount: 0,
       reportCount: 0,
       total: 0
@@ -165,7 +157,7 @@ const barangayDensityMap = computed(() => {
       if (!mapData[bgy]) {
         mapData[bgy] = {
           barangay: bgy,
-          coords: SANTA_ROSA_BARANGAY_COORDS[bgy] || SANTA_ROSA_BARANGAY_COORDS['Tagapo'],
+          coords: BARANGAY_COORDS[bgy] || BARANGAY_COORDS['Tagapo'],
           sosCount: 0,
           reportCount: 0,
           total: 0
@@ -182,7 +174,7 @@ const barangayDensityMap = computed(() => {
       if (!mapData[bgy]) {
         mapData[bgy] = {
           barangay: bgy,
-          coords: SANTA_ROSA_BARANGAY_COORDS[bgy] || SANTA_ROSA_BARANGAY_COORDS['Tagapo'],
+          coords: BARANGAY_COORDS[bgy] || BARANGAY_COORDS['Tagapo'],
           sosCount: 0,
           reportCount: 0,
           total: 0
@@ -222,9 +214,13 @@ function initMap() {
 
   boundaryLayerGroup = L.layerGroup().addTo(map)
   densityMarkerGroup = L.layerGroup().addTo(map)
+  incidentMarkerGroup = L.layerGroup().addTo(map)
 
   renderBoundary()
   renderDensityMarkers()
+  renderIncidentMarkers()
+
+  setTimeout(() => map.invalidateSize(), 100)
 }
 
 function renderBoundary() {
@@ -295,6 +291,76 @@ function renderDensityMarkers() {
   })
 }
 
+function renderIncidentMarkers() {
+  if (!map || !incidentMarkerGroup) return
+  incidentMarkerGroup.clearLayers()
+
+  if (showSOS.value) {
+    sosStore.activeReports.forEach(sos => {
+      if (sos.status === 'resolved') return
+      if (sos.latitude == null || sos.longitude == null) return
+
+      const marker = L.circleMarker([sos.latitude, sos.longitude], {
+        radius: 6,
+        fillColor: '#ef4444',
+        color: '#7f1d1d',
+        weight: 2,
+        opacity: 0.9,
+        fillOpacity: 0.9
+      })
+
+      const popup = `
+        <div style="font-family: sans-serif; padding: 4px; color: #0f172a; min-width: 160px;">
+          <h4 style="margin: 0 0 4px 0; font-weight: 800; font-size: 13px; color: #991b1b;">SOS Alert</h4>
+          <div style="font-size: 11px; color: #475569;">
+            <strong>Barangay:</strong> ${sos.barangay || 'Unknown'}<br/>
+            <strong>Coordinates:</strong> ${Number(sos.latitude).toFixed(5)}, ${Number(sos.longitude).toFixed(5)}<br/>
+            <strong>Mode:</strong> ${sos.mode || 'online'}<br/>
+            <strong>Status:</strong> ${sos.status}<br/>
+            <strong>ID:</strong> <code style="font-size: 10px;">${sos.id ? sos.id.substring(0, 12) + '...' : 'N/A'}</code>
+          </div>
+        </div>
+      `
+      marker.bindPopup(popup)
+      incidentMarkerGroup.addLayer(marker)
+    })
+  }
+
+  if (showReports.value) {
+    reportStore.reports.forEach(rep => {
+      if (rep.status === 'resolved' || rep.status === 'dismissed') return
+
+      const coords = BARANGAY_COORDS[rep.barangay] || BARANGAY_COORDS['Tagapo']
+
+      const marker = L.circleMarker([coords.lat, coords.lng], {
+        radius: 5,
+        fillColor: '#f59e0b',
+        color: '#92400e',
+        weight: 2,
+        opacity: 0.9,
+        fillOpacity: 0.9
+      })
+
+      const popup = `
+        <div style="font-family: sans-serif; padding: 4px; color: #0f172a; min-width: 160px;">
+          <h4 style="margin: 0 0 4px 0; font-weight: 800; font-size: 13px; color: #92400e;">Community Report</h4>
+          <div style="font-size: 11px; color: #475569;">
+            <strong>Barangay:</strong> ${rep.barangay || 'Unknown'}<br/>
+            <strong>Category:</strong> ${rep.ai_category || 'N/A'}<br/>
+            <strong>Priority:</strong> ${rep.ai_priority || 'N/A'}<br/>
+            <strong>Status:</strong> ${rep.status}<br/>
+            <div style="margin-top: 4px; padding: 4px; background: #fef3c7; border-radius: 4px; font-size: 10px; color: #92400e;">
+              "${(rep.raw_description || '').substring(0, 80)}${(rep.raw_description || '').length > 80 ? '...' : ''}"
+            </div>
+          </div>
+        </div>
+      `
+      marker.bindPopup(popup)
+      incidentMarkerGroup.addLayer(marker)
+    })
+  }
+}
+
 function recenterMap() {
   if (map) {
     map.setView(SANTA_ROSA_CENTER, 13)
@@ -311,6 +377,7 @@ function focusBarangay(barangayName) {
 watch([showSOS, showReports, showBoundary, barangayDensityMap], () => {
   renderBoundary()
   renderDensityMarkers()
+  renderIncidentMarkers()
 })
 
 onMounted(async () => {

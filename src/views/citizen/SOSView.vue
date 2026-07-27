@@ -76,6 +76,7 @@ import { useSOSStore } from '@/stores/sosStore'
 import { useConnectivityStore } from '@/stores/connectivityStore'
 import { useSOS } from '@/composables/useSOS'
 import { useGPS } from '@/composables/useGPS'
+import { findNearestBarangay } from '@/data/barangay_coords'
 
 const sos = useSOSStore()
 const connectivity = useConnectivityStore()
@@ -83,16 +84,17 @@ const { dispatchSOS } = useSOS()
 const { cachedLocation, isLocating, refreshLocation } = useGPS()
 
 async function handleSOSDispatch() {
-  let coords = cachedLocation.value
-  if (!coords) {
-    coords = await refreshLocation(false)
-  }
+  let coords = await refreshLocation(true)
 
   if (!coords) {
+    const fallbackLat = 14.3123
+    const fallbackLng = 121.1114
     coords = {
-      latitude: 14.3123,
-      longitude: 121.1114,
-      barangay: 'Tagapo'
+      latitude: fallbackLat,
+      longitude: fallbackLng,
+      accuracy: 0,
+      barangay: findNearestBarangay(fallbackLat, fallbackLng),
+      isFallback: true
     }
   }
 

@@ -1,6 +1,7 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase'
 import { useSOSStore } from '@/stores/sosStore'
 import { useConnectivityStore } from '@/stores/connectivityStore'
+import { findNearestBarangay } from '@/data/barangay_coords'
 
 export function useSOS() {
   const sosStore = useSOSStore()
@@ -36,7 +37,7 @@ export function useSOS() {
       latitude: coords.latitude,
       longitude: coords.longitude,
       user_hash: hash,
-      barangay: coords.barangay || 'Tagapo',
+      barangay: coords.barangay || findNearestBarangay(coords.latitude, coords.longitude),
       mode: connectivity.mode === 'online' ? 'online' : 'degraded_signal'
     }
     const body = JSON.stringify(payload)
@@ -78,6 +79,7 @@ export function useSOS() {
       if (res.ok) {
         sosStore.deliveryState = 'sent'
       } else {
+        console.warn(`SOS POST failed: ${res.status} ${res.statusText}`)
         sosStore.deliveryState = 'queued'
       }
     } catch (err) {

@@ -2,32 +2,14 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
+import { findNearestBarangay } from '@/data/barangay_coords'
 
 export const useSOSStore = defineStore('sos', () => {
   const deliveryState = ref('idle') // 'idle' | 'sending' | 'queued' | 'sent' | 'error'
   const currentSOS = ref(null)
   const userHash = ref('')
   const cachedBarangay = ref(null)
-  const activeReports = ref([
-    {
-      id: 'sos_771a8f90',
-      latitude: 14.3123,
-      longitude: 121.1114,
-      barangay: 'Tagapo',
-      mode: 'online',
-      status: 'pending',
-      created_at: new Date(Date.now() - 120000).toISOString()
-    },
-    {
-      id: 'sos_992b3c11',
-      latitude: 14.2980,
-      longitude: 121.1021,
-      barangay: 'Balibago',
-      mode: 'degraded_signal',
-      status: 'pending',
-      created_at: new Date(Date.now() - 300000).toISOString()
-    }
-  ])
+  const activeReports = ref([])
   const isLoading = ref(false)
   const sosChannel = ref(null)
   const clusterClock = ref(Date.now())
@@ -141,7 +123,7 @@ export const useSOSStore = defineStore('sos', () => {
         .from('sos_reports')
         .select('*')
         .order('created_at', { ascending: false })
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         activeReports.value = data
       }
     } catch (err) {
@@ -160,7 +142,7 @@ export const useSOSStore = defineStore('sos', () => {
         latitude: payload.latitude,
         longitude: payload.longitude,
         user_hash: hash,
-        barangay: payload.barangay || 'Tagapo',
+        barangay: payload.barangay || findNearestBarangay(payload.latitude, payload.longitude),
         mode: isOnline ? (payload.mode || 'online') : 'degraded_signal'
       }
 
