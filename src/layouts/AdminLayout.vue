@@ -46,7 +46,7 @@
       </div>
 
       <!-- M3 Expressive Horizontal Nav Rail with High-Contrast Active Tabs -->
-      <nav class="w-full px-4 sm:px-6 lg:px-8 pb-3 flex gap-2 overflow-x-auto scrollbar-hide">
+      <nav class="w-full px-4 sm:px-6 lg:px-8 pt-1.5 pb-3 flex gap-2 overflow-x-auto scrollbar-hide">
         <router-link
           v-for="tab in tabs"
           :key="tab.to"
