@@ -95,11 +95,11 @@
 
       <div
         v-if="userLocation && nearestEvacCenter"
-        class="absolute left-3 top-3 z-30 max-w-[16rem] rounded-2xl border border-black/10 bg-white/90 p-3 text-xs shadow-m3-lg backdrop-blur-md"
+        class="absolute left-3 top-3 z-30 max-w-[calc(100%-8rem)] rounded-2xl border border-black/10 bg-white/90 p-3 text-xs shadow-m3-lg backdrop-blur-md"
       >
-        <p class="text-[9px] font-extrabold uppercase tracking-wider text-[#717171]">{{ $t('evacMap.routeGuide') }}</p>
-        <p class="mt-0.5 font-expressive text-sm font-black text-[#0A0A0A]">{{ nearestEvacCenter.name }}</p>
-        <p class="mt-0.5 text-[#717171]">
+        <p class="text-[9px] font-extrabold uppercase tracking-wider text-[#717171] leading-tight break-words">{{ $t('evacMap.routeGuide') }}</p>
+        <p class="mt-0.5 font-expressive text-sm font-black text-[#0A0A0A] leading-tight break-words">{{ nearestEvacCenter.name }}</p>
+        <p class="mt-0.5 text-[#717171] text-[11px] leading-tight">
           {{ $t('evacMap.fromYou') }} {{ formatDistanceToKm(nearestEvacDistance) }} km
         </p>
       </div>
@@ -118,10 +118,12 @@
       <div class="absolute top-3 right-3 z-30">
         <button
           @click="toggleExpand"
-          class="px-3.5 py-1.5 rounded-full bg-white/90 backdrop-blur-md hover:bg-white text-[#0A0A0A] font-bold text-[11px] border border-black/10 shadow-m3-md transition-transform active:scale-95 flex items-center space-x-1.5"
+          class="px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md hover:bg-white text-[#0A0A0A] font-bold text-[11px] border border-black/10 shadow-m3-md transition-transform active:scale-95 flex items-center space-x-1.5"
         >
-          <svg class="w-3.5 h-3.5 text-[#902715]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-          <span>{{ isExpanded ? 'Exit Fullscreen' : 'Expand' }}</span>
+          <!-- Minimize screen icon when expanded, Expand screen icon when collapsed -->
+          <svg v-if="isExpanded" class="w-3.5 h-3.5 text-[#902715]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 4l5 5m0 0H5m4 0V5m10-1l-5 5m0 0h4m-4 0V5M4 20l5-5m0 0H5m4 0v4m10 0l-5-5m0 0h4m-4 0v4"/></svg>
+          <svg v-else class="w-3.5 h-3.5 text-[#902715]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+          <span>{{ isExpanded ? 'Exit' : 'Expand' }}</span>
         </button>
       </div>
 
@@ -341,6 +343,10 @@ function handleViewportResize() {
   nextTick(() => {
     if (map) {
       map.resize()
+      setTimeout(() => { if (map) map.resize() }, 50)
+      setTimeout(() => { if (map) map.resize() }, 150)
+      setTimeout(() => { if (map) map.resize() }, 300)
+      setTimeout(() => { if (map) map.resize() }, 500)
     }
   })
 }
@@ -1030,7 +1036,15 @@ function getBadgeBg(level) {
 }
 
 function recenterMap() {
-  if (map) {
+  if (!map) return
+  const loc = userLocation.value || cachedLocation.value
+  if (loc && typeof loc.longitude === 'number' && typeof loc.latitude === 'number') {
+    map.easeTo({
+      center: [loc.longitude, loc.latitude],
+      zoom: 15,
+      duration: 700
+    })
+  } else {
     map.easeTo({ center: SANTA_ROSA_CENTER, zoom: 13, duration: 700 })
   }
 }

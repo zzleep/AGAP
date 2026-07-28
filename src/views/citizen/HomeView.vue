@@ -58,7 +58,7 @@
           </div>
 
           <div class="min-w-0">
-            <div class="flex items-baseline gap-1.5 min-w-0">
+            <div class="flex flex-col gap-1.5 min-w-0">
               <span :class="['font-expressive text-3xl font-black tracking-tight leading-none shrink-0', activeTheme.tempColor]">
                 {{ currentTemp }}
               </span>
