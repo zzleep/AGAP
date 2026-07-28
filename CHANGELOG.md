@@ -15,6 +15,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.1] — 2026-07-28
+
+### Fixed
+
+- **Blank Evac page map** — resolved by integrating the MapboxGL CSP Worker
+  for strict CSP environments, adding an OSM raster tile style as failover
+  when Mapbox vector tiles are unreachable, and guarding all map operations
+  against style load state. GPS acquisition is deferred to avoid blocking
+  initial map render, and `map.resize()` calls are consolidated through
+  `handleViewportResize()` for reliable layout recalculation.
+
+### CI
+
+- **release-please workflow** — automated changelog generation and GitHub
+  Releases on push to `main`, with build artifact attachment and README
+  documentation of the release process.
+
 ## [1.0.0] — 2026-07-28
 
 Initial release of AGAP — the first merge of the `dev` branch into `main`.
@@ -92,4 +109,5 @@ Initial release of AGAP — the first merge of the `dev` branch into `main`.
 - Removed dangling `test:smoke` script referencing nonexistent file
 - Redundant `ENABLE ROW LEVEL SECURITY` in migration 2 (no-op)
 
+[1.0.1]: https://github.com/zzleep/AGAP/releases/tag/v1.0.1
 [1.0.0]: https://github.com/zzleep/AGAP/releases/tag/v1.0.0
