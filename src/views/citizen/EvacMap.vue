@@ -118,10 +118,12 @@
       <div class="absolute top-3 right-3 z-30">
         <button
           @click="toggleExpand"
-          class="px-3.5 py-1.5 rounded-full bg-white/90 backdrop-blur-md hover:bg-white text-[#0A0A0A] font-bold text-[11px] border border-black/10 shadow-m3-md transition-transform active:scale-95 flex items-center space-x-1.5"
+          class="px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md hover:bg-white text-[#0A0A0A] font-bold text-[11px] border border-black/10 shadow-m3-md transition-transform active:scale-95 flex items-center space-x-1.5"
         >
-          <svg class="w-3.5 h-3.5 text-[#902715]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-          <span>{{ isExpanded ? 'Exit Fullscreen' : 'Expand' }}</span>
+          <!-- Minimize screen icon when expanded, Expand screen icon when collapsed -->
+          <svg v-if="isExpanded" class="w-3.5 h-3.5 text-[#902715]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 4l5 5m0 0H5m4 0V5m10-1l-5 5m0 0h4m-4 0V5M4 20l5-5m0 0H5m4 0v4m10 0l-5-5m0 0h4m-4 0v4"/></svg>
+          <svg v-else class="w-3.5 h-3.5 text-[#902715]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+          <span>{{ isExpanded ? 'Exit' : 'Expand' }}</span>
         </button>
       </div>
 
@@ -341,6 +343,10 @@ function handleViewportResize() {
   nextTick(() => {
     if (map) {
       map.resize()
+      setTimeout(() => { if (map) map.resize() }, 50)
+      setTimeout(() => { if (map) map.resize() }, 150)
+      setTimeout(() => { if (map) map.resize() }, 300)
+      setTimeout(() => { if (map) map.resize() }, 500)
     }
   })
 }
