@@ -229,10 +229,6 @@
   box-shadow: 0 16px 32px -8px rgba(31, 58, 75, 0.12);
 }
 
-.admin-card:active {
-  transform: translateY(0) scale(0.985);
-}
-
 /* Smooth Asymmetric Curves (Toned down, no extreme corners) */
 .admin-card--expressive {
   border-radius: 2.25rem 1.25rem 2.25rem 1.25rem;
