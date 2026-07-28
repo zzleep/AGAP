@@ -1,5 +1,10 @@
 import 'leaflet/dist/leaflet.css'
 import 'mapbox-gl/dist/mapbox-gl.css'
+// Auto-upgrade HTTP to HTTPS on non-localhost IP addresses (Geolocation API requires HTTPS)
+if (typeof window !== 'undefined' && window.location.protocol === 'http:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+  window.location.href = window.location.href.replace('http:', 'https:')
+}
+
 // Silently intercept Mapbox telemetry requests to prevent browser console spam/errors from adblockers
 if (typeof window !== 'undefined') {
   const originalFetch = window.fetch

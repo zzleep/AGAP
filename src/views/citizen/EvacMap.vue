@@ -1030,7 +1030,15 @@ function getBadgeBg(level) {
 }
 
 function recenterMap() {
-  if (map) {
+  if (!map) return
+  const loc = userLocation.value || cachedLocation.value
+  if (loc && typeof loc.longitude === 'number' && typeof loc.latitude === 'number') {
+    map.easeTo({
+      center: [loc.longitude, loc.latitude],
+      zoom: 15,
+      duration: 700
+    })
+  } else {
     map.easeTo({ center: SANTA_ROSA_CENTER, zoom: 13, duration: 700 })
   }
 }
