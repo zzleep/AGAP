@@ -301,6 +301,19 @@ function renderBoundary() {
   }
 }
 
+// Relative time display for popup list items
+function timeAgo(dateStr) {
+  if (!dateStr) return ''
+  const diff = Date.now() - Date.parse(dateStr)
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  return `${days}d ago`
+}
+
 function renderDensityMarkers() {
   if (!map || !densityMarkerGroup) return
   densityMarkerGroup.clearLayers()
@@ -407,78 +420,44 @@ function renderIncidentMarkers() {
       // Show a popup with alert details and a navigation link to the SOS feed.
       // Single SOS shows its individual info; grouped shows a scrollable list.
       const sos = group.alerts[0]
-      const statusColor = sos.status === 'responding' ? '#d97706' : '#64748b'
-      const statusDot = sos.status === 'responding' ? '#d97706' : '#94a3b8'
       const popup = count === 1
         ? `
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 0; color: #0f172a; min-width: 230px; max-width: 280px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.15);">
-            <div style="background: linear-gradient(135deg, #991b1b 0%, #dc2626 100%); padding: 10px 14px;">
-              <div style="display:flex;align-items:center;justify-content:space-between;">
-                <span style="color:#fff;font-weight:800;font-size:13px;letter-spacing:0.3px;">🚨 SOS Alert</span>
-                <span style="background:rgba(255,255,255,0.2);color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">Active</span>
-              </div>
+          <div style="font-family: sans-serif; padding: 4px; color: #0f172a; min-width: 200px;">
+            <h4 style="margin: 0 0 4px 0; font-weight: 800; font-size: 13px; color: #991b1b;">SOS Alert</h4>
+            <div style="font-size: 11px; color: #475569;">
+              <strong>Barangay:</strong> ${sos.barangay || 'Unknown'}<br/>
+              <strong>Status:</strong> <span style="color:${sos.status === 'responding' ? '#d97706' : '#64748b'}">${sos.status}</span><br/>
+              <strong>Time:</strong> ${timeAgo(sos.created_at)}<br/>
             </div>
-            <div style="padding: 12px 14px 10px; background: #fff;">
-              <div style="margin-bottom:10px;">
-                <div style="display:flex;align-items:center;margin-bottom:6px;">
-                  <span style="font-size:11px;color:#64748b;width:68px;font-weight:600;">Barangay</span>
-                  <span style="font-size:12px;font-weight:700;color:#0f172a;">${sos.barangay || 'Unknown'}</span>
-                </div>
-                <div style="display:flex;align-items:center;margin-bottom:6px;">
-                  <span style="font-size:11px;color:#64748b;width:68px;font-weight:600;">Status</span>
-                  <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:${statusColor};">
-                    <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${statusDot};"></span>
-                    ${sos.status}
-                  </span>
-                </div>
-                <div style="display:flex;align-items:center;">
-                  <span style="font-size:11px;color:#64748b;width:68px;font-weight:600;">ID</span>
-                  <code style="font-size:10px;background:#f1f5f9;padding:1px 6px;border-radius:4px;color:#475569;">${sos.id ? sos.id.substring(0, 12) + '…' : 'N/A'}</code>
-                </div>
-              </div>
-              <a href="/admin/sos-feed?sos_id=${sos.id}"
-                 style="display:block;text-align:center;background:#991b1b;color:#fff;padding:8px 14px;border-radius:10px;font-weight:800;font-size:11px;text-decoration:none;transition:background 0.15s;box-shadow:0 2px 4px rgba(153,27,27,0.3);"
-                 onmouseover="this.style.background='#7f1d1d'" onmouseout="this.style.background='#991b1b'">
-                View in SOS Feed →
-              </a>
-            </div>
+            <hr style="margin: 6px 0; border: 0; border-top: 1px solid #e2e8f0;" />
+            <a href="/admin/sos-feed?sos_id=${sos.id}"
+               style="display:block;text-align:center;background:#991b1b;color:#fff;padding:6px 12px;border-radius:8px;font-weight:800;font-size:11px;text-decoration:none;">
+              View in SOS Feed →
+            </a>
           </div>
         `
         : `
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 0; color: #0f172a; min-width: 250px; max-width: 300px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.15);">
-            <div style="background: linear-gradient(135deg, #991b1b 0%, #dc2626 100%); padding: 10px 14px;">
-              <div style="display:flex;align-items:center;justify-content:space-between;">
-                <span style="color:#fff;font-weight:800;font-size:13px;letter-spacing:0.3px;">🚨 ${group.alerts[0].barangay || 'Unknown'}</span>
-                <span style="background:rgba(255,255,255,0.2);color:#fff;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:700;">${count}</span>
-              </div>
-            </div>
-            <div style="padding: 8px 0; background: #fff;">
-              <div style="max-height: 200px; overflow-y: auto;">
-                ${group.alerts.map((s, i) => {
-                  const sc = s.status === 'responding' ? '#d97706' : '#94a3b8'
-                  const scText = s.status === 'responding' ? '#d97706' : '#64748b'
-                  return `
-                    <a href="/admin/sos-feed?sos_id=${s.id}"
-                       style="display:flex;align-items:center;gap:8px;padding:7px 14px;text-decoration:none;transition:background 0.12s;border-bottom:1px solid #f1f5f9;"
-                       onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='transparent'">
-                      <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#fef2f2;color:#991b1b;font-weight:800;font-size:10px;flex-shrink:0;">${i + 1}</span>
-                      <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:${scText};flex:1;">
-                        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${sc};flex-shrink:0;"></span>
-                        ${s.status}
-                      </span>
-                      <code style="font-size:9px;background:#f1f5f9;padding:1px 5px;border-radius:4px;color:#64748b;flex-shrink:0;">${s.id ? s.id.substring(0, 8) + '…' : 'N/A'}</code>
-                    </a>
-                  `
-                }).join('')}
-              </div>
-              <div style="padding: 6px 14px 10px;">
-                <a href="/admin/sos-feed?sos_id=${group.alerts.map(s => s.id).join(',')}"
-                   style="display:block;text-align:center;background:#991b1b;color:#fff;padding:8px 14px;border-radius:10px;font-weight:800;font-size:11px;text-decoration:none;transition:background 0.15s;box-shadow:0 2px 4px rgba(153,27,27,0.3);"
-                   onmouseover="this.style.background='#7f1d1d'" onmouseout="this.style.background='#991b1b'">
-                  View All in SOS Feed →
+          <div style="font-family: sans-serif; padding: 4px; color: #0f172a; min-width: 220px;">
+            <h4 style="margin: 0 0 4px 0; font-weight: 800; font-size: 13px; color: #991b1b;">
+              ${group.alerts[0].barangay || 'Unknown'} SOS Alerts <span style="background:#991b1b;color:#fff;padding:0 6px;border-radius:8px;font-size:11px;">${count}</span>
+            </h4>
+            <div style="font-size: 11px; color: #475569; max-height: 180px; overflow-y: auto;">
+              ${group.alerts.map((s, i) => `
+                <hr style="margin: 3px 0; border: 0; border-top: 1px solid #e2e8f0;"${i === 0 ? ' hidden' : ''} />
+                <a href="/admin/sos-feed?sos_id=${s.id}"
+                   style="display:block;margin:2px 0;font-size:10px;color:#1F3A4B;text-decoration:none;padding:3px 6px;border-radius:6px;transition:background 0.15s;"
+                   onmouseover="this.style.background='#EEF4FB'" onmouseout="this.style.background=''">
+                  <strong>#${i + 1}</strong>
+                  · <span style="color:${s.status === 'responding' ? '#d97706' : '#64748b'}">${s.status}</span>
+                  · <span style="color:#94a3b8;font-size:9px;">${timeAgo(s.created_at)}</span>
                 </a>
-              </div>
+              `).join('')}
             </div>
+            <hr style="margin: 6px 0; border: 0; border-top: 1px solid #e2e8f0;" />
+            <a href="/admin/sos-feed?sos_id=${group.alerts.map(s => s.id).join(',')}"
+               style="display:block;text-align:center;background:#991b1b;color:#fff;padding:6px 12px;border-radius:8px;font-weight:800;font-size:11px;text-decoration:none;">
+              View All in SOS Feed →
+            </a>
           </div>
         `
       marker.bindPopup(popup)
@@ -524,84 +503,48 @@ function renderIncidentMarkers() {
       // Show a popup with report details and a navigation link.
       // Single report shows its individual info; grouped shows a scrollable list.
       const rep = group.reports[0]
-      const priorityColor = rep.ai_priority === 'high' || rep.ai_priority === 'critical' ? '#dc2626' : '#64748b'
-      const priorityDot = rep.ai_priority === 'high' || rep.ai_priority === 'critical' ? '#dc2626' : '#94a3b8'
       const popup = count === 1
         ? `
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 0; color: #0f172a; min-width: 230px; max-width: 280px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.15);">
-            <div style="background: linear-gradient(135deg, #92400e 0%, #d97706 100%); padding: 10px 14px;">
-              <div style="display:flex;align-items:center;justify-content:space-between;">
-                <span style="color:#fff;font-weight:800;font-size:13px;letter-spacing:0.3px;">📋 Community Report</span>
-                <span style="background:rgba(255,255,255,0.2);color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">${rep.status}</span>
+          <div style="font-family: sans-serif; padding: 4px; color: #0f172a; min-width: 200px;">
+            <h4 style="margin: 0 0 4px 0; font-weight: 800; font-size: 13px; color: #92400e;">Community Report</h4>
+            <div style="font-size: 11px; color: #475569;">
+              <strong>Barangay:</strong> ${rep.barangay || 'Unknown'}<br/>
+              <strong>Category:</strong> ${rep.ai_category || 'N/A'}<br/>
+              <strong>Priority:</strong> ${rep.ai_priority || 'N/A'}<br/>
+              <strong>Status:</strong> ${rep.status}<br/>
+              <div style="margin-top: 4px; padding: 4px; background: #fef3c7; border-radius: 4px; font-size: 10px; color: #92400e;">
+                "${(rep.raw_description || '').substring(0, 80)}${(rep.raw_description || '').length > 80 ? '...' : ''}"
               </div>
             </div>
-            <div style="padding: 12px 14px 10px; background: #fff;">
-              <div style="margin-bottom:8px;">
-                <div style="display:flex;align-items:center;margin-bottom:5px;">
-                  <span style="font-size:11px;color:#64748b;width:68px;font-weight:600;">Barangay</span>
-                  <span style="font-size:12px;font-weight:700;color:#0f172a;">${rep.barangay || 'Unknown'}</span>
-                </div>
-                <div style="display:flex;align-items:center;margin-bottom:5px;">
-                  <span style="font-size:11px;color:#64748b;width:68px;font-weight:600;">Category</span>
-                  <span style="font-size:11px;font-weight:600;color:#475569;background:#fef3c7;padding:1px 7px;border-radius:6px;">${rep.ai_category || 'N/A'}</span>
-                </div>
-                <div style="display:flex;align-items:center;margin-bottom:5px;">
-                  <span style="font-size:11px;color:#64748b;width:68px;font-weight:600;">Priority</span>
-                  <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:${priorityColor};">
-                    <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${priorityDot};"></span>
-                    ${rep.ai_priority || 'N/A'}
-                  </span>
-                </div>
-                <div style="display:flex;align-items:flex-start;">
-                  <span style="font-size:11px;color:#64748b;width:68px;font-weight:600;flex-shrink:0;">Detail</span>
-                  <div style="font-size:10px;color:#92400e;background:#fef3c7;padding:5px 8px;border-radius:8px;line-height:1.4;flex:1;word-break:break-word;">
-                    "${(rep.raw_description || '').substring(0, 80)}${(rep.raw_description || '').length > 80 ? '...' : ''}"
-                  </div>
-                </div>
-              </div>
-              <a href="/admin/community-reports?report_id=${rep.id}"
-                 style="display:block;text-align:center;background:#92400e;color:#fff;padding:8px 14px;border-radius:10px;font-weight:800;font-size:11px;text-decoration:none;transition:background 0.15s;box-shadow:0 2px 4px rgba(146,64,14,0.3);"
-                 onmouseover="this.style.background='#78350f'" onmouseout="this.style.background='#92400e'">
-                View in Community Reports →
-              </a>
-            </div>
+            <hr style="margin: 6px 0; border: 0; border-top: 1px solid #e2e8f0;" />
+            <a href="/admin/community-reports?report_id=${rep.id}"
+               style="display:block;text-align:center;background:#92400e;color:#fff;padding:6px 12px;border-radius:8px;font-weight:800;font-size:11px;text-decoration:none;">
+              View in Community Reports →
+            </a>
           </div>
         `
         : `
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 0; color: #0f172a; min-width: 250px; max-width: 300px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.15);">
-            <div style="background: linear-gradient(135deg, #92400e 0%, #d97706 100%); padding: 10px 14px;">
-              <div style="display:flex;align-items:center;justify-content:space-between;">
-                <span style="color:#fff;font-weight:800;font-size:13px;letter-spacing:0.3px;">📋 ${group.reports[0].barangay || 'Unknown'}</span>
-                <span style="background:rgba(255,255,255,0.2);color:#fff;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:700;">${count}</span>
-              </div>
-            </div>
-            <div style="padding: 8px 0; background: #fff;">
-              <div style="max-height: 200px; overflow-y: auto;">
-                ${group.reports.map((r, i) => {
-                  const pc = r.ai_priority === 'high' || r.ai_priority === 'critical' ? '#dc2626' : '#64748b'
-                  const pd = r.ai_priority === 'high' || r.ai_priority === 'critical' ? '#dc2626' : '#94a3b8'
-                  return `
-                    <a href="/admin/community-reports?report_id=${r.id}"
-                       style="display:flex;align-items:center;gap:8px;padding:7px 14px;text-decoration:none;transition:background 0.12s;border-bottom:1px solid #f1f5f9;"
-                       onmouseover="this.style.background='#fffbeb'" onmouseout="this.style.background='transparent'">
-                      <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#fffbeb;color:#92400e;font-weight:800;font-size:10px;flex-shrink:0;">${i + 1}</span>
-                      <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:${pc};flex:1;">
-                        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${pd};flex-shrink:0;"></span>
-                        ${r.ai_priority || 'N/A'}
-                      </span>
-                      <code style="font-size:9px;background:#f1f5f9;padding:1px 5px;border-radius:4px;color:#64748b;flex-shrink:0;">${r.id ? r.id.substring(0, 8) + '…' : 'N/A'}</code>
-                    </a>
-                  `
-                }).join('')}
-              </div>
-              <div style="padding: 6px 14px 10px;">
-                <a href="/admin/community-reports?report_id=${group.reports.map(r => r.id).join(',')}"
-                   style="display:block;text-align:center;background:#92400e;color:#fff;padding:8px 14px;border-radius:10px;font-weight:800;font-size:11px;text-decoration:none;transition:background 0.15s;box-shadow:0 2px 4px rgba(146,64,14,0.3);"
-                   onmouseover="this.style.background='#78350f'" onmouseout="this.style.background='#92400e'">
-                  View All in Community Reports →
+          <div style="font-family: sans-serif; padding: 4px; color: #0f172a; min-width: 220px;">
+            <h4 style="margin: 0 0 4px 0; font-weight: 800; font-size: 13px; color: #92400e;">
+              ${group.reports[0].barangay || 'Unknown'} Community Reports <span style="background:#92400e;color:#fff;padding:0 6px;border-radius:8px;font-size:11px;">${count}</span>
+            </h4>
+            <div style="font-size: 11px; color: #475569; max-height: 180px; overflow-y: auto;">
+              ${group.reports.map((r, i) => `
+                <hr style="margin: 3px 0; border: 0; border-top: 1px solid #e2e8f0;"${i === 0 ? ' hidden' : ''} />
+                <a href="/admin/community-reports?report_id=${r.id}"
+                   style="display:block;margin:2px 0;font-size:10px;color:#1F3A4B;text-decoration:none;padding:3px 6px;border-radius:6px;transition:background 0.15s;"
+                   onmouseover="this.style.background='#FEF3C7'" onmouseout="this.style.background=''">
+                  <strong>#${i + 1}</strong>
+                  · <span style="color:${r.ai_priority === 'high' || r.ai_priority === 'critical' ? '#dc2626' : '#64748b'}">${r.ai_priority || 'N/A'}</span>
+                  · <span style="color:#92400e;font-size:9px;">"${(r.raw_description || '').substring(0, 28)}${(r.raw_description || '').length > 28 ? '...' : ''}"</span>
                 </a>
-              </div>
+              `).join('')}
             </div>
+            <hr style="margin: 6px 0; border: 0; border-top: 1px solid #e2e8f0;" />
+            <a href="/admin/community-reports?report_id=${group.reports.map(r => r.id).join(',')}"
+               style="display:block;text-align:center;background:#92400e;color:#fff;padding:6px 12px;border-radius:8px;font-weight:800;font-size:11px;text-decoration:none;">
+              View All in Community Reports →
+            </a>
           </div>
         `
       marker.bindPopup(popup)
