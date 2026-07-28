@@ -16,7 +16,11 @@ jobs:
         id: release
         with:
           release-type: node
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # GITHUB_TOKEN may be blocked by repo/org settings from creating PRs.
+          # If you see "not permitted to create or approve pull requests",
+          # create a classic PAT (repo scope) at github.com/settings/tokens,
+          # add it as RELEASE_PLEASE_TOKEN in repo → Settings → Secrets → Actions.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
 
       # ---- Build & attach assets only when a release is actually published ----
       - uses: actions/checkout@v4
