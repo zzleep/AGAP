@@ -13,9 +13,9 @@ const sosQueue = new BackgroundSyncPlugin('sos-queue', {
 })
 
 registerRoute(
-  ({ url }) => /^https:\/\/[a-c]\.tile\.openstreetmap\.org\/.*/i.test(url.href),
+  ({ url }) => /^https:\/\/[a-c]\.tile\.openstreetmap\.org\/.*/i.test(url.href) || /^https:\/\/api\.mapbox\.com\/.*/i.test(url.href),
   new CacheFirst({
-    cacheName: 'leaflet-tiles',
+    cacheName: 'map-tiles',
     plugins: [
       new ExpirationPlugin({ maxEntries: 1000, maxAgeSeconds: 30 * 24 * 60 * 60 }),
       new CacheableResponsePlugin({ statuses: [0, 200] })

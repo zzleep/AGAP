@@ -155,7 +155,10 @@
 import { onMounted, watch, ref, onUnmounted, nextTick, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import mapboxgl from 'mapbox-gl'
+import MapboxWorker from 'mapbox-gl/dist/mapbox-gl-csp-worker?worker'
 import 'mapbox-gl/dist/mapbox-gl.css'
+
+mapboxgl.workerClass = MapboxWorker
 import { useFlowStore } from '@/stores/flowStore'
 import { supabase } from '@/lib/supabase'
 import { useGPS } from '@/composables/useGPS'
@@ -168,6 +171,32 @@ const { t } = useI18n()
 const flow = useFlowStore()
 const { cachedLocation, isLocating, initGPS, refreshLocation, startLiveTracking, stopLiveTracking } = useGPS()
 let map = null
+
+const osmRasterStyle = {
+  version: 8,
+  sources: {
+    'osm-raster-tiles': {
+      type: 'raster',
+      tiles: [
+        'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
+      ],
+      tileSize: 256,
+      attribution: '© OpenStreetMap contributors'
+    }
+  },
+  layers: [
+    {
+      id: 'osm-raster-layer',
+      type: 'raster',
+      source: 'osm-raster-tiles',
+      minzoom: 0,
+      maxzoom: 19
+    }
+  ]
+}
+
 const SANTA_ROSA_CENTER = [121.1114, 14.3123]
 const routesData = ref([])
 const isExpanded = ref(false)
@@ -217,19 +246,25 @@ const safetyMeterLabel = computed(() => {
 })
 
 onMounted(async () => {
-  await initGPS()
-  syncUserLocation()
-  startLiveTracking()
-  autopilotIntervalId = setInterval(() => {
-    runAutopilotCycle(false)
-  }, 15000)
-  initMapboxMap()
-  await loadEvacRoutes()
-  renderRoutes()
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('resize', handleViewportResize)
   window.addEventListener('orientationchange', handleViewportResize)
   document.addEventListener('fullscreenchange', handleFullscreenChange)
+
+  autopilotIntervalId = setInterval(() => {
+    runAutopilotCycle(false)
+  }, 15000)
+
+  await nextTick()
+  await loadEvacRoutes()
+  initMapboxMap()
+
+  initGPS().then(() => {
+    syncUserLocation()
+    startLiveTracking()
+  }).catch(err => {
+    console.warn('Non-fatal GPS acquisition delay:', err)
+  })
 })
 
 onUnmounted(() => {
@@ -239,7 +274,7 @@ onUnmounted(() => {
   if (evacRouteAbortController) evacRouteAbortController.abort()
   if (autopilotIntervalId) clearInterval(autopilotIntervalId)
   stopLiveTracking()
-  if (map) map.remove()
+  if (map && typeof map.remove === 'function') map.remove()
   window.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('resize', handleViewportResize)
   window.removeEventListener('orientationchange', handleViewportResize)
@@ -248,6 +283,8 @@ onUnmounted(() => {
 })
 
 function initMapboxMap() {
+  if (!mapContainerEl.value) return
+
   if (!mapboxToken) {
     mapError.value = 'Set VITE_MAPBOX_ACCESS_TOKEN in your environment to load this map.'
     return
@@ -259,24 +296,45 @@ function initMapboxMap() {
 
   mapboxgl.accessToken = mapboxToken
 
-  map = new mapboxgl.Map({
-    container: mapContainerEl.value,
-    style: 'mapbox://styles/mapbox/streets-v12',
-    center: SANTA_ROSA_CENTER,
-    zoom: 15,
-    minZoom: 12,
-    maxZoom: 16
-  })
+  try {
+    map = new mapboxgl.Map({
+      container: mapContainerEl.value,
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: SANTA_ROSA_CENTER,
+      zoom: 15,
+      minZoom: 12,
+      maxZoom: 16
+    })
 
-  map.on('load', async () => {
-    addBoundaryLayer()
-    renderEvacMarkers()
-    await renderEvacRouteLine()
-    await runAutopilotCycle(true)
-    renderRoutes()
-    handleViewportResize()
-    mapError.value = ''
-  })
+    let styleFailedOver = false
+
+    map.on('error', (e) => {
+      console.warn('Mapbox GL runtime notice:', e)
+      if (!styleFailedOver && e?.error?.message?.includes('style')) {
+        styleFailedOver = true
+        console.warn('Mapbox GL: Vector style unreachable, applying Mapbox GL raster failover style.')
+        map.setStyle(osmRasterStyle)
+      }
+    })
+
+    map.on('load', async () => {
+      addBoundaryLayer()
+      renderEvacMarkers()
+      await renderEvacRouteLine()
+      await runAutopilotCycle(true)
+      renderRoutes()
+      handleViewportResize()
+      mapError.value = ''
+    })
+
+    requestAnimationFrame(() => { if (map) map.resize() })
+    setTimeout(() => { if (map) map.resize() }, 50)
+    setTimeout(() => { if (map) map.resize() }, 200)
+    setTimeout(() => { if (map) map.resize() }, 500)
+  } catch (err) {
+    console.error('Mapbox GL initialization error:', err)
+    mapError.value = 'Failed to initialize Mapbox GL: ' + (err.message || String(err))
+  }
 }
 
 function handleViewportResize() {
@@ -303,11 +361,9 @@ async function loadEvacRoutes() {
 }
 
 function renderRoutes() {
-  if (!map) return
+  if (!map || !map.isStyleLoaded()) return
 
   clearRouteLayers()
-  if (!map.isStyleLoaded()) return
-
   const activeLevel = flow.mappedRiskLevel
   const filtered = routesData.value.filter(r => r.risk_level === activeLevel)
 
@@ -358,7 +414,7 @@ function renderRoutes() {
 }
 
 function addBoundaryLayer() {
-  if (!map || map.getSource('santa-rosa-boundary')) return
+  if (!map || !map.isStyleLoaded() || map.getSource('santa-rosa-boundary')) return
 
   map.addSource('santa-rosa-boundary', {
     type: 'geojson',
@@ -515,10 +571,9 @@ function formatDurationToMinutes(durationMinutes) {
 }
 
 async function renderEvacRouteLine() {
-  if (!map || !userLocation.value || !nearestEvacCenter.value || !map.isStyleLoaded()) return
+  if (!userLocation.value || !nearestEvacCenter.value) return
 
   clearEvacRouteLine()
-
   addUserLocationPoint()
 
   if (evacRouteAbortController) evacRouteAbortController.abort()
@@ -629,8 +684,6 @@ function clearIncidentMarkers() {
 }
 
 function renderIncidentMarkers(reports) {
-  if (!map) return
-
   clearIncidentMarkers()
 
   reports.forEach(report => {
@@ -647,12 +700,14 @@ function renderIncidentMarkers(reports) {
       </div>
     `
 
-    const marker = new mapboxgl.Marker({ color: getIncidentMarkerColor(report.ai_priority) })
-      .setLngLat([coords.longitude, coords.latitude])
-      .setPopup(new mapboxgl.Popup({ offset: 14 }).setHTML(popupHtml))
-      .addTo(map)
+    if (map && map.isStyleLoaded()) {
+      const marker = new mapboxgl.Marker({ color: getIncidentMarkerColor(report.ai_priority) })
+        .setLngLat([coords.longitude, coords.latitude])
+        .setPopup(new mapboxgl.Popup({ offset: 14 }).setHTML(popupHtml))
+        .addTo(map)
 
-    incidentMarkers.push(marker)
+      incidentMarkers.push(marker)
+    }
   })
 }
 
@@ -805,76 +860,78 @@ async function runAutopilotCycle(forceReroute) {
 }
 
 function addRouteLine(feature, useFallback = false) {
-  if (!map) return
-
   activeRouteCoordinates.value = feature?.geometry?.type === 'LineString'
     ? (feature.geometry.coordinates || [])
     : []
 
-  if (map.getLayer(evacRouteLayerId)) map.removeLayer(evacRouteLayerId)
-  if (map.getLayer(evacRouteFallbackLayerId)) map.removeLayer(evacRouteFallbackLayerId)
-  if (map.getSource(evacRouteSourceId)) map.removeSource(evacRouteSourceId)
+  if (map && map.isStyleLoaded()) {
+    if (map.getLayer(evacRouteLayerId)) map.removeLayer(evacRouteLayerId)
+    if (map.getLayer(evacRouteFallbackLayerId)) map.removeLayer(evacRouteFallbackLayerId)
+    if (map.getSource(evacRouteSourceId)) map.removeSource(evacRouteSourceId)
 
-  map.addSource(evacRouteSourceId, {
-    type: 'geojson',
-    data: feature
-  })
+    map.addSource(evacRouteSourceId, {
+      type: 'geojson',
+      data: feature
+    })
 
-  map.addLayer({
-    id: useFallback ? evacRouteFallbackLayerId : evacRouteLayerId,
-    type: 'line',
-    source: evacRouteSourceId,
-    paint: {
-      'line-color': '#902715',
-      'line-width': useFallback ? 3 : 5,
-      'line-opacity': 0.95,
-      ...(useFallback ? { 'line-dasharray': [2, 2] } : {})
-    }
-  })
+    map.addLayer({
+      id: useFallback ? evacRouteFallbackLayerId : evacRouteLayerId,
+      type: 'line',
+      source: evacRouteSourceId,
+      paint: {
+        'line-color': '#902715',
+        'line-width': useFallback ? 3 : 5,
+        'line-opacity': 0.95,
+        ...(useFallback ? { 'line-dasharray': [2, 2] } : {})
+      }
+    })
+  }
 }
 
 function addUserLocationPoint() {
-  if (!map) return
+  if (!userLocation.value) return
 
-  if (map.getLayer('user-location-point')) map.removeLayer('user-location-point')
-  if (map.getSource('user-location-point')) map.removeSource('user-location-point')
+  if (map && map.isStyleLoaded()) {
+    if (map.getLayer('user-location-point')) map.removeLayer('user-location-point')
+    if (map.getSource('user-location-point')) map.removeSource('user-location-point')
 
-  map.addSource('user-location-point', {
-    type: 'geojson',
-    data: {
-      type: 'Feature',
-      properties: { name: 'Current Location' },
-      geometry: {
-        type: 'Point',
-        coordinates: [userLocation.value.longitude, userLocation.value.latitude]
+    map.addSource('user-location-point', {
+      type: 'geojson',
+      data: {
+        type: 'Feature',
+        properties: { name: 'Current Location' },
+        geometry: {
+          type: 'Point',
+          coordinates: [userLocation.value.longitude, userLocation.value.latitude]
+        }
       }
-    }
-  })
+    })
 
-  map.addLayer({
-    id: 'user-location-point',
-    type: 'circle',
-    source: 'user-location-point',
-    paint: {
-      'circle-color': '#1d4ed8',
-      'circle-radius': 7,
-      'circle-stroke-width': 3,
-      'circle-stroke-color': '#ffffff'
-    }
-  })
+    map.addLayer({
+      id: 'user-location-point',
+      type: 'circle',
+      source: 'user-location-point',
+      paint: {
+        'circle-color': '#1d4ed8',
+        'circle-radius': 7,
+        'circle-stroke-width': 3,
+        'circle-stroke-color': '#ffffff'
+      }
+    })
+  }
 }
 
 function clearEvacRouteLine() {
-  if (!map) return
-
   activeRouteCoordinates.value = []
 
-  if (map.getLayer('user-location-point')) map.removeLayer('user-location-point')
-  if (map.getSource('user-location-point')) map.removeSource('user-location-point')
+  if (map && map.isStyleLoaded()) {
+    if (map.getLayer('user-location-point')) map.removeLayer('user-location-point')
+    if (map.getSource('user-location-point')) map.removeSource('user-location-point')
 
-  if (map.getLayer(evacRouteLayerId)) map.removeLayer(evacRouteLayerId)
-  if (map.getLayer(evacRouteFallbackLayerId)) map.removeLayer(evacRouteFallbackLayerId)
-  if (map.getSource(evacRouteSourceId)) map.removeSource(evacRouteSourceId)
+    if (map.getLayer(evacRouteLayerId)) map.removeLayer(evacRouteLayerId)
+    if (map.getLayer(evacRouteFallbackLayerId)) map.removeLayer(evacRouteFallbackLayerId)
+    if (map.getSource(evacRouteSourceId)) map.removeSource(evacRouteSourceId)
+  }
 }
 
 async function refreshLocationAndSafety() {
@@ -887,16 +944,18 @@ async function refreshCurrentLocation() {
 }
 
 function focusNearestEvacCenter() {
-  if (!map || !userLocation.value || !nearestEvacCenter.value) return
+  if (!userLocation.value || !nearestEvacCenter.value) return
 
-  const bounds = new mapboxgl.LngLatBounds()
-  bounds.extend([userLocation.value.longitude, userLocation.value.latitude])
-  bounds.extend([nearestEvacCenter.value.coords.longitude, nearestEvacCenter.value.coords.latitude])
-  map.fitBounds(bounds, {
-    padding: 80,
-    duration: 800,
-    maxZoom: 15
-  })
+  if (map && map.isStyleLoaded()) {
+    const bounds = new mapboxgl.LngLatBounds()
+    bounds.extend([userLocation.value.longitude, userLocation.value.latitude])
+    bounds.extend([nearestEvacCenter.value.coords.longitude, nearestEvacCenter.value.coords.latitude])
+    map.fitBounds(bounds, {
+      padding: 80,
+      duration: 800,
+      maxZoom: 15
+    })
+  }
 }
 
 function clearEvacMarkers() {
@@ -907,16 +966,16 @@ function clearEvacMarkers() {
 }
 
 function clearRouteLayers() {
-  if (!map) return
+  if (map && map.isStyleLoaded()) {
+    while (routeLayerIds.length) {
+      const layerId = routeLayerIds.pop()
+      if (map.getLayer(layerId)) map.removeLayer(layerId)
+    }
 
-  while (routeLayerIds.length) {
-    const layerId = routeLayerIds.pop()
-    if (map.getLayer(layerId)) map.removeLayer(layerId)
-  }
-
-  while (routeSourceIds.length) {
-    const sourceId = routeSourceIds.pop()
-    if (map.getSource(sourceId)) map.removeSource(sourceId)
+    while (routeSourceIds.length) {
+      const sourceId = routeSourceIds.pop()
+      if (map.getSource(sourceId)) map.removeSource(sourceId)
+    }
   }
 }
 
@@ -997,7 +1056,7 @@ async function toggleExpand() {
   isExpanded.value = !isExpanded.value
   document.body.classList.toggle('overflow-hidden', isExpanded.value)
   await nextTick()
-  if (map) map.resize()
+  handleViewportResize()
 }
 
 function handleKeydown(event) {
@@ -1006,9 +1065,7 @@ function handleKeydown(event) {
   isExpanded.value = false
   document.body.classList.remove('overflow-hidden')
   nextTick(() => {
-    if (map) {
-      map.resize()
-    }
+    handleViewportResize()
   })
 }
 
@@ -1017,7 +1074,7 @@ function handleFullscreenChange() {
   isExpanded.value = document.fullscreenElement === wrapper
   document.body.classList.toggle('overflow-hidden', isExpanded.value)
   nextTick(() => {
-    if (map) map.resize()
+    handleViewportResize()
   })
 }
 
@@ -1034,3 +1091,21 @@ watch(cachedLocation, () => {
   syncUserLocation()
 })
 </script>
+
+<style scoped>
+:deep(.mapboxgl-map) {
+  position: absolute !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+:deep(.mapboxgl-canvas-container),
+:deep(.mapboxgl-canvas) {
+  width: 100% !important;
+  height: 100% !important;
+}
+</style>

@@ -1,4 +1,5 @@
 import 'leaflet/dist/leaflet.css'
+import 'mapbox-gl/dist/mapbox-gl.css'
 // Silently intercept Mapbox telemetry requests to prevent browser console spam/errors from adblockers
 if (typeof window !== 'undefined') {
   const originalFetch = window.fetch

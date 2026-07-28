@@ -202,7 +202,25 @@
   }
 }
 
-/* Leaflet Map custom fixes for Santa Rosa M3 theme */
+/* Leaflet & Mapbox Map custom fixes for Santa Rosa M3 theme */
+.mapboxgl-map {
+  position: absolute !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 1.5rem;
+  z-index: 10;
+}
+
+.mapboxgl-canvas-container,
+.mapboxgl-canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 .leaflet-container {
   width: 100%;
   height: 100%;
