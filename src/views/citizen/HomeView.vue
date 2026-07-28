@@ -11,11 +11,11 @@
             </svg>
           </div>
           <div class="min-w-0">
-            <div class="flex items-baseline gap-2">
+            <div class="flex flex-col gap-1">
               <span class="font-expressive text-3xl font-black text-[#F7FB41] tracking-tight leading-none">{{ currentTemp }}</span>
-              <span class="text-[10px] font-extrabold uppercase tracking-wider text-white/70">Santa Rosa</span>
+              <h2 class="font-expressive truncate text-lg font-black tracking-tight text-white mt-1 leading-none">{{ weatherCondition }}</h2>
             </div>
-            <h2 class="font-expressive truncate text-lg font-black tracking-tight text-white mt-1 leading-none">{{ weatherCondition }}</h2>
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-white/70">Santa Rosa</span>
           </div>
         </div>
 
