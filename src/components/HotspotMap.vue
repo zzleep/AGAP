@@ -450,7 +450,7 @@ function renderIncidentMarkers() {
                   <strong>#${i + 1}</strong>
                   · <span style="color:${s.status === 'responding' ? '#d97706' : '#64748b'}">${s.status}</span>
                   · <span style="color:#94a3b8;font-size:9px;">${timeAgo(s.created_at)}</span>
-                  <br/><span style="color:#64748b;font-size:8px;">${Number(s.latitude).toFixed(4)}, ${Number(s.longitude).toFixed(4)}</span>
+                  · <span style="color:#64748b;font-size:8px;">${Number(s.latitude).toFixed(4)}, ${Number(s.longitude).toFixed(4)}</span>
                 </a>
               `).join('')}
             </div>
@@ -532,7 +532,7 @@ function renderIncidentMarkers() {
             <div style="font-size: 11px; color: #475569; max-height: 180px; overflow-y: auto;">
               ${group.reports.map((r, i) => `
                 <hr style="margin: 3px 0; border: 0; border-top: 1px solid #e2e8f0;"${i === 0 ? ' hidden' : ''} />
-                <a href="/admin/community-reports?report_id=${r.id}"
+                <a href="/admin/community-reports?barangay=${r.barangay || 'Tagapo'}"
                    style="display:block;margin:2px 0;font-size:10px;color:#1F3A4B;text-decoration:none;padding:3px 6px;border-radius:6px;transition:background 0.15s;"
                    onmouseover="this.style.background='#FEF3C7'" onmouseout="this.style.background=''">
                   <strong>#${i + 1}</strong>
@@ -543,7 +543,7 @@ function renderIncidentMarkers() {
               `).join('')}
             </div>
             <hr style="margin: 6px 0; border: 0; border-top: 1px solid #e2e8f0;" />
-            <a href="/admin/community-reports?report_id=${group.reports.map(r => r.id).join(',')}"
+            <a href="/admin/community-reports?barangay=${group.reports[0].barangay || 'Tagapo'}"
                style="display:block;text-align:center;background:#92400e;color:#fff;padding:6px 12px;border-radius:8px;font-weight:800;font-size:11px;text-decoration:none;">
               View All in Community Reports →
             </a>
