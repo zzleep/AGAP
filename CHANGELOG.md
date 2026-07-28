@@ -1,5 +1,53 @@
 # Changelog
 
+## Adaptive Evacuation Autopilot — 2026-07-28
+
+Added Adaptive Evacuation Autopilot that automatically navigates citizens to the nearest evacuation center based on their location. Includes live route updates with a user location marker and a searchable list of evacuation areas around the city.
+
+Commit: [c9b912c](https://github.com/zzleep/AGAP/commit/c9b912c)
+
+---
+
+## Operator Login Page UI Redesign — 2026-07-28
+
+Redesigned the AGAP Operator Login Page UI for improved visual consistency and usability.
+
+Commit: [7819bc9](https://github.com/zzleep/AGAP/commit/7819bc9)
+
+---
+
+## Photo Capture in Community Incident Report — 2026-07-28
+
+Added photo capture capability to the community incident report form, allowing citizens to attach images when submitting reports.
+
+Commit: [29512f4](https://github.com/zzleep/AGAP/commit/29512f4)
+
+---
+
+## UI Redesign & Bug Fixes — 2026-07-28
+
+UI redesign with scaling fixes for various devices, reduced redundant text, and updated emergency guides for Santa Rosa city. Also resolved the gray fill-in issue for map boundaries and applied general cosmetic improvements.
+
+Commits: [d2ad541](https://github.com/zzleep/AGAP/commit/d2ad541), [aed806b](https://github.com/zzleep/AGAP/commit/aed806b), [08ed98d](https://github.com/zzleep/AGAP/commit/08ed98d)
+
+---
+
+## Footprint Reduction — 2026-07-28
+
+Separated route bundles for `/admin` and `/client` to reduce the client PWA loading size — the client no longer fetches admin-side code.
+
+Commit: [b8e990b](https://github.com/zzleep/AGAP/commit/b8e990b)
+
+---
+
+## Localized Community Report Description — 2026-07-28
+
+Added localized descriptions to community incident reports and improved the overall citizen reporting flow.
+
+Commit: [a913bf5](https://github.com/zzleep/AGAP/commit/a913bf5)
+
+---
+
 ## Report Selector Modal + Bulk History Actions + Gemini Confidence Fixes — 2026-07-27
 
 Replaced hidden Ask Aegis button with always-visible trigger and full-screen report selector modal (single + bulk modes). Added bulk selection, delete, export, and tri-state select-all on the history log. Added confidence criteria to Gemini prompts and reduced token consumption (model reorder, output cap, fast-fail on 429, compressed prompts). Fixed Vue 3 `Set` reactivity crash and unclosed `</div>` build failure.
