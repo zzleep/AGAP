@@ -43,6 +43,17 @@ export function useGPS() {
     }).catch(() => {})
   }
 
+  async function clearGPSCache() {
+    try {
+      const db = await getDB()
+      await db.delete(STORE_NAME, 'last_known')
+      cachedLocation.value = null
+    } catch (err) {
+      console.warn('Failed to clear GPS cache:', err)
+      cachedLocation.value = null
+    }
+  }
+
   async function saveToCache(loc) {
     try {
       const db = await getDB()
@@ -77,36 +88,44 @@ export function useGPS() {
     }, 3000)
   }
 
-  function acquirePosition(highTimeoutMs, lowTimeoutMs) {
+  function acquirePosition(timeoutMs = 12000) {
     return new Promise((resolve) => {
       if (typeof navigator === 'undefined' || !navigator.geolocation) {
         resolve(null)
         return
       }
 
-      // Phase 1: High accuracy GPS (slower but more precise)
-      navigator.geolocation.getCurrentPosition(
+      let bestPos = null
+      let watchId = null
+
+      const timer = setTimeout(() => {
+        if (watchId !== null) {
+          navigator.geolocation.clearWatch(watchId)
+        }
+        resolve(bestPos)
+      }, timeoutMs)
+
+      watchId = navigator.geolocation.watchPosition(
         (pos) => {
-          if (pos.coords.accuracy <= 100) {
+          // Keep position with highest precision (lowest accuracy radius value)
+          if (!bestPos || pos.coords.accuracy < bestPos.coords.accuracy) {
+            bestPos = pos
+          }
+          // If accuracy is highly precise (<= 20 meters), resolve immediately!
+          if (pos.coords.accuracy <= 20) {
+            clearTimeout(timer)
+            navigator.geolocation.clearWatch(watchId)
             resolve(pos)
-          } else {
-            // Accuracy > 100m — try low-accuracy fallback which may be faster/better indoors
-            navigator.geolocation.getCurrentPosition(
-              (pos2) => resolve(pos2),
-              () => resolve(pos),
-              { timeout: lowTimeoutMs, enableHighAccuracy: false }
-            )
           }
         },
-        () => {
-          // Phase 1 timed out or failed — try Phase 2: low accuracy (WiFi/cell, faster)
-          navigator.geolocation.getCurrentPosition(
-            (pos) => resolve(pos),
-            () => resolve(null),
-            { timeout: lowTimeoutMs, enableHighAccuracy: false }
-          )
+        (err) => {
+          console.warn('GPS sample error:', err)
         },
-        { timeout: highTimeoutMs, enableHighAccuracy: true }
+        {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: timeoutMs
+        }
       )
     })
   }
@@ -144,7 +163,7 @@ export function useGPS() {
       return
     }
 
-    const pos = await acquirePosition(20000, 10000)
+    const pos = await acquirePosition(12000)
 
     if (pos) {
       const loc = buildLocationFromPosition(pos)
@@ -181,7 +200,7 @@ export function useGPS() {
       return cachedLocation.value
     }
 
-    const pos = await acquirePosition(20000, 10000)
+    const pos = await acquirePosition(12000)
 
     if (pos) {
       const loc = buildLocationFromPosition(pos)
@@ -238,6 +257,7 @@ export function useGPS() {
     toastMessage,
     initGPS,
     refreshLocation,
+    clearGPSCache,
     startBackgroundRefresh,
     startLiveTracking,
     stopLiveTracking
