@@ -167,8 +167,20 @@
         <div class="flex items-center space-x-2">
           <h3 class="text-xs font-black uppercase tracking-wider text-[#1F3A4B]">Incoming Emergency Alerts</h3>
           <span class="px-2.5 py-0.5 rounded-full bg-[#1F3A4B] text-white text-[11px] font-black">
-            {{ filteredQueue.length }} Showing / {{ sosStore.sortedQueue.length }} Total
+            {{ paginatedQueue.length }} Showing / {{ filteredQueue.length }} Filtered / {{ sosStore.sortedQueue.length }} Total
           </span>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-[10px] uppercase font-black text-[#1F3A4B] tracking-wider">Rows</label>
+          <select
+            v-model.number="rowsPerPage"
+            class="px-2.5 py-1 rounded-xl bg-white border border-[#1F3A4B]/20 text-xs text-[#1F3A4B] font-bold focus:outline-none focus:border-[#902715] transition-all"
+          >
+            <option :value="10">10</option>
+            <option :value="20">20</option>
+            <option :value="50">50</option>
+            <option :value="100">100</option>
+          </select>
         </div>
       </div>
 
@@ -188,14 +200,14 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-[#E0E0E0] text-xs">
-              <tr v-if="filteredQueue.length === 0">
+              <tr v-if="paginatedQueue.length === 0">
                 <td colspan="7" class="py-12 text-center text-[#717171] font-bold">
                   No matching SOS alerts found for active filters.
                 </td>
               </tr>
 
               <tr
-                v-for="item in filteredQueue"
+                v-for="item in paginatedQueue"
                 :key="item.id"
                 :class="[
                   'transition-colors hover:bg-[#EEF4FB]',
@@ -289,13 +301,55 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Pagination Footer -->
+        <div v-if="totalPages > 1" class="flex items-center justify-between px-5 py-3.5 bg-[#F8FAFC] border-t border-[#E0E0E0]">
+          <p class="text-[11px] text-[#717171] font-bold">
+            Page <span class="text-[#1F3A4B] font-black">{{ currentPage }}</span> of <span class="text-[#1F3A4B] font-black">{{ totalPages }}</span>
+            &middot; Showing {{ paginationStart }}–{{ paginationEnd }} of {{ filteredQueue.length }}
+          </p>
+          <div class="flex items-center gap-1.5">
+            <button
+              @click="currentPage = 1"
+              :disabled="currentPage === 1"
+              class="px-3 py-1.5 rounded-xl text-[11px] font-black transition-all border disabled:opacity-30 disabled:cursor-not-allowed"
+              :class="currentPage === 1 ? 'bg-[#F5F5F5] text-[#717171] border-[#E0E0E0]' : 'bg-white text-[#1F3A4B] border-[#1F3A4B]/20 hover:bg-[#EEF4FB] active:scale-95'"
+            >
+              First
+            </button>
+            <button
+              @click="currentPage--"
+              :disabled="currentPage === 1"
+              class="px-3 py-1.5 rounded-xl text-[11px] font-black transition-all border disabled:opacity-30 disabled:cursor-not-allowed"
+              :class="currentPage === 1 ? 'bg-[#F5F5F5] text-[#717171] border-[#E0E0E0]' : 'bg-white text-[#1F3A4B] border-[#1F3A4B]/20 hover:bg-[#EEF4FB] active:scale-95'"
+            >
+              ← Prev
+            </button>
+            <button
+              @click="currentPage++"
+              :disabled="currentPage === totalPages"
+              class="px-3 py-1.5 rounded-xl text-[11px] font-black transition-all border disabled:opacity-30 disabled:cursor-not-allowed"
+              :class="currentPage === totalPages ? 'bg-[#F5F5F5] text-[#717171] border-[#E0E0E0]' : 'bg-white text-[#1F3A4B] border-[#1F3A4B]/20 hover:bg-[#EEF4FB] active:scale-95'"
+            >
+              Next →
+            </button>
+            <button
+              @click="currentPage = totalPages"
+              :disabled="currentPage === totalPages"
+              class="px-3 py-1.5 rounded-xl text-[11px] font-black transition-all border disabled:opacity-30 disabled:cursor-not-allowed"
+              :class="currentPage === totalPages ? 'bg-[#F5F5F5] text-[#717171] border-[#E0E0E0]' : 'bg-white text-[#1F3A4B] border-[#1F3A4B]/20 hover:bg-[#EEF4FB] active:scale-95'"
+            >
+              Last
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useSOSStore } from '@/stores/sosStore'
 import { useAuthStore } from '@/stores/authStore'
 import { BARANGAY_LIST } from '@/data/barangay_coords'
@@ -307,6 +361,11 @@ const toastMessage = ref('')
 let staleTimer = null
 let pollTimer = null
 
+// ── Pagination State ──
+const currentPage = ref(1)
+const rowsPerPage = ref(10)
+
+
 // ── Multi-Attribute SOS Filters State ──
 const filters = ref({
   searchQuery: '',
@@ -315,6 +374,10 @@ const filters = ref({
   mode: 'all',
   assignedAreaOnly: false
 })
+
+// Auto-reset to page 1 when filters or rows-per-page change
+watch(filters, () => { currentPage.value = 1 }, { deep: true })
+watch(rowsPerPage, () => { currentPage.value = 1 })
 
 const filteredQueue = computed(() => {
   return sosStore.sortedQueue.filter(item => {
@@ -350,6 +413,15 @@ const filteredQueue = computed(() => {
   })
 })
 
+// ── Pagination Computed ──
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredQueue.value.length / rowsPerPage.value)))
+const paginationStart = computed(() => filteredQueue.value.length === 0 ? 0 : (currentPage.value - 1) * rowsPerPage.value + 1)
+const paginationEnd = computed(() => Math.min(currentPage.value * rowsPerPage.value, filteredQueue.value.length))
+const paginatedQueue = computed(() => {
+  const start = (currentPage.value - 1) * rowsPerPage.value
+  return filteredQueue.value.slice(start, start + rowsPerPage.value)
+})
+
 function toggleAssignedAreaOnly() {
   filters.value.assignedAreaOnly = !filters.value.assignedAreaOnly
 }
@@ -362,6 +434,7 @@ function resetFilters() {
     mode: 'all',
     assignedAreaOnly: false
   }
+  currentPage.value = 1
 }
 
 async function manualRefresh() {
@@ -414,10 +487,17 @@ async function markResolved(id) {
 
 function formatTimeAgo(dateStr) {
   if (!dateStr) return 'Just now'
-  const diffMs = Date.now() - new Date(dateStr).getTime()
-  const diffMins = Math.floor(diffMs / 60000)
-  if (diffMins < 1) return 'Just now'
-  if (diffMins === 1) return '1 min ago'
-  return `${diffMins} mins ago`
+  
+  const date = new Date(dateStr)
+  
+  return date.toLocaleDateString('en-PH', {
+    month: '2-digit',
+    day: '2-digit',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Manila'
+  })
 }
 </script>

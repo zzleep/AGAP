@@ -44,10 +44,10 @@ export const useSOSStore = defineStore('sos', () => {
         if (aMatch !== bMatch) return bMatch - aMatch
       }
 
-      // 3. Oldest unclaimed first (ascending order)
+      // 3. Most recent first (descending order)
       const aTime = a.created_at ? Date.parse(a.created_at) : Date.now()
       const bTime = b.created_at ? Date.parse(b.created_at) : Date.now()
-      return aTime - bTime
+      return bTime - aTime
     })
   })
 
