@@ -43,6 +43,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "${{ steps.release.outputs.tag_name }}" dist/ \
+          gh release upload "${{ steps.release.outputs.tag_name }}" dist/* \
             --repo "${{ github.repository }}" \
             --clobber
