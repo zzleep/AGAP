@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3](https://github.com/zzleep/AGAP/compare/v1.0.2...v1.0.3) (2026-07-28)
+
+
+### Bug Fixes
+
+* zip dist/ before upload to handle nested directories ([4bfc8b0](https://github.com/zzleep/AGAP/commit/4bfc8b062ba384319b06d2515636b034eb4cf7c0))
+
 ## [1.0.2](https://github.com/zzleep/AGAP/compare/v1.0.1...v1.0.2) (2026-07-28)
 
 
