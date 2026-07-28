@@ -20,7 +20,7 @@ export const useLocaleStore = defineStore('locale', () => {
     if (saved && availableLocales.includes(saved)) {
       setLocale(saved)
     } else {
-      const browserLang = navigator.language?.startsWith('fil') ? 'fil' : 'fil'
+      const browserLang = navigator.language?.startsWith('fil') ? 'fil' : 'en'
       setLocale(browserLang)
     }
   }

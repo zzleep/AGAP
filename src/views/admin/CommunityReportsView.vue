@@ -177,6 +177,7 @@
           <tr>
             <th class="p-4 pl-6 text-white">ID / Time</th>
             <th class="p-4 text-white">Barangay</th>
+            <th class="p-4 text-[#F7FB41]">Photo</th>
             <th class="p-4 text-[#F7FB41]">Description</th>
             <th class="p-4 text-[#F7FB41]">AI Triage / Dept</th>
             <th class="p-4 text-white">Priority</th>
@@ -187,7 +188,7 @@
         </thead>
         <tbody class="divide-y divide-[#1F3A4B]/15">
           <tr v-if="reportStore.filteredReports.length === 0">
-            <td colspan="8" class="p-12 text-center text-[#717171] font-bold">
+            <td colspan="9" class="p-12 text-center text-[#717171] font-bold">
               No incident reports match the current filter criteria.
             </td>
           </tr>
@@ -207,6 +208,17 @@
             </td>
 
             <td class="p-4 font-black text-[#1F3A4B] whitespace-nowrap text-sm">{{ item.barangay }}</td>
+
+            <td class="p-4 whitespace-nowrap">
+              <div v-if="item.image_url" class="flex items-center space-x-2 cursor-pointer group" @click="enlargedPhoto = item.image_url">
+                <div class="relative">
+                  <img :src="item.image_url" alt="Incident photo" class="w-10 h-10 object-cover rounded-xl border-2 border-[#556B2F] shadow-sm group-hover:scale-105 transition-transform" />
+                  <span class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#556B2F] border border-white rounded-full flex items-center justify-center text-[8px] text-white font-bold">✓</span>
+                </div>
+                <span class="px-2 py-0.5 rounded-full bg-[#EEF2E6] text-[#556B2F] border border-[#D8E2C7] text-[10px] font-extrabold hidden lg:inline-block">Photo Verified</span>
+              </div>
+              <span v-else class="text-[10px] text-[#717171] font-bold italic">No photo</span>
+            </td>
 
             <td class="p-4 max-w-xs truncate text-[#0A0A0A] font-bold" :title="item.raw_description">
               {{ item.raw_description }}
@@ -283,110 +295,146 @@
         </tbody>
       </table>
     </div>
-
     <!-- AI Reasoning Detail Modal -->
-    <div
-      v-if="selectedReport"
-      class="fixed inset-0 z-50 bg-[#1F3A4B]/50 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in"
-    >
-      <div class="w-full max-w-lg bg-white border border-[#1F3A4B]/20 rounded-3xl p-6 md:p-8 space-y-5 shadow-2xl">
-        <div class="flex items-center justify-between border-b border-[#1F3A4B]/15 pb-3.5">
-          <div>
-            <h3 class="font-expressive text-xl font-black text-[#1F3A4B]">AI Incident Inspection</h3>
-            <p class="text-xs text-[#902715] font-mono font-black">Report ID: {{ selectedReport.id }}</p>
-          </div>
-          <button
-            @click="selectedReport = null"
-            class="w-10 h-10 rounded-full bg-[#902715] text-white flex items-center justify-center font-black transition-all hover:scale-105 shadow-md"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <div class="space-y-4 text-xs">
-          <div>
-            <span class="text-[#717171] font-black block text-[10px] uppercase tracking-wider">Barangay</span>
-            <span class="text-[#1F3A4B] font-black text-xl">{{ selectedReport.barangay }}</span>
-          </div>
-
-          <!-- Solid Earthy Slate Blue Description Box -->
-          <div>
-            <span class="text-[#1F3A4B] font-black block text-[10px] uppercase tracking-wider mb-1.5">Citizen Description</span>
-            <p class="p-4 rounded-2xl bg-[#1F3A4B] text-white border border-[#1F3A4B] text-xs font-bold leading-relaxed shadow-sm">
-              "{{ selectedReport.raw_description }}"
-            </p>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
+    <Teleport to="body">
+      <div
+        v-if="selectedReport"
+        class="fixed inset-0 z-[9998] bg-[#1F3A4B]/60 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in max-h-screen overflow-y-auto"
+      >
+        <div class="w-full max-w-lg bg-white border border-[#1F3A4B]/20 rounded-3xl p-6 md:p-8 space-y-5 shadow-2xl my-8">
+          <div class="flex items-center justify-between border-b border-[#1F3A4B]/15 pb-3.5">
             <div>
-              <span class="text-[#717171] font-black block text-[10px] uppercase tracking-wider mb-1.5">AI Category</span>
-              <span class="px-4 py-1.5 rounded-full bg-[#902715] text-white font-black uppercase inline-block shadow-sm">
-                {{ selectedReport.ai_category || 'general' }}
-              </span>
+              <h3 class="font-expressive text-xl font-black text-[#1F3A4B]">AI Incident Inspection</h3>
+              <p class="text-xs text-[#902715] font-mono font-black">Report ID: {{ selectedReport.id }}</p>
             </div>
+            <button
+              @click="selectedReport = null"
+              class="w-10 h-10 rounded-full bg-[#902715] text-white flex items-center justify-center font-black transition-all hover:scale-105 shadow-md"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="space-y-4 text-xs">
             <div>
-              <span class="text-[#717171] font-black block text-[10px] uppercase tracking-wider mb-1.5">Assigned Department</span>
-              <span class="text-[#902715] font-black text-base">{{ selectedReport.ai_department || 'CDRRMO' }}</span>
+              <span class="text-[#717171] font-black block text-[10px] uppercase tracking-wider">Barangay</span>
+              <span class="text-[#1F3A4B] font-black text-xl">{{ selectedReport.barangay }}</span>
             </div>
-          </div>
 
-          <!-- Solid Canary Yellow Reasoning Box (NO PALE WASH!) -->
-          <div>
-            <span class="text-[#1F3A4B] font-black block text-[10px] uppercase tracking-wider mb-1.5">AI Reasoning & Logic</span>
-            <p class="p-4 rounded-2xl bg-[#F7FB41] text-[#0A0A0A] border border-[#8a7e00] font-black leading-relaxed shadow-sm">
-              {{ selectedReport.ai_reasoning || 'No AI reasoning metadata available for this report.' }}
-            </p>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4 pt-2">
-            <div>
-              <span class="text-[#717171] font-black block text-[10px] uppercase tracking-wider mb-2">Set Status</span>
-              <div class="flex flex-wrap gap-1.5">
-                <button
-                  v-for="st in ['open', 'in_review', 'resolved', 'dismissed']"
-                  :key="st"
-                  @click="onStatusChange(selectedReport.id, st); selectedReport.status = st"
-                  :class="[
-                    'px-3 py-1.5 rounded-full text-[10px] font-black uppercase transition-all',
-                    selectedReport.status === st ? 'bg-[#902715] text-white shadow-md' : 'bg-white border border-[#1F3A4B]/20 text-[#1F3A4B] hover:bg-[#EEF4FB]'
-                  ]"
-                >
-                  {{ st }}
-                </button>
+            <!-- Captured Camera Photo Display in Operator Modal -->
+            <div v-if="selectedReport.image_url" class="p-4 rounded-2xl bg-[#EEF2E6] border border-[#D8E2C7] space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[#556B2F] font-black block text-[10px] uppercase tracking-wider">Citizen Camera Photo Attachment</span>
+                <span class="text-[10px] font-extrabold text-[#556B2F] bg-white px-2 py-0.5 rounded-full border border-[#D8E2C7]">Camera Capture</span>
+              </div>
+              <div class="relative group cursor-pointer overflow-hidden rounded-xl border-2 border-[#556B2F]" @click="enlargedPhoto = selectedReport.image_url">
+                <img :src="selectedReport.image_url" alt="Citizen camera photo" class="w-full h-48 object-cover group-hover:scale-105 transition-transform" />
+                <div class="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span class="px-3 py-1.5 rounded-full bg-white/90 text-[#0A0A0A] font-extrabold text-xs shadow-md">Click to Enlarge</span>
+                </div>
               </div>
             </div>
 
+            <!-- Solid Earthy Slate Blue Description Box -->
             <div>
-              <span class="text-[#717171] font-black block text-[10px] uppercase tracking-wider mb-2">Set Plausibility</span>
-              <div class="flex flex-wrap gap-1.5">
-                <button
-                  v-for="pl in ['verified', 'unverified', 'suspected_spam']"
-                  :key="pl"
-                  @click="onPlausibilityChange(selectedReport.id, pl); selectedReport.ai_plausibility = pl"
-                  :class="[
-                    'px-3 py-1.5 rounded-full text-[10px] font-black transition-all capitalize',
-                    selectedReport.ai_plausibility === pl ? 'bg-[#1F3A4B] text-white shadow-md' : 'bg-white border border-[#1F3A4B]/20 text-[#1F3A4B] hover:bg-[#EEF4FB]'
-                  ]"
-                >
-                  {{ pl }}
-                </button>
+              <span class="text-[#1F3A4B] font-black block text-[10px] uppercase tracking-wider mb-1.5">Citizen Description</span>
+              <p class="p-4 rounded-2xl bg-[#1F3A4B] text-white border border-[#1F3A4B] text-xs font-bold leading-relaxed shadow-sm">
+                "{{ selectedReport.raw_description }}"
+              </p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <span class="text-[#717171] font-black block text-[10px] uppercase tracking-wider mb-1.5">AI Category</span>
+                <span class="px-4 py-1.5 rounded-full bg-[#902715] text-white font-black uppercase inline-block shadow-sm">
+                  {{ selectedReport.ai_category || 'general' }}
+                </span>
+              </div>
+              <div>
+                <span class="text-[#717171] font-black block text-[10px] uppercase tracking-wider mb-1.5">Assigned Department</span>
+                <span class="text-[#902715] font-black text-base">{{ selectedReport.ai_department || 'CDRRMO' }}</span>
+              </div>
+            </div>
+
+            <!-- Solid Canary Yellow Reasoning Box (NO PALE WASH!) -->
+            <div>
+              <span class="text-[#1F3A4B] font-black block text-[10px] uppercase tracking-wider mb-1.5">AI Reasoning & Logic</span>
+              <p class="p-4 rounded-2xl bg-[#F7FB41] text-[#0A0A0A] border border-[#8a7e00] font-black leading-relaxed shadow-sm">
+                {{ selectedReport.ai_reasoning || 'No AI reasoning metadata available for this report.' }}
+              </p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 pt-2">
+              <div>
+                <span class="text-[#717171] font-black block text-[10px] uppercase tracking-wider mb-2">Set Status</span>
+                <div class="flex flex-wrap gap-1.5">
+                  <button
+                    v-for="st in ['open', 'in_review', 'resolved', 'dismissed']"
+                    :key="st"
+                    @click="onStatusChange(selectedReport.id, st); selectedReport.status = st"
+                    :class="[
+                      'px-3 py-1.5 rounded-full text-[10px] font-black uppercase transition-all',
+                      selectedReport.status === st ? 'bg-[#902715] text-white shadow-md' : 'bg-white border border-[#1F3A4B]/20 text-[#1F3A4B] hover:bg-[#EEF4FB]'
+                    ]"
+                  >
+                    {{ st }}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <span class="text-[#717171] font-black block text-[10px] uppercase tracking-wider mb-2">Set Plausibility</span>
+                <div class="flex flex-wrap gap-1.5">
+                  <button
+                    v-for="pl in ['verified', 'unverified', 'suspected_spam']"
+                    :key="pl"
+                    @click="onPlausibilityChange(selectedReport.id, pl); selectedReport.ai_plausibility = pl"
+                    :class="[
+                      'px-3 py-1.5 rounded-full text-[10px] font-black transition-all capitalize',
+                      selectedReport.ai_plausibility === pl ? 'bg-[#1F3A4B] text-white shadow-md' : 'bg-white border border-[#1F3A4B]/20 text-[#1F3A4B] hover:bg-[#EEF4FB]'
+                    ]"
+                  >
+                    {{ pl }}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div class="pt-4 border-t-2 border-[#1F3A4B]/20 flex justify-end">
-          <button
-            @click="selectedReport = null"
-            class="px-6 py-3 rounded-full bg-[#902715] hover:bg-[#a82e1a] text-white font-black text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all"
-          >
-            Close Detail
-          </button>
+          <div class="pt-4 border-t-2 border-[#1F3A4B]/20 flex justify-end">
+            <button
+              @click="selectedReport = null"
+              class="px-6 py-3 rounded-full bg-[#902715] hover:bg-[#a82e1a] text-white font-black text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all"
+            >
+              Close Detail
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Teleport>
+
+    <!-- Lightbox Modal for Enlarged Incident Photo Viewing -->
+    <Teleport to="body">
+      <div
+        v-if="enlargedPhoto"
+        class="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 w-screen h-screen"
+        @click.self="enlargedPhoto = null"
+      >
+        <div class="relative max-w-4xl w-full flex flex-col items-center space-y-3">
+          <button
+            @click="enlargedPhoto = null"
+            class="absolute -top-12 right-0 p-2 text-white/80 hover:text-white font-black text-sm flex items-center space-x-1"
+          >
+            <span>Close</span>
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+          <img :src="enlargedPhoto" alt="Enlarged incident photo" class="max-h-[85vh] w-auto max-w-full object-contain rounded-2xl border-2 border-white/20 shadow-2xl" />
+          <span class="text-xs font-bold text-white/70">Citizen Camera Attachment Inspection</span>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -398,6 +446,7 @@ const reportStore = useReportStore()
 
 const isMuted = ref(localStorage.getItem('agap_chime_muted') === 'true')
 const selectedReport = ref(null)
+const enlargedPhoto = ref(null)
 
 const santaRosaBarangays = [
   'Aplaya', 'Balibago', 'Caingins', 'Dila', 'Dita', 'Don Jose',

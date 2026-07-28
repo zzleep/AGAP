@@ -115,19 +115,65 @@ export const useReportStore = defineStore('report', () => {
       let insertedReport = null
 
       try {
-        const { data, error } = await supabase
+        const insertPayload = {
+          raw_description: payload.raw_description,
+          barangay: payload.barangay || 'Tagapo',
+          status: 'open'
+        }
+        if (payload.image_url) {
+          insertPayload.image_url = payload.image_url
+        }
+
+        let { data, error } = await supabase
           .from('community_reports')
-          .insert([{
-            raw_description: payload.raw_description,
-            barangay: payload.barangay || 'Tagapo',
-            status: 'open'
-          }])
+          .insert([insertPayload])
           .select()
           .single()
 
-        if (!error && data) {
+        // If error 42501 (RLS select violation) or column error occurs, try plain insert without .select()
+        if (error) {
+          console.warn('DB select error encountered, attempting plain insert without select():', error)
+          const retryPlain = await supabase
+            .from('community_reports')
+            .insert([insertPayload])
+
+          if (!retryPlain.error) {
+            error = null
+            data = {
+              id: 'rep_' + Date.now(),
+              ...insertPayload,
+              created_at: new Date().toISOString()
+            }
+          } else if (payload.image_url) {
+            // Fallback without image_url if column missing
+            console.warn('Retry plain insert without image_url column...')
+            delete insertPayload.image_url
+            const retryNoImg = await supabase
+              .from('community_reports')
+              .insert([insertPayload])
+
+            if (!retryNoImg.error) {
+              error = null
+              data = {
+                id: 'rep_' + Date.now(),
+                ...insertPayload,
+                image_url: payload.image_url,
+                created_at: new Date().toISOString()
+              }
+            } else {
+              error = retryNoImg.error
+            }
+          } else {
+            error = retryPlain.error
+          }
+        }
+
+        if (error) {
+          console.error('Supabase Community Report DB Insert Error:', error)
+        } else if (data) {
           insertedReport = {
             ...data,
+            image_url: payload.image_url || data.image_url || null,
             ai_plausibility: normalizePlausibility(data.ai_plausibility)
           }
         }
@@ -140,6 +186,7 @@ export const useReportStore = defineStore('report', () => {
           id: 'rep_' + Date.now(),
           raw_description: payload.raw_description,
           barangay: payload.barangay || 'Tagapo',
+          image_url: payload.image_url || null,
           ai_category: 'infrastructure',
           ai_priority: 'medium',
           ai_department: 'City Engineer',

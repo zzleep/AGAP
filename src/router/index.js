@@ -2,22 +2,26 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 
 import CitizenLayout from '@/layouts/CitizenLayout.vue'
-import AdminLayout from '@/layouts/AdminLayout.vue'
 
+// Eagerly loaded for instant home & SOS access
 import HomeView from '@/views/citizen/HomeView.vue'
 import SOSView from '@/views/citizen/SOSView.vue'
-import EvacMap from '@/views/citizen/EvacMap.vue'
-import GuideList from '@/views/citizen/GuideList.vue'
-import GuideDetail from '@/views/citizen/GuideDetail.vue'
-import CommunityReportForm from '@/views/citizen/CommunityReportForm.vue'
-import FlowEngine from '@/views/citizen/FlowEngine.vue'
 
-import LoginView from '@/views/admin/LoginView.vue'
-import LiveSOSFeed from '@/views/admin/LiveSOSFeed.vue'
-import CommunityReportsView from '@/views/admin/CommunityReportsView.vue'
-import HotspotMap from '@/views/admin/HotspotMap.vue'
-import AegisPanel from '@/views/admin/AegisPanel.vue'
-import InsightDashboard from '@/views/admin/InsightDashboard.vue'
+// Dynamically imported citizen views for lightweight initial PWA bundle
+const EvacMap = () => import('@/views/citizen/EvacMap.vue')
+const GuideList = () => import('@/views/citizen/GuideList.vue')
+const GuideDetail = () => import('@/views/citizen/GuideDetail.vue')
+const CommunityReportForm = () => import('@/views/citizen/CommunityReportForm.vue')
+const FlowEngine = () => import('@/views/citizen/FlowEngine.vue')
+
+// Dynamically imported admin layout & views (decoupled from citizen bundle)
+const AdminLayout = () => import('@/layouts/AdminLayout.vue')
+const LoginView = () => import('@/views/admin/LoginView.vue')
+const LiveSOSFeed = () => import('@/views/admin/LiveSOSFeed.vue')
+const CommunityReportsView = () => import('@/views/admin/CommunityReportsView.vue')
+const HotspotMap = () => import('@/views/admin/HotspotMap.vue')
+const AegisPanel = () => import('@/views/admin/AegisPanel.vue')
+const InsightDashboard = () => import('@/views/admin/InsightDashboard.vue')
 
 const routes = [
   {

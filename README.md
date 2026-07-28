@@ -375,6 +375,29 @@ The AGAP team extends its appreciation to:
 
 ---
 
+## Release Process
+
+Releases follow an **automated, PR-based** workflow powered by [release-please](https://github.com/googleapis/release-please).
+
+### For contributors
+
+1. Write commits using [Conventional Commits](https://www.conventionalcommits.org/):
+   - `feat: …` → minor version bump (e.g. `1.1.0`)
+   - `fix: …` → patch version bump (e.g. `1.0.1`)
+   - `feat!: …` or `fix!: …` → major version bump (e.g. `2.0.0`)
+2. Open PRs against `main` as usual.
+3. A maintainer merges your PR — **no extra steps needed**.
+
+### For maintainers
+
+1. After any merge to `main`, release-please **automatically creates or updates a Release PR** with an up-to-date changelog and version bump.
+2. Review the Release PR, edit the changelog if desired, then merge it.
+3. On merge, a GitHub Release is published, the version in `package.json` is bumped, and the built `dist/` artifacts are attached automatically.
+
+> No manual tagging or `npm version` commands — the workflow handles everything.
+
+---
+
 ## AGAP
 
 **Advance Guidance & Assistance Platform**

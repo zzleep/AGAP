@@ -7,30 +7,15 @@ export function useCommunityReport() {
 
   const form = ref({
     barangay: 'Tagapo',
-    raw_description: ''
+    raw_description: '',
+    image_url: ''
   })
-
-  // Math CAPTCHA state
-  const captcha = ref({ num1: 0, num2: 0, answer: 0, userResponse: '' })
-  const captchaError = ref(false)
 
   // Soft Throttle & Nag Modal state
   const showNagModal = ref(false)
   const secondsRemaining = ref(0)
   const submissionSuccess = ref(false)
   const submittedData = ref(null)
-
-  function generateCaptcha() {
-    const n1 = Math.floor(Math.random() * 9) + 1
-    const n2 = Math.floor(Math.random() * 9) + 1
-    captcha.value = {
-      num1: n1,
-      num2: n2,
-      answer: n1 + n2,
-      userResponse: ''
-    }
-    captchaError.value = false
-  }
 
   function checkThrottle() {
     const lastSubmit = localStorage.getItem('agap_last_community_report_time')
@@ -45,16 +30,6 @@ export function useCommunityReport() {
   }
 
   async function handleInitialSubmit() {
-    // Validate Math CAPTCHA with regex digits check before numeric comparison
-    const userResp = String(captcha.value.userResponse || '').trim()
-    if (!/^\d+$/.test(userResp) || parseInt(userResp, 10) !== captcha.value.answer) {
-      generateCaptcha()
-      captchaError.value = true
-      return
-    }
-    captchaError.value = false
-
-    // Check soft throttle rate limit
     if (checkThrottle()) {
       showNagModal.value = true
     } else {
@@ -67,13 +42,14 @@ export function useCommunityReport() {
     try {
       const res = await reportStore.submitReport({
         barangay: form.value.barangay,
-        raw_description: form.value.raw_description
+        raw_description: form.value.raw_description,
+        image_url: form.value.image_url
       })
       localStorage.setItem('agap_last_community_report_time', Date.now().toString())
       submittedData.value = res
       submissionSuccess.value = true
       form.value.raw_description = ''
-      generateCaptcha()
+      form.value.image_url = ''
     } catch (err) {
       console.error('Community report submission error:', err)
     }
@@ -82,22 +58,16 @@ export function useCommunityReport() {
   function resetForm() {
     submissionSuccess.value = false
     submittedData.value = null
-    generateCaptcha()
+    form.value.image_url = ''
   }
-
-  // Initialize captcha on setup
-  generateCaptcha()
 
   return {
     form,
-    captcha,
-    captchaError,
     showNagModal,
     secondsRemaining,
     submissionSuccess,
     submittedData,
     barangays: BARANGAY_LIST,
-    generateCaptcha,
     handleInitialSubmit,
     executeSubmission,
     resetForm
