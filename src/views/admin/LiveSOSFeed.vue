@@ -173,7 +173,7 @@
       </div>
 
       <!-- High-Density Operator Table Container -->
-      <div class="bg-white border border-[#1F3A4B]/15 rounded-3xl overflow-hidden shadow-sm admin-card w-full">
+      <div class="bg-white border border-[#1F3A4B]/15 rounded-3xl overflow-hidden shadow-sm w-full">
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse min-w-[768px]">
             <thead>
