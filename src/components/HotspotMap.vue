@@ -450,6 +450,7 @@ function renderIncidentMarkers() {
                   <strong>#${i + 1}</strong>
                   · <span style="color:${s.status === 'responding' ? '#d97706' : '#64748b'}">${s.status}</span>
                   · <span style="color:#94a3b8;font-size:9px;">${timeAgo(s.created_at)}</span>
+                  <br/><span style="color:#64748b;font-size:8px;">${Number(s.latitude).toFixed(4)}, ${Number(s.longitude).toFixed(4)}</span>
                 </a>
               `).join('')}
             </div>
@@ -537,6 +538,7 @@ function renderIncidentMarkers() {
                   <strong>#${i + 1}</strong>
                   · <span style="color:${r.ai_priority === 'high' || r.ai_priority === 'critical' ? '#dc2626' : '#64748b'}">${r.ai_priority || 'N/A'}</span>
                   · <span style="color:#92400e;font-size:9px;">"${(r.raw_description || '').substring(0, 28)}${(r.raw_description || '').length > 28 ? '...' : ''}"</span>
+                  <span style="color:#92400e;font-size:9px;font-weight:700;"> →</span>
                 </a>
               `).join('')}
             </div>
