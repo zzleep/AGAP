@@ -209,6 +209,8 @@
               <tr
                 v-for="item in paginatedQueue"
                 :key="item.id"
+                :id="`sos-row-${item.id}`"
+                tabindex="-1"
                 :class="[
                   'transition-colors hover:bg-[#EEF4FB]',
                   item.barangay === authStore.assignedArea ? 'bg-[#FFFBEB] font-semibold' : 'bg-white'
@@ -350,10 +352,12 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useSOSStore } from '@/stores/sosStore'
 import { useAuthStore } from '@/stores/authStore'
 import { BARANGAY_LIST } from '@/data/barangay_coords'
 
+const route = useRoute()
 const sosStore = useSOSStore()
 const authStore = useAuthStore()
 
@@ -381,12 +385,15 @@ watch(rowsPerPage, () => { currentPage.value = 1 })
 
 const filteredQueue = computed(() => {
   return sosStore.sortedQueue.filter(item => {
-    // 1. Search Query (ID or Barangay)
+    // 1. Search Query (ID or Barangay). Space-separated terms OR-match
+    //    so multiple IDs passed from the hotspot map group together.
     const q = filters.value.searchQuery.toLowerCase().trim()
     if (q) {
-      const matchId = item.id.toLowerCase().includes(q)
-      const matchBarangay = item.barangay.toLowerCase().includes(q)
-      if (!matchId && !matchBarangay) return false
+      const terms = q.split(/\s+/).filter(Boolean)
+      const matchesAny = terms.some(term =>
+        item.id.toLowerCase().includes(term) || item.barangay.toLowerCase().includes(term)
+      )
+      if (!matchesAny) return false
     }
 
     // 2. Barangay Filter
@@ -449,6 +456,14 @@ onMounted(async () => {
   }
   sosStore.subscribeToRealtimeSOS()
   await sosStore.checkStaleClaims()
+
+  // If navigated from hotspot map with SOS ID(s), set the search filter
+  // to those IDs so they group together as the only visible results.
+  const sosParam = route.query.sos_id
+  if (sosParam) {
+    const ids = sosParam.split(',').filter(Boolean)
+    filters.value.searchQuery = ids.join(' ')
+  }
 
   staleTimer = setInterval(() => {
     sosStore.checkStaleClaims()

@@ -116,6 +116,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useSOSStore } from '@/stores/sosStore'
@@ -123,12 +124,23 @@ import { useReportStore } from '@/stores/reportStore'
 import santaRosaBoundaries from '@/data/santa_rosa_boundaries.json'
 import { BARANGAY_COORDS } from '@/data/barangay_coords'
 
+const router = useRouter()
 const sosStore = useSOSStore()
 const reportStore = useReportStore()
 
 const showSOS = ref(true)
 const showReports = ref(true)
 const showBoundary = ref(true)
+
+// Filter out terminal-status items at the source so computed re-evaluation
+// reliably excludes them on any status change, not just array replacements.
+const activeSOSAlerts = computed(() =>
+  sosStore.activeReports.filter(sos => sos.status !== 'resolved')
+)
+
+const activeReportsFiltered = computed(() =>
+  reportStore.reports.filter(rep => rep.status !== 'resolved' && rep.status !== 'dismissed')
+)
 
 let map = null
 let boundaryLayerGroup = null
@@ -151,8 +163,7 @@ const barangayDensityMap = computed(() => {
   })
 
   if (showSOS.value) {
-    sosStore.activeReports.forEach(sos => {
-      if (sos.status === 'resolved') return
+    activeSOSAlerts.value.forEach(sos => {
       const bgy = sos.barangay || 'Tagapo'
       if (!mapData[bgy]) {
         mapData[bgy] = {
@@ -168,8 +179,7 @@ const barangayDensityMap = computed(() => {
   }
 
   if (showReports.value) {
-    reportStore.reports.forEach(rep => {
-      if (rep.status === 'resolved' || rep.status === 'dismissed') return
+    activeReportsFiltered.value.forEach(rep => {
       const bgy = rep.barangay || 'Tagapo'
       if (!mapData[bgy]) {
         mapData[bgy] = {
@@ -248,7 +258,8 @@ function renderDensityMarkers() {
     if (item.total === 0) return
 
     const { lat, lng } = item.coords
-    const radius = Math.min(45, 14 + item.total * 6)
+    // Geographic radius in meters — circle stays consistent on the ground at any zoom level
+    const radius = Math.min(900, 250 + item.total * 100)
 
     let fillColor = '#10b981'
     let strokeColor = '#047857'
@@ -264,7 +275,7 @@ function renderDensityMarkers() {
       fillOpacity = 0.55
     }
 
-    const circle = L.circleMarker([lat, lng], {
+    const circle = L.circle([lat, lng], {
       radius,
       fillColor,
       color: strokeColor,
@@ -296,12 +307,24 @@ function renderIncidentMarkers() {
   incidentMarkerGroup.clearLayers()
 
   if (showSOS.value) {
-    sosStore.activeReports.forEach(sos => {
-      if (sos.status === 'resolved') return
+    // Group SOS alerts by coordinates so multiple signals at the same spot
+    // render as a single marker with a count instead of invisible overlaps.
+    const sosByCoord = new Map()
+    activeSOSAlerts.value.forEach(sos => {
       if (sos.latitude == null || sos.longitude == null) return
+      const key = `${Number(sos.latitude).toFixed(5)},${Number(sos.longitude).toFixed(5)}`
+      if (!sosByCoord.has(key)) {
+        sosByCoord.set(key, { lat: sos.latitude, lng: sos.longitude, alerts: [] })
+      }
+      sosByCoord.get(key).alerts.push(sos)
+    })
 
-      const marker = L.circleMarker([sos.latitude, sos.longitude], {
-        radius: 6,
+    sosByCoord.forEach((group) => {
+      const count = group.alerts.length
+      const radius = Math.min(18, 6 + (count - 1) * 2)
+
+      const marker = L.circleMarker([group.lat, group.lng], {
+        radius,
         fillColor: '#ef4444',
         color: '#7f1d1d',
         weight: 2,
@@ -309,26 +332,67 @@ function renderIncidentMarkers() {
         fillOpacity: 0.9
       })
 
-      const popup = `
-        <div style="font-family: sans-serif; padding: 4px; color: #0f172a; min-width: 160px;">
-          <h4 style="margin: 0 0 4px 0; font-weight: 800; font-size: 13px; color: #991b1b;">SOS Alert</h4>
-          <div style="font-size: 11px; color: #475569;">
-            <strong>Barangay:</strong> ${sos.barangay || 'Unknown'}<br/>
-            <strong>Coordinates:</strong> ${Number(sos.latitude).toFixed(5)}, ${Number(sos.longitude).toFixed(5)}<br/>
-            <strong>Mode:</strong> ${sos.mode || 'online'}<br/>
-            <strong>Status:</strong> ${sos.status}<br/>
-            <strong>ID:</strong> <code style="font-size: 10px;">${sos.id ? sos.id.substring(0, 12) + '...' : 'N/A'}</code>
+      // Show a popup with alert details and a navigation link to the SOS feed.
+      // Single SOS shows its individual info; grouped shows a scrollable list.
+      const sos = group.alerts[0]
+      const popup = count === 1
+        ? `
+          <div style="font-family: sans-serif; padding: 4px; color: #0f172a; min-width: 200px;">
+            <h4 style="margin: 0 0 4px 0; font-weight: 800; font-size: 13px; color: #991b1b;">SOS Alert</h4>
+            <div style="font-size: 11px; color: #475569;">
+              <strong>Barangay:</strong> ${sos.barangay || 'Unknown'}<br/>
+              <strong>Status:</strong> <span style="color:${sos.status === 'responding' ? '#d97706' : '#64748b'}">${sos.status}</span><br/>
+              <strong>Coordinates:</strong> ${Number(sos.latitude).toFixed(5)}, ${Number(sos.longitude).toFixed(5)}<br/>
+              <strong>ID:</strong> <code style="font-size: 10px;">${sos.id || 'N/A'}</code><br/>
+            </div>
+            <hr style="margin: 6px 0; border: 0; border-top: 1px solid #e2e8f0;" />
+            <a href="/admin/sos-feed?sos_id=${sos.id}"
+               style="display:block;text-align:center;background:#991b1b;color:#fff;padding:6px 12px;border-radius:8px;font-weight:800;font-size:11px;text-decoration:none;">
+              View in SOS Feed →
+            </a>
           </div>
-        </div>
-      `
+        `
+        : `
+          <div style="font-family: sans-serif; padding: 4px; color: #0f172a; min-width: 220px;">
+            <h4 style="margin: 0 0 4px 0; font-weight: 800; font-size: 13px; color: #991b1b;">
+              SOS Alerts <span style="background:#991b1b;color:#fff;padding:0 6px;border-radius:8px;font-size:11px;">${count}</span>
+            </h4>
+            <div style="font-size: 11px; color: #475569; max-height: 180px; overflow-y: auto;">
+              <strong>Coordinates:</strong> ${Number(group.lat).toFixed(5)}, ${Number(group.lng).toFixed(5)}<br/>
+              ${group.alerts.map((s, i) => `
+                <hr style="margin: 3px 0; border: 0; border-top: 1px solid #e2e8f0;"${i === 0 ? ' hidden' : ''} />
+                <a href="/admin/sos-feed?sos_id=${s.id}"
+                   style="display:block;margin:2px 0;font-size:10px;color:#1F3A4B;text-decoration:none;padding:3px 6px;border-radius:6px;transition:background 0.15s;"
+                   onmouseover="this.style.background='#EEF4FB'" onmouseout="this.style.background=''">
+                  <strong>#${i + 1}</strong> — ${s.barangay || 'Unknown'}
+                  · <span style="color:${s.status === 'responding' ? '#d97706' : '#64748b'}">${s.status}</span>
+                  · <code style="font-size:9px;">${s.id ? s.id.substring(0, 10) + '…' : 'N/A'}</code>
+                </a>
+              `).join('')}
+            </div>
+            <hr style="margin: 6px 0; border: 0; border-top: 1px solid #e2e8f0;" />
+            <a href="/admin/sos-feed?sos_id=${group.alerts.map(s => s.id).join(',')}"
+               style="display:block;text-align:center;background:#991b1b;color:#fff;padding:6px 12px;border-radius:8px;font-weight:800;font-size:11px;text-decoration:none;">
+              View All in SOS Feed →
+            </a>
+          </div>
+        `
       marker.bindPopup(popup)
+
+      if (count > 1) {
+        marker.bindTooltip(String(count), {
+          permanent: true,
+          direction: 'center',
+          className: 'sos-cluster-badge'
+        })
+      }
+
       incidentMarkerGroup.addLayer(marker)
     })
   }
 
   if (showReports.value) {
-    reportStore.reports.forEach(rep => {
-      if (rep.status === 'resolved' || rep.status === 'dismissed') return
+    activeReportsFiltered.value.forEach(rep => {
 
       const coords = BARANGAY_COORDS[rep.barangay] || BARANGAY_COORDS['Tagapo']
 
@@ -393,3 +457,28 @@ onUnmounted(() => {
   }
 })
 </script>
+
+<style>
+.sos-cluster-badge {
+  background: #991b1b !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+  font-size: 11px !important;
+  border: 2px solid #fff !important;
+  border-radius: 50% !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4) !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  white-space: nowrap;
+}
+.leaflet-tooltip-top.sos-cluster-badge::before,
+.leaflet-tooltip-bottom.sos-cluster-badge::before,
+.sos-cluster-badge::before {
+  display: none !important;
+}
+</style>
