@@ -95,11 +95,11 @@
 
       <div
         v-if="userLocation && nearestEvacCenter"
-        class="absolute left-3 top-3 z-30 max-w-[16rem] rounded-2xl border border-black/10 bg-white/90 p-3 text-xs shadow-m3-lg backdrop-blur-md"
+        class="absolute left-3 top-3 z-30 max-w-[calc(100%-8rem)] rounded-2xl border border-black/10 bg-white/90 p-3 text-xs shadow-m3-lg backdrop-blur-md"
       >
-        <p class="text-[9px] font-extrabold uppercase tracking-wider text-[#717171]">{{ $t('evacMap.routeGuide') }}</p>
-        <p class="mt-0.5 font-expressive text-sm font-black text-[#0A0A0A]">{{ nearestEvacCenter.name }}</p>
-        <p class="mt-0.5 text-[#717171]">
+        <p class="text-[9px] font-extrabold uppercase tracking-wider text-[#717171] leading-tight break-words">{{ $t('evacMap.routeGuide') }}</p>
+        <p class="mt-0.5 font-expressive text-sm font-black text-[#0A0A0A] leading-tight break-words">{{ nearestEvacCenter.name }}</p>
+        <p class="mt-0.5 text-[#717171] text-[11px] leading-tight">
           {{ $t('evacMap.fromYou') }} {{ formatDistanceToKm(nearestEvacDistance) }} km
         </p>
       </div>
