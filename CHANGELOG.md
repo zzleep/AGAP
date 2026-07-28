@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.1.0](https://github.com/zzleep/AGAP/compare/v1.0.3...v1.1.0) (2026-07-28)
 
+
+### Features
+
+* feat:  ([42c6d24](https://github.com/zzleep/AGAP/commit/42c6d24d95e0c9d615d4014f829fe608e3a270e6))
+* **ui:** redesign SOS alert and community report map popups with card UX ([19dc477](https://github.com/zzleep/AGAP/commit/19dc4770d503eb808ec3990504752a6fd075a51f))
+
+
+### Bug Fixes
+
+* add query param filtering to community reports, cluster links use barangay, compact SOS coords ([f9ebc6d](https://github.com/zzleep/AGAP/commit/f9ebc6de91039f7fa9019731f4ca069006ebd461))
+* **gps:** resolve mobile location inaccuracies and enable HTTPS dev server ([52a0d16](https://github.com/zzleep/AGAP/commit/52a0d165c06b687d55e3bfabdf4e8e25d582f3c9))
+* **hotspot:** cluster SOS markers, navigate to feed with auto-filter, exclude resolved alerts ([54bba03](https://github.com/zzleep/AGAP/commit/54bba037afed0cc6ee3583edb83bee482174de8a))
+* **hotspotmap:** dynamic density circle sizing, incident centroid anchoring, grouped report popups ([c365a68](https://github.com/zzleep/AGAP/commit/c365a68dd8f9e72313196d7da9cf38e37484343b))
+* **ui:** add GPS coords to SOS cluster items, add redirect arrow to report items ([65742bc](https://github.com/zzleep/AGAP/commit/65742bc9ff1c8d0a9c1986ba5beef0fce65a6aba))
+* **ui:** resolve bottom nav text wrapping and map card overlay overlap on mobile ([314faf1](https://github.com/zzleep/AGAP/commit/314faf15d075742d0fe28f862ac85f763f7b423c))
+* **ui:** resolve map stretching and fullscreen button layout bugs ([40eb142](https://github.com/zzleep/AGAP/commit/40eb142a7809fe5799f4196f08d10de95313ff5a))
+* **ui:** revert popups to original style, improve cluster lists with time/desc instead of IDs ([635add8](https://github.com/zzleep/AGAP/commit/635add8348b6e196cb83e65e03c0bc85d392be12))
+
+## [1.1.0](https://github.com/zzleep/AGAP/compare/v1.0.3...v1.1.0) (2026-07-28)
+
 ### Added
 
 - **Hotspot map density circles** — circles now dynamically size to encompass all incident markers (SOS GPS + report barangay centers) and are capped at 90% of the nearest-neighbor gap to prevent overlap
