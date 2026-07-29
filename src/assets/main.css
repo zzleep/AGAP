@@ -13,6 +13,17 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* Hide scrollbars globally across all browsers */
+  ::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+  * {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
   h1, h2, h3, .font-expressive {
     font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
     letter-spacing: -0.02em;
