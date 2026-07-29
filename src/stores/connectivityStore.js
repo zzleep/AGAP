@@ -5,6 +5,7 @@ export const useConnectivityStore = defineStore('connectivity', () => {
   const isOnline = ref(typeof navigator !== 'undefined' ? navigator.onLine : true)
   const effectiveType = ref(getEffectiveType())
   const rtt = ref(getRTT())
+  const measuredRtt = ref(0)
   const lastOnlineAt = ref(isOnline.value ? Date.now() : null)
   const lastOfflineAt = ref(!isOnline.value ? Date.now() : null)
   const isPrewarmed = ref(false)
@@ -23,9 +24,11 @@ export const useConnectivityStore = defineStore('connectivity', () => {
     return 0
   }
 
+  const effectiveRtt = computed(() => Math.max(rtt.value, measuredRtt.value))
+
   const mode = computed(() => {
     if (!isOnline.value) return 'offline'
-    if (effectiveType.value === '2g' || effectiveType.value === 'slow-2g' || rtt.value > 1000) {
+    if (effectiveType.value === '2g' || effectiveType.value === 'slow-2g' || effectiveRtt.value > 1000) {
       return 'degraded_signal'
     }
     return 'online'
@@ -35,6 +38,8 @@ export const useConnectivityStore = defineStore('connectivity', () => {
     switch (mode.value) {
       case 'online':
         return {
+          labelKey: 'connectivity.online',
+          messageKey: 'connectivity.onlineMsg',
           label: 'Online',
           bgClass: 'bg-emerald-600 text-white',
           icon: 'wifi',
@@ -42,14 +47,18 @@ export const useConnectivityStore = defineStore('connectivity', () => {
         }
       case 'degraded_signal':
         return {
-          label: 'Weak / Degraded Signal',
+          labelKey: 'connectivity.degraded',
+          messageKey: 'connectivity.degradedMsg',
+          label: 'Weak Signal',
           bgClass: 'bg-amber-600 text-white',
           icon: 'wifi-off',
-          message: 'Signal congested — SOS requests will queue automatically via BackgroundSync / sendBeacon'
+          message: 'Your emergency details are saved safely. Any SOS request will automatically send as soon as signal improves.'
         }
       case 'offline':
       default:
         return {
+          labelKey: 'connectivity.offline',
+          messageKey: 'connectivity.offlineMsg',
           label: 'Offline Mode',
           bgClass: 'bg-rose-700 text-white',
           icon: 'signal-slash',
@@ -109,6 +118,7 @@ export const useConnectivityStore = defineStore('connectivity', () => {
     isOnline,
     effectiveType,
     rtt,
+    measuredRtt,
     lastOnlineAt,
     lastOfflineAt,
     isPrewarmed,

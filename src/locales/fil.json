@@ -179,7 +179,7 @@
     "degraded": "Mahina ang Signal",
     "offline": "Offline Mode",
     "onlineMsg": "Konektado sa AGAP Disaster Response Network",
-    "degradedMsg": "Mahina ang signal — awtomatikong papila ang SOS hanggang bumalik ang koneksyon",
+    "degradedMsg": "Ligtas na nakatago ang iyong impormasyon. Awtomatikong ipapadala ang anumang ulat ng SOS sa sandaling bumalik ang signal.",
     "offlineMsg": "Walang koneksyon sa internet — Gumagamit ng lokal na cache. Nakapila ang SOS hanggang bumalik ang internet.",
     "dismiss": "Isara"
   },

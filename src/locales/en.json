@@ -176,11 +176,11 @@
   },
   "connectivity": {
     "online": "Online",
-    "degraded": "Weak / Degraded Signal",
+    "degraded": "Weak Signal",
     "offline": "Offline Mode",
     "onlineMsg": "Connected to AGAP Disaster Response Network",
-    "degradedMsg": "Signal congested — SOS requests will queue automatically via BackgroundSync / sendBeacon",
-    "offlineMsg": "No internet connection — Operating on local cache. SOS queued until connection returns.",
+    "degradedMsg": "Your emergency details are saved safely. Any SOS request will automatically send as soon as possible.",
+    "offlineMsg": "No internet connection detected, please stay safe. Any SOS request will automatically send as soon as we are online.",
     "dismiss": "Dismiss"
   },
   "gps": {

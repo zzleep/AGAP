@@ -57,7 +57,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSOSStore } from '@/stores/sosStore'
 import { useSOS } from '@/composables/useSOS'
@@ -67,7 +67,7 @@ import { findNearestBarangay } from '@/data/barangay_coords'
 const HOLD_DURATION_MS = 2000
 const sos = useSOSStore()
 const { t } = useI18n()
-const { dispatchSOS } = useSOS()
+const { dispatchSOS, warmConnection } = useSOS()
 const { isLocating, refreshLocation } = useGPS()
 
 const holdProgress = ref(0)
@@ -76,6 +76,10 @@ const isDispatching = ref(false)
 let holdFrame = null
 let holdStartedAt = 0
 let activePointerId = null
+
+onMounted(() => {
+  warmConnection()
+})
 
 const isBusy = computed(() => isLocating.value || sos.isPending || isDispatching.value)
 const holdLabel = computed(() => {
@@ -102,6 +106,9 @@ const deliveryTone = computed(() => sos.deliveryState === 'sent'
 function startHold(event) {
   if (isBusy.value || isHolding.value) return
   if (event?.button !== undefined && event.button !== 0) return
+
+  // Asynchronously trigger pre-warm right at t=0.0s of hold start
+  warmConnection(true)
 
   event?.preventDefault?.()
   activePointerId = event?.pointerId ?? null

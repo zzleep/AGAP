@@ -148,24 +148,57 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import ConnectivityBanner from '@/components/common/ConnectivityBanner.vue'
 import { useSOS } from '@/composables/useSOS'
 import { useGPS } from '@/composables/useGPS'
 import { useLocaleStore } from '@/stores/localeStore'
+import { useConnectivityStore } from '@/stores/connectivityStore'
 
 const route = useRoute()
 const isSetupRoute = computed(() => route.path === '/app/setup' || route.name === 'citizen-setup')
 
 const localeStore = useLocaleStore()
-const { warmConnection } = useSOS()
+const connectivity = useConnectivityStore()
+const { warmConnection, syncDegradedHeartbeat, stopDegradedHeartbeat } = useSOS()
 const { initGPS, startBackgroundRefresh } = useGPS()
+
+function handleNetworkReconnect() {
+  connectivity.isPrewarmed = false
+  warmConnection()
+  syncDegradedHeartbeat()
+}
+
+function handleVisibilityChange() {
+  if (document.visibilityState === 'visible') {
+    warmConnection()
+  }
+  syncDegradedHeartbeat()
+}
+
+watch(() => connectivity.mode, () => {
+  syncDegradedHeartbeat()
+})
 
 onMounted(() => {
   localeStore.initLocale()
   warmConnection()
   initGPS()
   startBackgroundRefresh()
+  syncDegradedHeartbeat()
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('online', handleNetworkReconnect)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+  }
+})
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('online', handleNetworkReconnect)
+    document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }
+  stopDegradedHeartbeat()
 })
 </script>
