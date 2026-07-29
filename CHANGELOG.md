@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.0](https://github.com/zzleep/AGAP/compare/v1.1.0...v2.0.0) (2026-07-29)
 
+
+### ⚠️ Breaking Changes
+
+* **Onboarding & SOS callback module** — header language toggle replaced with Settings gear icon; citizen pages redirect new users through onboarding flow; IndexedDB schema upgraded from v1 to v2 with new `user_profile` store ([e13d09f](https://github.com/zzleep/AGAP/commit/e13d09f941addb18691094f3fdad6ca7eba51fc4))
+
+
+### Features
+
+* **Onboarding, SOS Callback Module, Device tagging, and Spam Suppression** — 2-screen citizen onboarding, dedicated Settings page, callback number capture with Philippine mobile normalization, persistent SOS device hashing via IndexedDB, contact number column with tel: links in dispatch feed, contextual dropdown dispatch actions, spam/prank flagging with confirmation modal, `/admin/flagged-sos` review page, and automatic spam suppression in the main feed ([e13d09f](https://github.com/zzleep/AGAP/commit/e13d09f941addb18691094f3fdad6ca7eba51fc4))
+
+
+### Bug Fixes
+
+* **debugging tools removed** — stripped extraneous debug UI elements from Settings page; added onboarding background ([756000b](https://github.com/zzleep/AGAP/commit/756000b1dc499142a4ad878292af111b4ea2f66b))
+
+---
+
+## [2.0.0] — 2026-07-29
+
 ### Added
 
 - **Citizen onboarding flow** — 2-screen setup (`OnboardingView.vue`) guiding GPS permission grant and optional callback number capture on first launch; auto-redirects new users and skips if already completed
