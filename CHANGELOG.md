@@ -5,6 +5,68 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0](https://github.com/zzleep/AGAP/compare/v2.0.0...v3.0.0) (2026-07-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* Onboarding, SOS Callback Module,
+
+### Features
+
+* feat:  ([42c6d24](https://github.com/zzleep/AGAP/commit/42c6d24d95e0c9d615d4014f829fe608e3a270e6))
+* feat:  ([51fd133](https://github.com/zzleep/AGAP/commit/51fd133a648770c45bd3a3544684bd1ae09e6d22))
+* feat:  ([c9b912c](https://github.com/zzleep/AGAP/commit/c9b912c2bfbb249db99c6e656759dba5a5f64fca))
+* feat:  ([c08278a](https://github.com/zzleep/AGAP/commit/c08278a496cf8749d719fc6b2cdc06b5f56b4ada))
+* add basic SSL plugin for development environment and update ignore patterns ([4794f30](https://github.com/zzleep/AGAP/commit/4794f304067940d48fff7e2e8dcfbcb1b73f7631))
+* add Filipino (Tagalog) translation with vue-i18n for citizen-facing UI ([c4ce64e](https://github.com/zzleep/AGAP/commit/c4ce64e46d20af34d963868e34cb2cc0a377efac))
+* add Filipino (Tagalog) translation with vue-i18n for citizen-facing UI ([9d97de8](https://github.com/zzleep/AGAP/commit/9d97de84818ce50a27cf9094b547e9f2a9e4865a))
+* add localized community report description ([a913bf5](https://github.com/zzleep/AGAP/commit/a913bf54a9aab0f4741a4b2c084266d627f6f6de))
+* added new sta rosa map boundaries. ([8aedb42](https://github.com/zzleep/AGAP/commit/8aedb425154a2ca621c6bc3030d4f52ab027b731))
+* added photo capture in community incident report ([29512f4](https://github.com/zzleep/AGAP/commit/29512f428317503b9ab844a818b350df0414fdd8))
+* bulk multi-select in report selector modal ([bb27ae5](https://github.com/zzleep/AGAP/commit/bb27ae558fedd6eb9816ade0a4c0e7c77a108abd))
+* cosmetic features update. ([08ed98d](https://github.com/zzleep/AGAP/commit/08ed98dfa834e2904068b063c5d2e58cc2b57493))
+* fixed bug in the active client navigation ([4df323d](https://github.com/zzleep/AGAP/commit/4df323d79c34a77efe2734a79e994d753587218a))
+* footprint reduction ([b8e990b](https://github.com/zzleep/AGAP/commit/b8e990b4b028c0dd09ecdbc65ba62dbb44504809))
+* implement GPS accuracy improvements, incident markers, and barangay lookup enhancements ([fdb7f6e](https://github.com/zzleep/AGAP/commit/fdb7f6eaf27721b8f30837e0884f94620988e076))
+* initialize AGAP project structure ([4a93179](https://github.com/zzleep/AGAP/commit/4a93179acf4b46b24a732eb4cf22d8b13290db7f))
+* initialize AGAP project structure with core stores, layout components, and weather-based flood monitoring modules ([e3c9241](https://github.com/zzleep/AGAP/commit/e3c924198c96fb072bbb47d364e795b92455b147))
+* multi-scenario Aegis advisory + 17 bug fixes ([e42d271](https://github.com/zzleep/AGAP/commit/e42d271ee1ec3d7952db5393ab25e6d901ae4729))
+* Onboarding, SOS Callback Module, ([e13d09f](https://github.com/zzleep/AGAP/commit/e13d09f941addb18691094f3fdad6ca7eba51fc4))
+* report selector modal + bulk history actions + confidence improvements ([e76bd0f](https://github.com/zzleep/AGAP/commit/e76bd0f55a706a7c8318d0c691b705bdbdc60687))
+* UI redesign & bug fixes ([d2ad541](https://github.com/zzleep/AGAP/commit/d2ad541e5590200afc86d30958b67e3fcbadc75e))
+* UI redesign to fit the new motif and improve user interaction. ([df199c4](https://github.com/zzleep/AGAP/commit/df199c4c5f4e01ec77c0b42ee4dfa92b6c357662))
+* **ui:** redesign SOS alert and community report map popups with card UX ([19dc477](https://github.com/zzleep/AGAP/commit/19dc4770d503eb808ec3990504752a6fd075a51f))
+* update .gitignore ([a5f4985](https://github.com/zzleep/AGAP/commit/a5f4985d691db286c1cdfeb046ad92e53b88e104))
+* update changelog with recent feature additions and improvements ([89c080f](https://github.com/zzleep/AGAP/commit/89c080f0e2da63b3b71c39af9c90aa6f1d6aa281))
+
+
+### Bug Fixes
+
+* add query param filtering to community reports, cluster links use barangay, compact SOS coords ([f9ebc6d](https://github.com/zzleep/AGAP/commit/f9ebc6de91039f7fa9019731f4ca069006ebd461))
+* auto-dismiss Aegis recommendation panel after outcome submit ([f99600d](https://github.com/zzleep/AGAP/commit/f99600d026346ccfa5651d2b0dbdb68786379712))
+* dead ternary in localeStore default, remove dangling test:smoke script ([4e4b357](https://github.com/zzleep/AGAP/commit/4e4b357f9565d66c5e21b1432b02e7e11022e90a))
+* Fixed the blank Evac page map ([597fd13](https://github.com/zzleep/AGAP/commit/597fd13a752053bd0d67c9438611f34015945ae9))
+* glob dist/* instead of dist/ for release upload ([6c0198d](https://github.com/zzleep/AGAP/commit/6c0198d056ee0eded03fcd75f5e437eb4e62a7d4))
+* glob dist/* instead of dist/ for release upload ([c1bbb67](https://github.com/zzleep/AGAP/commit/c1bbb67137c88f501c3c08539d36e5b4336bfbf6))
+* **gps:** resolve mobile location inaccuracies and enable HTTPS dev server ([52a0d16](https://github.com/zzleep/AGAP/commit/52a0d165c06b687d55e3bfabdf4e8e25d582f3c9))
+* **hotspot:** cluster SOS markers, navigate to feed with auto-filter, exclude resolved alerts ([54bba03](https://github.com/zzleep/AGAP/commit/54bba037afed0cc6ee3583edb83bee482174de8a))
+* **hotspotmap:** dynamic density circle sizing, incident centroid anchoring, grouped report popups ([c365a68](https://github.com/zzleep/AGAP/commit/c365a68dd8f9e72313196d7da9cf38e37484343b))
+* live SOS feed not showing citizen dispatches + hotspot data fixes ([3f2dd0e](https://github.com/zzleep/AGAP/commit/3f2dd0ecfb286f4452e7df6b70dde4659a370577))
+* prevent admin nav pills from overlapping the top bar on hover ([e5bd878](https://github.com/zzleep/AGAP/commit/e5bd8789a3d985771d2717fa4b7cb737839e8a60))
+* prevent admin nav pills from overlapping the top bar on hover ([b3a0b64](https://github.com/zzleep/AGAP/commit/b3a0b64a64267b07207483ae242dce744ec57043))
+* reduce Gemini token consumption, fix modal div nesting ([a43c5ba](https://github.com/zzleep/AGAP/commit/a43c5baa830c6ed8f58b8be2e05a7b829e297445))
+* remove clickable and hover effects from admin cards and tables ([707f5ff](https://github.com/zzleep/AGAP/commit/707f5ff237a5b1cb9ebab2fa9a0e336043378013))
+* remove clickable/hover affordances from admin cards and table containers ([c15a495](https://github.com/zzleep/AGAP/commit/c15a4951aa29647d69046b2d3db5b63627e5285a))
+* removed debugging tools ([756000b](https://github.com/zzleep/AGAP/commit/756000b1dc499142a4ad878292af111b4ea2f66b))
+* **ui:** add GPS coords to SOS cluster items, add redirect arrow to report items ([65742bc](https://github.com/zzleep/AGAP/commit/65742bc9ff1c8d0a9c1986ba5beef0fce65a6aba))
+* **ui:** resolve bottom nav text wrapping and map card overlay overlap on mobile ([314faf1](https://github.com/zzleep/AGAP/commit/314faf15d075742d0fe28f862ac85f763f7b423c))
+* **ui:** resolve map stretching and fullscreen button layout bugs ([40eb142](https://github.com/zzleep/AGAP/commit/40eb142a7809fe5799f4196f08d10de95313ff5a))
+* **ui:** revert popups to original style, improve cluster lists with time/desc instead of IDs ([635add8](https://github.com/zzleep/AGAP/commit/635add8348b6e196cb83e65e03c0bc85d392be12))
+* use RELEASE_PLEASE_TOKEN secret for release-please action ([7a2c4ea](https://github.com/zzleep/AGAP/commit/7a2c4eac7a284071f82d5bfcf8721c23db65c85d))
+* zip dist/ before upload to handle nested directories ([4bfc8b0](https://github.com/zzleep/AGAP/commit/4bfc8b062ba384319b06d2515636b034eb4cf7c0))
+* zip dist/ before upload to handle nested directories ([6f4c9d2](https://github.com/zzleep/AGAP/commit/6f4c9d22f3ee45e1eefb15ec447f7c0a6f9c054d))
+
 ## [2.0.0](https://github.com/zzleep/AGAP/compare/v1.1.0...v2.0.0) (2026-07-29)
 
 
