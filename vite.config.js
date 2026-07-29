@@ -14,33 +14,35 @@ export default defineConfig({
       filename: 'sw.js',
       registerType: 'autoUpdate',
       injectRegister: 'auto',
-      includeAssets: ['hero.svg', 'agap icon.svg', 'favicon.svg', 'pwa-192x192.svg', 'pwa-512x512.svg', 'robots.txt'],
+      includeAssets: ['agap_pwa_icon.png', 'apple-touch-icon.png', 'apple-touch-icon-precomposed.png', 'hero.svg', 'agap icon.svg', 'favicon.svg', 'pwa-192x192.svg', 'pwa-512x512.svg', 'robots.txt'],
       manifest: {
         name: 'AGAP - Santa Rosa Disaster Response',
         short_name: 'AGAP',
         description: 'Advance Guidance & Assistance Platform for Santa Rosa City',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
+        theme_color: '#902715',
+        background_color: '#902715',
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',
         start_url: '/',
         icons: [
           {
-            src: 'pwa-192x192.svg',
+            src: 'agap_pwa_icon.png',
             sizes: '192x192',
-            type: 'image/svg+xml'
+            type: 'image/png',
+            purpose: 'any'
           },
           {
-            src: 'pwa-512x512.svg',
+            src: 'agap_pwa_icon.png',
             sizes: '512x512',
-            type: 'image/svg+xml'
+            type: 'image/png',
+            purpose: 'any'
           },
           {
-            src: 'pwa-512x512.svg',
+            src: 'agap_pwa_icon.png',
             sizes: '512x512',
-            type: 'image/svg+xml',
-            purpose: 'any maskable'
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ]
       },

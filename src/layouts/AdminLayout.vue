@@ -7,6 +7,7 @@
     <header
       v-if="route.name !== 'admin-login'"
       class="bg-white/85 backdrop-blur-xl border-b border-[#1F3A4B]/10 sticky top-0 z-40 shadow-[0_4px_20px_rgba(31,58,75,0.06)]"
+      style="padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));"
     >
       <div class="w-full px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
         <!-- AGAP Logo + Branding -->
