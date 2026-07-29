@@ -5,6 +5,35 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0](https://github.com/zzleep/AGAP/compare/v1.0.3...v1.1.0) (2026-07-28)
+
+### Added
+
+- **Hotspot map density circles** — circles now dynamically size to encompass all incident markers (SOS GPS + report barangay centers) and are capped at 90% of the nearest-neighbor gap to prevent overlap
+- **Incident centroid anchoring** — density circles re-center at the actual incident coordinates instead of the administrative barangay center
+- **SOS marker clustering by GPS** — alerts at distinct locations stay separate; only exact-coordinate duplicates cluster into a grouped marker with count badge
+- **Community report marker clustering by barangay** — reports from the same barangay now cluster into a single marker with count tooltip, matching the SOS pattern
+- **Populated popup list items** — clustered SOS alerts show relative time (e.g. "5m ago") and GPS coordinates; clustered reports show priority + short description snippet
+- **Navigation redirects** — clicking any clustered list item navigates to the respective admin page; SOS items filter by ID, community report items filter by barangay
+- **Query param filtering** — `CommunityReportsView` now reads `?barangay=X` and `?report_id=X` from the URL to pre-filter the view when arriving from the hotspot map
+- **SOS feed pagination** — live SOS entries display 10 per page with readable date formatting
+- **Home page CSS styling** — visual polish applied to the client-side home view
+
+### Changed
+
+- **Popups revert to cleaner layout** — map popups returned to the original simple card design after a redesign cycle, with improved list-item content replacing technical IDs with human-readable info
+- **SOS feed row headers** — clustered and single popups now show the barangay name in the header for immediate geographic context
+- **Community report redirect links** — changed from `?report_id=X` to `?barangay=X` so cluster navigation shows all reports from that barangay
+
+### Fixed
+
+- **Mobile GPS inaccuracies** — resolved location drift on mobile devices with improved GPS acquisition
+- **Map stretching & fullscreen button** — layout no longer breaks when toggling fullscreen
+- **Bottom nav text wrapping** — navigation labels no longer overflow on narrow screens
+- **Map card overlay overlap** — incident markers no longer clip behind control panels
+- **Resolved alerts excluded** — terminal-status SOS and reports are filtered out of markers and density calculations
+- **SOS feed row header** — barangay name displayed correctly in grouped alert popups
+
 ## [1.0.3](https://github.com/zzleep/AGAP/compare/v1.0.2...v1.0.3) (2026-07-28)
 
 
@@ -26,14 +55,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Fixed the blank Evac page map ([597fd13](https://github.com/zzleep/AGAP/commit/597fd13a752053bd0d67c9438611f34015945ae9))
 * use RELEASE_PLEASE_TOKEN secret for release-please action ([7a2c4ea](https://github.com/zzleep/AGAP/commit/7a2c4eac7a284071f82d5bfcf8721c23db65c85d))
-
-## [Unreleased]
-
-### Added
-
-### Changed
-
-### Fixed
 
 ---
 

@@ -440,8 +440,10 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useReportStore } from '@/stores/reportStore'
 
+const route = useRoute()
 const reportStore = useReportStore()
 
 const isMuted = ref(localStorage.getItem('agap_chime_muted') === 'true')
@@ -545,6 +547,18 @@ watch(() => reportStore.unreadHighPriorityCount, (newCount, oldCount) => {
 })
 
 onMounted(async () => {
+  // Read URL query params for hotspot map navigation
+  const barangayParam = route.query.barangay
+  const reportIdParam = route.query.report_id
+  if (barangayParam) {
+    reportStore.filters.barangay = barangayParam
+  }
+  if (reportIdParam) {
+    // Comma-separated IDs or single — drop into searchQuery like SOS feed does
+    const ids = String(reportIdParam).split(',').filter(Boolean)
+    reportStore.filters.searchQuery = ids.join(' ')
+  }
+
   if (reportStore.fetchReports) {
     await reportStore.fetchReports()
   }

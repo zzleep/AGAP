@@ -149,6 +149,31 @@ let incidentMarkerGroup = null
 
 const SANTA_ROSA_CENTER = [14.3157, 121.1122]
 
+// Pre-compute distance (in meters) from each barangay to its nearest neighbor
+// so density circles never overlap — each circle is capped to fit its available space.
+function degToMeters(dlat, dlng, lat) {
+  const latM = 111320
+  const lngM = 111320 * Math.cos(lat * Math.PI / 180)
+  return Math.sqrt((dlat * latM) ** 2 + (dlng * lngM) ** 2)
+}
+
+const nearestNeighborDist = (() => {
+  const names = Object.keys(BARANGAY_COORDS)
+  const dist = {}
+  names.forEach(a => {
+    const ca = BARANGAY_COORDS[a]
+    let minD = Infinity
+    names.forEach(b => {
+      if (a === b) return
+      const cb = BARANGAY_COORDS[b]
+      const d = degToMeters(ca.lat - cb.lat, ca.lng - cb.lng, (ca.lat + cb.lat) / 2)
+      if (d < minD) minD = d
+    })
+    dist[a] = minD
+  })
+  return dist
+})()
+
 const barangayDensityMap = computed(() => {
   const mapData = {}
 
@@ -196,6 +221,32 @@ const barangayDensityMap = computed(() => {
 
   Object.keys(mapData).forEach(key => {
     mapData[key].total = mapData[key].sosCount + mapData[key].reportCount
+  })
+
+  // Re-center each density circle at the centroid of its incident coordinates
+  // so the circle actually covers where the alerts are, not just the admin center.
+  Object.values(mapData).forEach(item => {
+    const lats = []
+    const lngs = []
+    if (showSOS.value) {
+      activeSOSAlerts.value.forEach(sos => {
+        if ((sos.barangay || 'Tagapo') !== item.barangay) return
+        if (sos.latitude != null && sos.longitude != null) {
+          lats.push(sos.latitude)
+          lngs.push(sos.longitude)
+        }
+      })
+    }
+    // Community reports use barangay center coords — add the official center
+    // as a weighted anchor so the circle doesn't drift too far from the barangay.
+    lats.push(item.coords.lat)
+    lngs.push(item.coords.lng)
+    if (lats.length > 0) {
+      item.coords = {
+        lat: lats.reduce((s, v) => s + v, 0) / lats.length,
+        lng: lngs.reduce((s, v) => s + v, 0) / lngs.length
+      }
+    }
   })
 
   return mapData
@@ -250,6 +301,19 @@ function renderBoundary() {
   }
 }
 
+// Relative time display for popup list items
+function timeAgo(dateStr) {
+  if (!dateStr) return ''
+  const diff = Date.now() - Date.parse(dateStr)
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  return `${days}d ago`
+}
+
 function renderDensityMarkers() {
   if (!map || !densityMarkerGroup) return
   densityMarkerGroup.clearLayers()
@@ -258,8 +322,29 @@ function renderDensityMarkers() {
     if (item.total === 0) return
 
     const { lat, lng } = item.coords
-    // Geographic radius in meters — circle stays consistent on the ground at any zoom level
-    const radius = Math.min(900, 250 + item.total * 100)
+
+    // Grow the circle until it touches every related incident marker (SOS GPS
+    // coords + community report barangay centers), but don't over-extend
+    // beyond the nearest-neighbor gap.
+    let farthestM = 0
+    if (showSOS.value) {
+      activeSOSAlerts.value.forEach(sos => {
+        if ((sos.barangay || 'Tagapo') !== item.barangay) return
+        if (sos.latitude == null || sos.longitude == null) return
+        farthestM = Math.max(farthestM, degToMeters(lat - sos.latitude, lng - sos.longitude, (lat + sos.latitude) / 2))
+      })
+    }
+    if (showReports.value) {
+      // Community reports are placed at their barangay center coords
+      const reportCoords = BARANGAY_COORDS[item.barangay] || BARANGAY_COORDS['Tagapo']
+      farthestM = Math.max(farthestM, degToMeters(lat - reportCoords.lat, lng - reportCoords.lng, (lat + reportCoords.lat) / 2))
+    }
+
+    // Size the circle to just cover all related markers (with a small buffer),
+    // with a reasonable minimum so a single incident is still visible, and
+    // capped at 90 % of the nearest-neighbor gap so circles never overlap.
+    const maxRadius = nearestNeighborDist[item.barangay] * 0.9
+    const radius = Math.min(maxRadius, Math.max(farthestM * 1.1, 50))
 
     let fillColor = '#10b981'
     let strokeColor = '#047857'
@@ -307,8 +392,8 @@ function renderIncidentMarkers() {
   incidentMarkerGroup.clearLayers()
 
   if (showSOS.value) {
-    // Group SOS alerts by coordinates so multiple signals at the same spot
-    // render as a single marker with a count instead of invisible overlaps.
+    // Group SOS alerts by exact coordinates so only signals at the exact same
+    // spot cluster together; different locations stay separate.
     const sosByCoord = new Map()
     activeSOSAlerts.value.forEach(sos => {
       if (sos.latitude == null || sos.longitude == null) return
@@ -342,8 +427,7 @@ function renderIncidentMarkers() {
             <div style="font-size: 11px; color: #475569;">
               <strong>Barangay:</strong> ${sos.barangay || 'Unknown'}<br/>
               <strong>Status:</strong> <span style="color:${sos.status === 'responding' ? '#d97706' : '#64748b'}">${sos.status}</span><br/>
-              <strong>Coordinates:</strong> ${Number(sos.latitude).toFixed(5)}, ${Number(sos.longitude).toFixed(5)}<br/>
-              <strong>ID:</strong> <code style="font-size: 10px;">${sos.id || 'N/A'}</code><br/>
+              <strong>Time:</strong> ${timeAgo(sos.created_at)}<br/>
             </div>
             <hr style="margin: 6px 0; border: 0; border-top: 1px solid #e2e8f0;" />
             <a href="/admin/sos-feed?sos_id=${sos.id}"
@@ -355,18 +439,18 @@ function renderIncidentMarkers() {
         : `
           <div style="font-family: sans-serif; padding: 4px; color: #0f172a; min-width: 220px;">
             <h4 style="margin: 0 0 4px 0; font-weight: 800; font-size: 13px; color: #991b1b;">
-              SOS Alerts <span style="background:#991b1b;color:#fff;padding:0 6px;border-radius:8px;font-size:11px;">${count}</span>
+              ${group.alerts[0].barangay || 'Unknown'} SOS Alerts <span style="background:#991b1b;color:#fff;padding:0 6px;border-radius:8px;font-size:11px;">${count}</span>
             </h4>
             <div style="font-size: 11px; color: #475569; max-height: 180px; overflow-y: auto;">
-              <strong>Coordinates:</strong> ${Number(group.lat).toFixed(5)}, ${Number(group.lng).toFixed(5)}<br/>
               ${group.alerts.map((s, i) => `
                 <hr style="margin: 3px 0; border: 0; border-top: 1px solid #e2e8f0;"${i === 0 ? ' hidden' : ''} />
                 <a href="/admin/sos-feed?sos_id=${s.id}"
                    style="display:block;margin:2px 0;font-size:10px;color:#1F3A4B;text-decoration:none;padding:3px 6px;border-radius:6px;transition:background 0.15s;"
                    onmouseover="this.style.background='#EEF4FB'" onmouseout="this.style.background=''">
-                  <strong>#${i + 1}</strong> — ${s.barangay || 'Unknown'}
+                  <strong>#${i + 1}</strong>
                   · <span style="color:${s.status === 'responding' ? '#d97706' : '#64748b'}">${s.status}</span>
-                  · <code style="font-size:9px;">${s.id ? s.id.substring(0, 10) + '…' : 'N/A'}</code>
+                  · <span style="color:#94a3b8;font-size:9px;">${timeAgo(s.created_at)}</span>
+                  · <span style="color:#64748b;font-size:8px;">${Number(s.latitude).toFixed(4)}, ${Number(s.longitude).toFixed(4)}</span>
                 </a>
               `).join('')}
             </div>
@@ -392,12 +476,24 @@ function renderIncidentMarkers() {
   }
 
   if (showReports.value) {
+    // Group community reports by barangay center coordinates so all reports
+    // from the same barangay cluster into a single marker (same pattern as SOS).
+    const reportsByCoord = new Map()
     activeReportsFiltered.value.forEach(rep => {
-
       const coords = BARANGAY_COORDS[rep.barangay] || BARANGAY_COORDS['Tagapo']
+      const key = `${Number(coords.lat).toFixed(5)},${Number(coords.lng).toFixed(5)}`
+      if (!reportsByCoord.has(key)) {
+        reportsByCoord.set(key, { lat: coords.lat, lng: coords.lng, reports: [] })
+      }
+      reportsByCoord.get(key).reports.push(rep)
+    })
 
-      const marker = L.circleMarker([coords.lat, coords.lng], {
-        radius: 5,
+    reportsByCoord.forEach((group) => {
+      const count = group.reports.length
+      const radius = Math.min(18, 6 + (count - 1) * 2)
+
+      const marker = L.circleMarker([group.lat, group.lng], {
+        radius,
         fillColor: '#f59e0b',
         color: '#92400e',
         weight: 2,
@@ -405,21 +501,64 @@ function renderIncidentMarkers() {
         fillOpacity: 0.9
       })
 
-      const popup = `
-        <div style="font-family: sans-serif; padding: 4px; color: #0f172a; min-width: 160px;">
-          <h4 style="margin: 0 0 4px 0; font-weight: 800; font-size: 13px; color: #92400e;">Community Report</h4>
-          <div style="font-size: 11px; color: #475569;">
-            <strong>Barangay:</strong> ${rep.barangay || 'Unknown'}<br/>
-            <strong>Category:</strong> ${rep.ai_category || 'N/A'}<br/>
-            <strong>Priority:</strong> ${rep.ai_priority || 'N/A'}<br/>
-            <strong>Status:</strong> ${rep.status}<br/>
-            <div style="margin-top: 4px; padding: 4px; background: #fef3c7; border-radius: 4px; font-size: 10px; color: #92400e;">
-              "${(rep.raw_description || '').substring(0, 80)}${(rep.raw_description || '').length > 80 ? '...' : ''}"
+      // Show a popup with report details and a navigation link.
+      // Single report shows its individual info; grouped shows a scrollable list.
+      const rep = group.reports[0]
+      const popup = count === 1
+        ? `
+          <div style="font-family: sans-serif; padding: 4px; color: #0f172a; min-width: 200px;">
+            <h4 style="margin: 0 0 4px 0; font-weight: 800; font-size: 13px; color: #92400e;">Community Report</h4>
+            <div style="font-size: 11px; color: #475569;">
+              <strong>Barangay:</strong> ${rep.barangay || 'Unknown'}<br/>
+              <strong>Category:</strong> ${rep.ai_category || 'N/A'}<br/>
+              <strong>Priority:</strong> ${rep.ai_priority || 'N/A'}<br/>
+              <strong>Status:</strong> ${rep.status}<br/>
+              <div style="margin-top: 4px; padding: 4px; background: #fef3c7; border-radius: 4px; font-size: 10px; color: #92400e;">
+                "${(rep.raw_description || '').substring(0, 80)}${(rep.raw_description || '').length > 80 ? '...' : ''}"
+              </div>
             </div>
+            <hr style="margin: 6px 0; border: 0; border-top: 1px solid #e2e8f0;" />
+            <a href="/admin/community-reports?report_id=${rep.id}"
+               style="display:block;text-align:center;background:#92400e;color:#fff;padding:6px 12px;border-radius:8px;font-weight:800;font-size:11px;text-decoration:none;">
+              View in Community Reports →
+            </a>
           </div>
-        </div>
-      `
+        `
+        : `
+          <div style="font-family: sans-serif; padding: 4px; color: #0f172a; min-width: 220px;">
+            <h4 style="margin: 0 0 4px 0; font-weight: 800; font-size: 13px; color: #92400e;">
+              ${group.reports[0].barangay || 'Unknown'} Community Reports <span style="background:#92400e;color:#fff;padding:0 6px;border-radius:8px;font-size:11px;">${count}</span>
+            </h4>
+            <div style="font-size: 11px; color: #475569; max-height: 180px; overflow-y: auto;">
+              ${group.reports.map((r, i) => `
+                <hr style="margin: 3px 0; border: 0; border-top: 1px solid #e2e8f0;"${i === 0 ? ' hidden' : ''} />
+                <a href="/admin/community-reports?barangay=${r.barangay || 'Tagapo'}"
+                   style="display:block;margin:2px 0;font-size:10px;color:#1F3A4B;text-decoration:none;padding:3px 6px;border-radius:6px;transition:background 0.15s;"
+                   onmouseover="this.style.background='#FEF3C7'" onmouseout="this.style.background=''">
+                  <strong>#${i + 1}</strong>
+                  · <span style="color:${r.ai_priority === 'high' || r.ai_priority === 'critical' ? '#dc2626' : '#64748b'}">${r.ai_priority || 'N/A'}</span>
+                  · <span style="color:#92400e;font-size:9px;">"${(r.raw_description || '').substring(0, 28)}${(r.raw_description || '').length > 28 ? '...' : ''}"</span>
+                  <span style="color:#92400e;font-size:9px;font-weight:700;"> →</span>
+                </a>
+              `).join('')}
+            </div>
+            <hr style="margin: 6px 0; border: 0; border-top: 1px solid #e2e8f0;" />
+            <a href="/admin/community-reports?barangay=${group.reports[0].barangay || 'Tagapo'}"
+               style="display:block;text-align:center;background:#92400e;color:#fff;padding:6px 12px;border-radius:8px;font-weight:800;font-size:11px;text-decoration:none;">
+              View All in Community Reports →
+            </a>
+          </div>
+        `
       marker.bindPopup(popup)
+
+      if (count > 1) {
+        marker.bindTooltip(String(count), {
+          permanent: true,
+          direction: 'center',
+          className: 'report-cluster-badge'
+        })
+      }
+
       incidentMarkerGroup.addLayer(marker)
     })
   }
@@ -479,6 +618,29 @@ onUnmounted(() => {
 .leaflet-tooltip-top.sos-cluster-badge::before,
 .leaflet-tooltip-bottom.sos-cluster-badge::before,
 .sos-cluster-badge::before {
+  display: none !important;
+}
+
+.report-cluster-badge {
+  background: #92400e !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+  font-size: 11px !important;
+  border: 2px solid #fff !important;
+  border-radius: 50% !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4) !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  white-space: nowrap;
+}
+.leaflet-tooltip-top.report-cluster-badge::before,
+.leaflet-tooltip-bottom.report-cluster-badge::before,
+.report-cluster-badge::before {
   display: none !important;
 }
 </style>
