@@ -11,25 +11,38 @@
         </router-link>
 
         <div class="flex items-center space-x-2">
-          <button
-            @click="toggleLanguage"
-            class="text-xs px-2.5 py-1.5 rounded-full bg-[#EBEBEB] hover:bg-[#E0E0E0] text-[#0A0A0A] font-semibold transition-colors flex items-center space-x-1"
-            :title="$t('nav.language')"
+          <router-link
+            to="/app/settings"
+            v-slot="{ isActive }"
+            class="group flex items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-[#902715]/20"
+            :title="$t('nav.settings')"
+            aria-label="Settings"
           >
-            <svg class="w-3.5 h-3.5 text-[#902715]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span>{{ locale === 'fil' ? 'FIL' : 'EN' }}</span>
-          </button>
+            <div
+              :class="[
+                'w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200',
+                isActive
+                  ? 'bg-[#902715]/15 text-[#902715] scale-105 shadow-m3-sm'
+                  : 'bg-[#EBEBEB] text-[#717171] hover:bg-[#E0E0E0] hover:text-[#0A0A0A]'
+              ]"
+            >
+              <svg class="w-5 h-5 transition-transform duration-300 group-hover:rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+          </router-link>
         </div>
       </div>
     </header>
 
     <!-- Main Content Area -->
-    <main class="flex-1 max-w-md mx-auto w-full pb-28 p-4">
+    <main :class="['flex-1 max-w-md mx-auto w-full p-4', isSetupRoute ? 'pb-6' : 'pb-28']">
       <router-view />
     </main>
 
     <!-- Citizen Bottom Navigation Floating Glass Dock -->
-    <div class="fixed bottom-4 left-0 right-0 z-50 px-4 pointer-events-none">
+    <div v-if="!isSetupRoute" class="fixed bottom-4 left-0 right-0 z-50 px-4 pointer-events-none">
       <nav class="max-w-md mx-auto glass-dock rounded-full p-2 flex items-center justify-around pointer-events-auto shadow-m3-lg">
         <router-link
           to="/app"
@@ -135,22 +148,19 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import ConnectivityBanner from '@/components/common/ConnectivityBanner.vue'
 import { useSOS } from '@/composables/useSOS'
 import { useGPS } from '@/composables/useGPS'
 import { useLocaleStore } from '@/stores/localeStore'
 
-const { locale } = useI18n()
+const route = useRoute()
+const isSetupRoute = computed(() => route.path === '/app/setup' || route.name === 'citizen-setup')
+
 const localeStore = useLocaleStore()
 const { warmConnection } = useSOS()
 const { initGPS, startBackgroundRefresh } = useGPS()
-
-function toggleLanguage() {
-  const next = locale.value === 'fil' ? 'en' : 'fil'
-  localeStore.setLocale(next)
-}
 
 onMounted(() => {
   localeStore.initLocale()

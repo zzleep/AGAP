@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
+import { getCallbackNumber, getSOSDeviceHash } from '../composables/useGPS.js'
 import { findNearestBarangay } from '@/data/barangay_coords'
 
 export const useSOSStore = defineStore('sos', () => {
@@ -10,6 +11,7 @@ export const useSOSStore = defineStore('sos', () => {
   const userHash = ref('')
   const cachedBarangay = ref(null)
   const activeReports = ref([])
+  const flaggedDeviceHashes = ref(new Set())
   const isLoading = ref(false)
   const sosChannel = ref(null)
   const clusterClock = ref(Date.now())
@@ -28,27 +30,31 @@ export const useSOSStore = defineStore('sos', () => {
   const hasActiveSOS = computed(() => currentSOS.value !== null)
 
   // Sorted Queue: Priority pending -> assigned_area match -> oldest created_at first
+  // Filtered to exclude active flagged device hashes (R6), while ALWAYS preserving null/absent hashes (R7)
   const sortedQueue = computed(() => {
     const authStore = useAuthStore()
     const area = authStore.assignedArea
 
-    return [...activeReports.value].filter(Boolean).sort((a, b) => {
-      // 1. Pending status prioritized over non-pending
-      if (a.status === 'pending' && b.status !== 'pending') return -1
-      if (a.status !== 'pending' && b.status === 'pending') return 1
+    return [...activeReports.value]
+      .filter(Boolean)
+      .filter(r => !r.sos_device_hash || !flaggedDeviceHashes.value.has(r.sos_device_hash))
+      .sort((a, b) => {
+        // 1. Pending status prioritized over non-pending
+        if (a.status === 'pending' && b.status !== 'pending') return -1
+        if (a.status !== 'pending' && b.status === 'pending') return 1
 
-      // 2. Assigned area match priority
-      if (area && area !== 'all') {
-        const aMatch = a.barangay === area ? 1 : 0
-        const bMatch = b.barangay === area ? 1 : 0
-        if (aMatch !== bMatch) return bMatch - aMatch
-      }
+        // 2. Assigned area match priority
+        if (area && area !== 'all') {
+          const aMatch = a.barangay === area ? 1 : 0
+          const bMatch = b.barangay === area ? 1 : 0
+          if (aMatch !== bMatch) return bMatch - aMatch
+        }
 
-      // 3. Most recent first (descending order)
-      const aTime = a.created_at ? Date.parse(a.created_at) : Date.now()
-      const bTime = b.created_at ? Date.parse(b.created_at) : Date.now()
-      return bTime - aTime
-    })
+        // 3. Most recent first (descending order)
+        const aTime = a.created_at ? Date.parse(a.created_at) : Date.now()
+        const bTime = b.created_at ? Date.parse(b.created_at) : Date.now()
+        return bTime - aTime
+      })
   })
 
   // 30-minute barangay clustering (3+ reports in same barangay within 30 minutes)
@@ -118,9 +124,24 @@ export const useSOSStore = defineStore('sos', () => {
     return hash
   }
 
+  async function fetchFlaggedDevices() {
+    try {
+      const { data, error } = await supabase
+        .from('flagged_devices')
+        .select('device_hash')
+        .eq('active', true)
+      if (!error && data) {
+        flaggedDeviceHashes.value = new Set(data.map(d => d.device_hash).filter(Boolean))
+      }
+    } catch (err) {
+      console.warn('Fetch flagged devices error:', err)
+    }
+  }
+
   async function fetchActiveReports() {
     isLoading.value = true
     try {
+      await fetchFlaggedDevices()
       const { data, error } = await supabase
         .from('sos_reports')
         .select('*')
@@ -137,17 +158,114 @@ export const useSOSStore = defineStore('sos', () => {
     }
   }
 
+  async function flagDevice(param) {
+    const device_hash = typeof param === 'object' && param !== null ? param.device_hash : param
+    const flagged_by = typeof param === 'object' && param !== null ? param.flagged_by : arguments[1]
+    const reason = typeof param === 'object' && param !== null ? param.reason : arguments[2]
+
+    if (!device_hash) return { success: false, reason: 'missing_device_hash' }
+
+    try {
+      const nowIso = new Date().toISOString()
+      const { data, error } = await supabase
+        .from('flagged_devices')
+        .upsert({
+          device_hash,
+          flagged_at: nowIso,
+          flagged_by: flagged_by || 'operator',
+          reason: reason || null,
+          active: true
+        })
+
+      if (error) {
+        console.warn('Flag device DB error:', error)
+        return { success: false, error }
+      }
+
+      flaggedDeviceHashes.value.add(device_hash)
+      return { success: true, data }
+    } catch (err) {
+      console.warn('Flag device exception:', err)
+      return { success: false, error: err }
+    }
+  }
+
+  async function unflagDevice(device_hash) {
+    if (!device_hash) return { success: false, reason: 'missing_device_hash' }
+
+    try {
+      const { data, error } = await supabase
+        .from('flagged_devices')
+        .update({ active: false })
+        .eq('device_hash', device_hash)
+
+      if (error) {
+        console.warn('Unflag device DB error:', error)
+        return { success: false, error }
+      }
+
+      flaggedDeviceHashes.value.delete(device_hash)
+      return { success: true, data }
+    } catch (err) {
+      console.warn('Unflag device exception:', err)
+      return { success: false, error: err }
+    }
+  }
+
+  async function fetchFlaggedReports() {
+    await fetchFlaggedDevices()
+    const hashes = Array.from(flaggedDeviceHashes.value).filter(Boolean)
+    if (hashes.length === 0) return []
+
+    try {
+      const { data, error } = await supabase
+        .from('sos_reports')
+        .select('*')
+        .in('sos_device_hash', hashes)
+        .order('created_at', { ascending: false })
+
+      if (!error && data) {
+        return data
+      }
+      return []
+    } catch (err) {
+      console.warn('Fetch flagged reports exception:', err)
+      return []
+    }
+  }
+
   async function submitSOS(payload) {
     deliveryState.value = 'sending'
     try {
       const hash = userHash.value || initUserHash()
       const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true
+
+      const [retrievedCallbackNumber, retrievedDeviceHash] = await Promise.all([
+        payload.callback_number !== undefined
+          ? Promise.resolve(payload.callback_number)
+          : getCallbackNumber().catch((err) => {
+              console.warn('IndexedDB getCallbackNumber error in submitSOS:', err)
+              return null
+            }),
+        payload.sos_device_hash !== undefined
+          ? Promise.resolve(payload.sos_device_hash)
+          : getSOSDeviceHash().catch((err) => {
+              console.warn('IndexedDB getSOSDeviceHash error in submitSOS:', err)
+              return null
+            })
+      ])
+
+      const fallbackDeviceHash = crypto.randomUUID ? crypto.randomUUID() : 'dev_' + Date.now()
+      const finalDeviceHash = retrievedDeviceHash || fallbackDeviceHash
+
       const sosPayload = {
         latitude: payload.latitude,
         longitude: payload.longitude,
         user_hash: hash,
         barangay: payload.barangay || findNearestBarangay(payload.latitude, payload.longitude),
-        mode: isOnline ? (payload.mode || 'online') : 'degraded_signal'
+        mode: isOnline ? (payload.mode || 'online') : 'degraded_signal',
+        callback_number: retrievedCallbackNumber ?? null,
+        sos_device_hash: finalDeviceHash
       }
 
       const body = JSON.stringify(sosPayload)
@@ -297,6 +415,7 @@ export const useSOSStore = defineStore('sos', () => {
     userHash,
     cachedBarangay,
     activeReports,
+    flaggedDeviceHashes,
     isLoading,
     isPending,
     hasActiveSOS,
@@ -305,10 +424,14 @@ export const useSOSStore = defineStore('sos', () => {
     subscribeToRealtimeSOS,
     unsubscribeRealtimeSOS,
     initUserHash,
+    fetchFlaggedDevices,
     fetchActiveReports,
     submitSOS,
     claimReport,
     resolveReport,
-    checkStaleClaims
+    checkStaleClaims,
+    flagDevice,
+    unflagDevice,
+    fetchFlaggedReports
   }
 })

@@ -12,6 +12,7 @@ export function useWeather() {
   const error = ref(null)
 
   function saveLocalCache(data) {
+    if (!data || data.isFallback) return
     try {
       localStorage.setItem('agap_weather_cache', JSON.stringify({
         timestamp: Date.now(),
@@ -33,21 +34,23 @@ export function useWeather() {
       windSpeed: Math.round(raw.wind.speed * 3.6), // m/s to km/h
       location: 'Santa Rosa City, Laguna',
       icon: raw.weather[0]?.icon || '01d',
-      fetchedAt: Date.now()
+      fetchedAt: Date.now(),
+      isFallback: false
     }
   }
 
   function getFallbackWeather() {
     return {
       temp: 28,
-      condition: 'Thunderstorm',
-      description: 'Moderate to heavy rain showers',
-      rainfallRate: 12.5,
-      humidity: 88,
-      windSpeed: 24,
+      condition: 'Clouds',
+      description: 'Weather data temporarily unavailable',
+      rainfallRate: 0,
+      humidity: 80,
+      windSpeed: 10,
       location: 'Santa Rosa City, Laguna',
-      icon: '11d',
-      fetchedAt: Date.now()
+      icon: '02d',
+      fetchedAt: Date.now(),
+      isFallback: true
     }
   }
 
@@ -55,36 +58,24 @@ export function useWeather() {
     loading.value = true
     error.value = null
 
+    // 1. Check local storage cache first (only if valid & not a fallback)
     try {
-      // 1. Check local storage cache first
       const localCached = localStorage.getItem('agap_weather_cache')
       if (localCached) {
         const parsed = JSON.parse(localCached)
-        if (Date.now() - parsed.timestamp < CACHE_TTL_MS) {
+        if (parsed.data && !parsed.data.isFallback && (Date.now() - parsed.timestamp < CACHE_TTL_MS)) {
           weatherData.value = parsed.data
           loading.value = false
           return parsed.data
         }
       }
+    } catch (e) {
+      console.warn('Weather local cache read error:', e)
+    }
 
-      // 2. Check Supabase weather_cache DB table if online
-      if (typeof navigator !== 'undefined' && navigator.onLine) {
-        const { data: dbCache } = await supabase
-          .from('weather_cache')
-          .select('data, cached_at')
-          .eq('location_key', 'santa_rosa_city')
-          .single()
-
-        if (dbCache && (Date.now() - new Date(dbCache.cached_at).getTime() < CACHE_TTL_MS)) {
-          weatherData.value = dbCache.data
-          saveLocalCache(dbCache.data)
-          loading.value = false
-          return dbCache.data
-        }
-      }
-
-      // 3. Fetch live from OpenWeatherMap API if online and API key available
-      if (typeof navigator !== 'undefined' && navigator.onLine && OWM_API_KEY) {
+    // 2. Fetch live from OpenWeatherMap API
+    if (typeof navigator !== 'undefined' && navigator.onLine && OWM_API_KEY) {
+      try {
         const res = await fetch(
           `https://api.openweathermap.org/data/2.5/weather?lat=${SANTA_ROSA_LAT}&lon=${SANTA_ROSA_LON}&units=metric&appid=${OWM_API_KEY}`
         )
@@ -92,31 +83,50 @@ export function useWeather() {
           const raw = await res.json()
           const formatted = formatOWMData(raw)
 
-          // Save to Supabase weather_cache (upsert)
-          try {
-            await supabase.from('weather_cache').upsert({
-              location_key: 'santa_rosa_city',
-              data: formatted,
-              cached_at: new Date().toISOString()
-            }, { onConflict: 'location_key' })
-          } catch (dbErr) {
-            console.warn('Weather DB cache upsert warning:', dbErr)
-          }
+          saveLocalCache(formatted)
+
+          // Async DB cache upsert (non-blocking)
+          supabase.from('weather_cache').upsert({
+            location_key: 'santa_rosa_city',
+            data: formatted,
+            cached_at: new Date().toISOString()
+          }, { onConflict: 'location_key' }).then(() => {}).catch(err => {
+            console.warn('Weather DB cache upsert warning:', err)
+          })
 
           weatherData.value = formatted
-          saveLocalCache(formatted)
           loading.value = false
           return formatted
+        } else {
+          console.warn('OpenWeatherMap API response not OK:', res.status)
         }
+      } catch (owmErr) {
+        console.warn('OpenWeatherMap live fetch failed:', owmErr.message)
       }
-    } catch (err) {
-      console.warn('Weather fetch fallback triggered:', err.message)
-      error.value = err.message
-    } finally {
-      loading.value = false
     }
 
-    // 4. Fallback weather
+    // 3. Fallback to Supabase DB cache
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      try {
+        const { data: dbCache, error: dbErr } = await supabase
+          .from('weather_cache')
+          .select('data, cached_at')
+          .eq('location_key', 'santa_rosa_city')
+          .maybeSingle()
+
+        if (!dbErr && dbCache && dbCache.data && !dbCache.data.isFallback) {
+          weatherData.value = dbCache.data
+          saveLocalCache(dbCache.data)
+          loading.value = false
+          return dbCache.data
+        }
+      } catch (dbQueryErr) {
+        console.warn('Weather DB cache lookup error:', dbQueryErr)
+      }
+    }
+
+    // 4. Deterministic fallback (offline or all calls fail)
+    loading.value = false
     const fallback = getFallbackWeather()
     weatherData.value = fallback
     return fallback

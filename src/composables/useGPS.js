@@ -2,9 +2,11 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { openDB } from 'idb'
 import { findNearestBarangay } from '@/data/barangay_coords'
+import { normalizeCallbackNumber, looksValid } from '@/utils/callbackNumber'
 
 const DB_NAME = 'agap_gps_db'
 const STORE_NAME = 'locations'
+const PROFILE_STORE_NAME = 'user_profile'
 
 const cachedLocation = ref(null)
 const isLocating = ref(false)
@@ -13,14 +15,93 @@ let refreshInterval = null
 let serviceWorkerListenerReady = false
 let locationWatchId = null
 
-async function getDB() {
-  return openDB(DB_NAME, 1, {
-    upgrade(db) {
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME)
+let dbPromise = null
+let cachedDeviceHash = null
+let deviceHashPromise = null
+
+function getDB() {
+  if (!dbPromise) {
+    dbPromise = openDB(DB_NAME, 2, {
+      upgrade(db) {
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME)
+        }
+        if (!db.objectStoreNames.contains(PROFILE_STORE_NAME)) {
+          db.createObjectStore(PROFILE_STORE_NAME)
+        }
       }
+    }).catch((err) => {
+      dbPromise = null
+      throw err
+    })
+  }
+  return dbPromise
+}
+
+export async function getCallbackNumber() {
+  try {
+    const db = await getDB()
+    const val = await db.get(PROFILE_STORE_NAME, 'callback_number')
+    return val ?? null
+  } catch (err) {
+    console.warn('IndexedDB getCallbackNumber failed:', err)
+    return null
+  }
+}
+
+export async function setCallbackNumber(raw) {
+  const normalized = normalizeCallbackNumber(raw)
+  const validNumber = normalized || (raw ? String(raw).trim() : null)
+  try {
+    const db = await getDB()
+    if (!validNumber) {
+      await db.delete(PROFILE_STORE_NAME, 'callback_number')
+    } else {
+      await db.put(PROFILE_STORE_NAME, validNumber, 'callback_number')
     }
-  })
+  } catch (err) {
+    console.warn('IndexedDB setCallbackNumber failed:', err)
+  }
+  return validNumber
+}
+
+export async function initSOSDeviceHash() {
+  if (cachedDeviceHash) {
+    return cachedDeviceHash
+  }
+  if (deviceHashPromise) {
+    return deviceHashPromise
+  }
+
+  deviceHashPromise = (async () => {
+    try {
+      const db = await getDB()
+      const existing = await db.get(PROFILE_STORE_NAME, 'sos_device_hash')
+      if (existing) {
+        cachedDeviceHash = existing
+        return existing
+      }
+      if (!cachedDeviceHash) {
+        cachedDeviceHash = crypto.randomUUID()
+      }
+      await db.put(PROFILE_STORE_NAME, cachedDeviceHash, 'sos_device_hash')
+      return cachedDeviceHash
+    } catch (err) {
+      console.warn('IndexedDB initSOSDeviceHash failed:', err)
+      if (!cachedDeviceHash) {
+        cachedDeviceHash = crypto.randomUUID()
+      }
+      return cachedDeviceHash
+    } finally {
+      deviceHashPromise = null
+    }
+  })()
+
+  return deviceHashPromise
+}
+
+export async function getSOSDeviceHash() {
+  return await initSOSDeviceHash()
 }
 
 export function useGPS() {
@@ -142,6 +223,7 @@ export function useGPS() {
 
   async function initGPS() {
     registerServiceWorkerGPSRefresh()
+    await initSOSDeviceHash()
     const existing = await loadFromCache()
     isLocating.value = true
 
@@ -260,6 +342,11 @@ export function useGPS() {
     clearGPSCache,
     startBackgroundRefresh,
     startLiveTracking,
-    stopLiveTracking
+    stopLiveTracking,
+    getCallbackNumber,
+    setCallbackNumber,
+    getSOSDeviceHash,
+    initSOSDeviceHash
   }
 }
+

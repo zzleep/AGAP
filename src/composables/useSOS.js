@@ -1,6 +1,7 @@
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase'
 import { useSOSStore } from '@/stores/sosStore'
 import { useConnectivityStore } from '@/stores/connectivityStore'
+import { getCallbackNumber, getSOSDeviceHash } from './useGPS.js'
 import { findNearestBarangay } from '@/data/barangay_coords'
 
 export function useSOS() {
@@ -29,12 +30,34 @@ export function useSOS() {
   async function dispatchSOS(coords) {
     sosStore.deliveryState = 'sending'
     const hash = sosStore.userHash || sosStore.initUserHash()
+
+    // Concurrently fetch callback_number and sos_device_hash from IndexedDB/memory with non-blocking fallbacks
+    const [retrievedCallbackNumber, retrievedDeviceHash] = await Promise.all([
+      coords.callback_number !== undefined
+        ? Promise.resolve(coords.callback_number)
+        : getCallbackNumber().catch((err) => {
+            console.warn('IndexedDB getCallbackNumber error in dispatchSOS:', err)
+            return null
+          }),
+      coords.sos_device_hash !== undefined
+        ? Promise.resolve(coords.sos_device_hash)
+        : getSOSDeviceHash().catch((err) => {
+            console.warn('IndexedDB getSOSDeviceHash error in dispatchSOS:', err)
+            return null
+          })
+    ])
+
+    const fallbackDeviceHash = crypto.randomUUID ? crypto.randomUUID() : 'dev_' + Date.now()
+    const finalDeviceHash = retrievedDeviceHash || fallbackDeviceHash
+
     const payload = {
       latitude: coords.latitude,
       longitude: coords.longitude,
       user_hash: hash,
       barangay: coords.barangay || findNearestBarangay(coords.latitude, coords.longitude),
-      mode: connectivity.mode === 'online' ? 'online' : 'degraded_signal'
+      mode: connectivity.mode === 'online' ? 'online' : 'degraded_signal',
+      callback_number: retrievedCallbackNumber ?? null,
+      sos_device_hash: finalDeviceHash
     }
     const body = JSON.stringify(payload)
     const url = `${SUPABASE_URL}/rest/v1/sos_reports`

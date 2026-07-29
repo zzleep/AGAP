@@ -8,6 +8,8 @@ import HomeView from '@/views/citizen/HomeView.vue'
 import SOSView from '@/views/citizen/SOSView.vue'
 
 // Dynamically imported citizen views for lightweight initial PWA bundle
+const OnboardingView = () => import('@/views/citizen/OnboardingView.vue')
+const SettingsView = () => import('@/views/citizen/SettingsView.vue')
 const EvacMap = () => import('@/views/citizen/EvacMap.vue')
 const GuideList = () => import('@/views/citizen/GuideList.vue')
 const GuideDetail = () => import('@/views/citizen/GuideDetail.vue')
@@ -18,6 +20,7 @@ const FlowEngine = () => import('@/views/citizen/FlowEngine.vue')
 const AdminLayout = () => import('@/layouts/AdminLayout.vue')
 const LoginView = () => import('@/views/admin/LoginView.vue')
 const LiveSOSFeed = () => import('@/views/admin/LiveSOSFeed.vue')
+const FlaggedSOSView = () => import('@/views/admin/FlaggedSOSView.vue')
 const CommunityReportsView = () => import('@/views/admin/CommunityReportsView.vue')
 const HotspotMap = () => import('@/views/admin/HotspotMap.vue')
 const AegisPanel = () => import('@/views/admin/AegisPanel.vue')
@@ -33,6 +36,8 @@ const routes = [
     component: CitizenLayout,
     children: [
       { path: '', name: 'citizen-home', component: HomeView },
+      { path: 'setup', name: 'citizen-setup', component: OnboardingView },
+      { path: 'settings', name: 'citizen-settings', component: SettingsView },
       { path: 'sos', name: 'citizen-sos', component: SOSView },
       { path: 'map', name: 'citizen-map', component: EvacMap },
       { path: 'flow', name: 'citizen-flow-engine', component: FlowEngine },
@@ -56,6 +61,12 @@ const routes = [
         path: 'sos-feed',
         name: 'admin-sos-feed',
         component: LiveSOSFeed,
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'flagged-sos',
+        name: 'admin-flagged-sos',
+        component: FlaggedSOSView,
         meta: { requiresAuth: true }
       },
       {
@@ -114,6 +125,19 @@ router.beforeEach(async (to, from, next) => {
 
   if (isLoginPage && authStore.isAuthenticated && authStore.profile) {
     return next({ name: 'admin-sos-feed' })
+  }
+
+  const isAppRoute = to.path.startsWith('/app')
+  const isSetupPage = to.path === '/app/setup' || to.name === 'citizen-setup'
+
+  if (isAppRoute) {
+    const onboardingDone = localStorage.getItem('agap_onboarding_done') === 'true'
+    if (isSetupPage && onboardingDone) {
+      return next({ name: 'citizen-home' })
+    }
+    if (!isSetupPage && !onboardingDone) {
+      return next({ name: 'citizen-setup' })
+    }
   }
 
   next()
