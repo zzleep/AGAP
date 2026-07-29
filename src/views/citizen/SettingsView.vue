@@ -144,22 +144,6 @@
       </div>
     </section>
 
-    <!-- Section 3: Privacy & Device Diagnostics Card -->
-    <section class="bg-white rounded-3xl p-6 shadow-m3-md border border-black/5 space-y-3">
-      <h2 class="font-expressive text-sm font-black text-[#0A0A0A] uppercase tracking-wider">
-        {{ $t('settings.deviceInfoTitle') }}
-      </h2>
-      <div class="p-3.5 rounded-2xl bg-[#F5F5F5] border border-black/5 space-y-2 text-xs font-mono text-[#717171]">
-        <div class="flex items-center justify-between">
-          <span>{{ $t('settings.deviceHashLabel') }}</span>
-          <span class="font-bold text-[#0A0A0A]">{{ truncatedDeviceHash || 'Loading...' }}</span>
-        </div>
-        <div class="flex items-center justify-between border-t border-gray-200 pt-2 text-[11px] font-sans">
-          <span>{{ $t('settings.storageType') }}</span>
-          <span class="text-green-700 font-semibold">Ready</span>
-        </div>
-      </div>
-    </section>
 
     <!-- Toast Notification Popup -->
     <transition
@@ -191,12 +175,11 @@ import { useLocaleStore } from '@/stores/localeStore'
 import { normalizeCallbackNumber, looksValid } from '@/utils/callbackNumber'
 
 const { t } = useI18n()
-const { getCallbackNumber, setCallbackNumber, getSOSDeviceHash } = useGPS()
+const { getCallbackNumber, setCallbackNumber } = useGPS()
 const localeStore = useLocaleStore()
 
 const savedNumber = ref(null)
 const phoneInput = ref('')
-const sosDeviceHash = ref('')
 const toastMessage = ref('')
 const isSaving = ref(false)
 
@@ -206,13 +189,6 @@ const normalizedInput = computed(() => normalizeCallbackNumber(phoneInput.value)
 const isPhoneInvalidWarningVisible = computed(() => {
   if (!phoneInput.value || !phoneInput.value.trim()) return false
   return !looksValid(normalizedInput.value)
-})
-
-const truncatedDeviceHash = computed(() => {
-  if (!sosDeviceHash.value) return ''
-  const hash = sosDeviceHash.value
-  if (hash.length <= 12) return hash
-  return `${hash.slice(0, 6)}...${hash.slice(-4)}`
 })
 
 function showToast(msg) {
@@ -229,7 +205,6 @@ async function loadData() {
   if (savedNumber.value) {
     phoneInput.value = savedNumber.value
   }
-  sosDeviceHash.value = await getSOSDeviceHash()
 }
 
 async function handleSavePhone() {

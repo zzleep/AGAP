@@ -1,7 +1,19 @@
 <template>
   <div class="min-h-[80vh] flex flex-col justify-between py-4 space-y-6">
+    <!-- Background Decor (Full-Bleed Viewport Santa Rosa Brand Assets) -->
+    <img
+      src="/bg.png"
+      class="fixed inset-0 w-full h-full object-cover opacity-20 pointer-events-none z-0"
+      alt="Background Texture"
+    />
+    <img
+      src="/arkosta.png"
+      class="fixed -bottom-6 -right-6 w-80 sm:w-96 opacity-30 pointer-events-none z-0 select-none"
+      alt="Santa Rosa Arch"
+    />
+
     <!-- Top Stepper Header -->
-    <div class="space-y-3">
+    <div class="space-y-3 relative z-10">
       <div class="flex items-center justify-between text-xs font-bold text-[#717171] uppercase tracking-wider">
         <span>AGAP Citizen Setup</span>
         <span>Step {{ currentStep }} of 2</span>
@@ -16,8 +28,8 @@
     </div>
 
     <!-- Screen 1: GPS Permission Screen -->
-    <div v-if="currentStep === 1" class="flex-1 flex flex-col justify-between space-y-6">
-      <div class="bg-white rounded-3xl p-6 shadow-m3-md border border-black/5 space-y-6">
+    <div v-if="currentStep === 1" class="flex-1 flex flex-col justify-between space-y-6 relative z-10">
+      <div class="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-m3-md border border-black/5 space-y-6">
         <!-- Hero Icon Badge -->
         <div class="w-16 h-16 rounded-2xl bg-[#902715]/10 text-[#902715] flex items-center justify-center">
           <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -76,8 +88,8 @@
     </div>
 
     <!-- Screen 2: Callback Number Capture Screen -->
-    <div v-else-if="currentStep === 2" class="flex-1 flex flex-col justify-between space-y-6">
-      <div class="bg-white rounded-3xl p-6 shadow-m3-md border border-black/5 space-y-6">
+    <div v-else-if="currentStep === 2" class="flex-1 flex flex-col justify-between space-y-6 relative z-10">
+      <div class="bg-white/95 backdrop-blur-sm rounded-3xl p-6 shadow-m3-md border border-black/5 space-y-6">
         <!-- Hero Icon Badge -->
         <div class="w-16 h-16 rounded-2xl bg-[#1F3A4B]/10 text-[#1F3A4B] flex items-center justify-center">
           <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
