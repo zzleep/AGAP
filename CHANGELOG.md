@@ -5,6 +5,37 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0](https://github.com/zzleep/AGAP/compare/v1.1.0...v2.0.0) (2026-07-29)
+
+### Added
+
+- **Citizen onboarding flow** — 2-screen setup (`OnboardingView.vue`) guiding GPS permission grant and optional callback number capture on first launch; auto-redirects new users and skips if already completed
+- **Settings page** (`SettingsView.vue`) — dedicated screen for language selection, emergency callback number editing, and SOS device hash inspection
+- **Callback number utility** (`callbackNumber.js`) — Philippine mobile number normalizer (`+639` / `639` → `09XXXXXXXXX`) with validation
+- **IndexedDB v2 upgrade** — `user_profile` object store caching `callback_number` and `sos_device_hash` with lazy init and in-memory caching
+- **SOS device tagging** — every SOS dispatch includes a persistent `sos_device_hash` (UUID) across all paths (REST, Supabase SDK, IndexedDB offline) enabling device-level tracking without compromising emergency reporting
+- **SOS callback number capture** — `callback_number` appended to all SOS payloads wherever a saved number exists; fully optional and never gates emergency dispatch
+- **Contact Number column** — in `LiveSOSFeed.vue` with `tel:` protocol links and copy-to-clipboard for dispatchers
+- **Dispatch action dropdown menu** — contextual multi-action dropdown replacing single-action buttons with "Claim & Dispatch", "Mark Resolved", and "Mark as Spam/Prank" options
+- **Spam/ Pranks confirmation modal** — optional reason logging when flagging SOS as spam, recorded to the `flagged_devices` table
+- **Flagged SOS admin page** — `/admin/flagged-sos` route and `FlaggedSOSView.vue` with device unhashing, flagged report review, and device un-flagging
+- **Flagged SOS nav tab** — "Flagged SOS" entry added to the admin navigation rail with flag icon
+- **Spam suppression engine** — main dispatch feed auto-filters SOS from actively flagged device hashes while preserving all null-hash reports (legacy devices) to guarantee no legitimate report is ever suppressed
+- **Santa Rosa Arch watermark** — SVG landmark silhouette embedded in the home hero card with per-theme dynamic tinting
+
+### Changed
+
+- **Header language toggle replaced** — globe icon with language label removed from `CitizenLayout.vue` header; language switching moved to the new Settings page
+- **CitizenLayout bottom nav** — hidden during onboarding flow (`/app/setup`) so the setup screen is presented without navigation chrome
+- **Main content padding** — adjusted bottom padding from `pb-28` to `pb-6` on the setup route for a cleaner first-run layout
+- **IndexedDB schema v1→v2** — non-breaking migration; existing `locations` store preserved, `user_profile` store added alongside
+- **SOS payload expansion** — `callback_number` and `sos_device_hash` fields added to REST API and Supabase SDK paths; both default to `null` / generated UUID when absent
+
+### Fixed
+
+- **Debugging visuals removed** — extraneous debug UI elements stripped from Settings page
+- **Onboarding background display** — corrected background context so the onboarding view renders consistently with the app theme
+
 ## [1.1.0](https://github.com/zzleep/AGAP/compare/v1.0.3...v1.1.0) (2026-07-28)
 
 ### Added
