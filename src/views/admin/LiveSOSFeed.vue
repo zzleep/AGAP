@@ -194,6 +194,7 @@
                 <th class="py-3.5 px-5">Alert ID</th>
                 <th class="py-3.5 px-5">Barangay</th>
                 <th class="py-3.5 px-5">GPS Coordinates</th>
+                <th class="py-3.5 px-5">Contact Number</th>
                 <th class="py-3.5 px-5">Signal Mode</th>
                 <th class="py-3.5 px-5">Submitted</th>
                 <th class="py-3.5 px-5 text-right">Dispatch Action</th>
@@ -201,7 +202,7 @@
             </thead>
             <tbody class="divide-y divide-[#E0E0E0] text-xs">
               <tr v-if="paginatedQueue.length === 0">
-                <td colspan="7" class="py-12 text-center text-[#717171] font-bold">
+                <td colspan="8" class="py-12 text-center text-[#717171] font-bold">
                   No matching SOS alerts found for active filters.
                 </td>
               </tr>
@@ -253,6 +254,32 @@
                   {{ typeof item.longitude === 'number' ? item.longitude.toFixed(4) : item.longitude }}
                 </td>
 
+                <!-- Contact Number -->
+                <td class="py-3.5 px-5 whitespace-nowrap">
+                  <div v-if="item.callback_number" class="inline-flex items-center gap-1.5 font-mono font-bold text-[#1F3A4B]">
+                    <a
+                      :href="'tel:' + item.callback_number"
+                      class="inline-flex items-center gap-1.5 hover:text-[#902715] hover:underline"
+                      title="Click to call"
+                    >
+                      <svg class="w-3.5 h-3.5 text-[#902715] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                      <span>{{ formatCallbackNumber(item.callback_number) }}</span>
+                    </a>
+                    <button
+                      @click.stop="copyToClipboard(item.callback_number)"
+                      class="p-1 text-[#717171] hover:text-[#1F3A4B] rounded transition-colors"
+                      title="Copy number"
+                    >
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                      </svg>
+                    </button>
+                  </div>
+                  <span v-else class="text-[#717171] italic font-normal">No callback number provided</span>
+                </td>
+
                 <!-- Signal Mode -->
                 <td class="py-3.5 px-5 whitespace-nowrap">
                   <span
@@ -270,34 +297,67 @@
                   {{ formatTimeAgo(item.created_at) }}
                 </td>
 
-                <!-- Dispatch Action Button -->
-                <td class="py-3.5 px-5 whitespace-nowrap text-right">
-                  <button
-                    v-if="item.status === 'pending'"
-                    @click="claimAlert(item.id)"
-                    class="px-5 py-2 rounded-full bg-[#902715] hover:bg-[#7a2012] text-white font-black text-xs shadow-m3-xs active:scale-95 transition-all"
-                  >
-                    Claim & Dispatch
-                  </button>
-
-                  <div v-else-if="item.status === 'responding'" class="inline-flex items-center space-x-2">
-                    <span class="text-xs font-bold text-[#1F3A4B]">
-                      Responding
-                    </span>
-                    <button
-                      @click="markResolved(item.id)"
-                      class="px-4 py-1.5 rounded-full bg-[#183F07] hover:bg-[#122E06] text-white font-black text-xs shadow-m3-xs active:scale-95 transition-all"
-                    >
-                      Mark Resolved
-                    </button>
-                  </div>
-
-                  <span v-else-if="item.status === 'resolved'" class="text-xs font-black text-[#183F07] inline-flex items-center space-x-1">
+                <!-- Dispatch Action Menu -->
+                <td class="py-3.5 px-5 whitespace-nowrap text-right relative">
+                  <span v-if="item.status === 'resolved'" class="text-xs font-black text-[#183F07] inline-flex items-center space-x-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                     </svg>
                     <span>Resolved</span>
                   </span>
+
+                  <div v-else class="relative inline-block text-left">
+                    <button
+                      @click.stop="toggleDropdown(item.id)"
+                      class="px-3.5 py-1.5 rounded-full bg-[#1F3A4B] hover:bg-[#152a37] text-white font-black text-xs shadow-sm transition-all inline-flex items-center gap-1.5 active:scale-95"
+                    >
+                      <span>Actions</span>
+                      <svg class="w-3.5 h-3.5 text-[#F7FB41] transition-transform duration-200" :class="{ 'rotate-180': activeDropdownId === item.id }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    <!-- Contextual Dropdown Menu Popover -->
+                    <div
+                      v-if="activeDropdownId === item.id"
+                      @click.stop
+                      class="absolute right-0 mt-1.5 w-52 rounded-2xl bg-white border border-[#1F3A4B]/15 shadow-xl py-1.5 z-40 text-left font-sans"
+                    >
+                      <button
+                        v-if="item.status === 'pending'"
+                        @click="handleClaim(item)"
+                        class="w-full px-4 py-2 text-xs font-black text-[#902715] hover:bg-[#EEF4FB] flex items-center gap-2 transition-colors"
+                      >
+                        <svg class="w-4 h-4 text-[#902715]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        <span>Claim & Dispatch</span>
+                      </button>
+
+                      <button
+                        v-if="item.status === 'responding'"
+                        @click="handleResolve(item)"
+                        class="w-full px-4 py-2 text-xs font-black text-[#183F07] hover:bg-[#EEF4FB] flex items-center gap-2 transition-colors"
+                      >
+                        <svg class="w-4 h-4 text-[#183F07]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Mark Resolved</span>
+                      </button>
+
+                      <div class="my-1 border-t border-[#E0E0E0]"></div>
+
+                      <button
+                        @click="openSpamModal(item)"
+                        class="w-full px-4 py-2 text-xs font-black text-[#902715] hover:bg-[#FFF5F5] flex items-center gap-2 transition-colors"
+                      >
+                        <svg class="w-4 h-4 text-[#902715]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span>Mark as Spam/Prank</span>
+                      </button>
+                    </div>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -347,6 +407,80 @@
         </div>
       </div>
     </div>
+
+    <!-- Spam/Prank Confirmation Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showSpamModal"
+        class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs"
+        @click.self="closeSpamModal"
+      >
+        <div class="bg-white rounded-3xl p-6 max-w-md w-full border border-[#1F3A4B]/15 shadow-2xl space-y-4 text-left">
+          <div class="flex items-start space-x-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#902715]/10 text-[#902715] flex items-center justify-center shrink-0">
+              <svg class="w-6 h-6 text-[#902715]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-black text-lg text-[#1F3A4B] leading-tight">Mark as Spam/Prank</h3>
+              <p class="text-xs font-semibold text-[#717171] mt-0.5">
+                Alert #{{ selectedReportForFlag?.id ? selectedReportForFlag.id.substring(0, 8) : '' }} &middot; {{ selectedReportForFlag?.barangay }}
+              </p>
+            </div>
+          </div>
+
+          <div class="p-3.5 rounded-2xl bg-[#EEF4FB] border border-[#1F3A4B]/15 text-xs text-[#1F3A4B] font-medium leading-relaxed">
+            Mark this device as spam/prank? Future SOS reports from this device will be hidden from the main dispatch feed but not deleted — you can review or reverse this from the Flagged tab.
+          </div>
+
+          <div class="p-2.5 rounded-2xl bg-[#F8FAFC] border border-[#1F3A4B]/10 text-[11px] text-[#717171] font-semibold flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-[#1F3A4B] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Based on this device's local ID — may reset if the app is reinstalled</span>
+          </div>
+
+          <div v-if="selectedReportForFlag && !selectedReportForFlag.sos_device_hash" class="p-3 rounded-2xl bg-[#FFF5F5] border border-[#902715]/30 text-[11px] font-bold text-[#902715]">
+            ⚠️ Note: This report has no device hash attached. Flagging cannot suppress future reports from this device until a device hash is present.
+          </div>
+
+          <div>
+            <label class="block text-[10px] uppercase font-black text-[#1F3A4B] mb-1 tracking-wider">
+              Reason (Optional)
+            </label>
+            <textarea
+              v-model="spamReason"
+              rows="2"
+              placeholder="e.g. Nuisance call, repeated false alert, testing app..."
+              class="w-full px-3.5 py-2 rounded-2xl bg-white border border-[#1F3A4B]/20 text-xs text-[#1F3A4B] placeholder-[#717171] focus:outline-none focus:border-[#902715] font-medium transition-all"
+            ></textarea>
+          </div>
+
+          <div v-if="flagError" class="p-3 rounded-2xl bg-[#902715] text-white text-xs font-bold">
+            {{ flagError }}
+          </div>
+
+          <div class="flex items-center justify-end gap-3 pt-2">
+            <button
+              @click="closeSpamModal"
+              :disabled="isSubmittingFlag"
+              class="px-4 py-2.5 rounded-full bg-[#F5F5F5] hover:bg-[#E0E0E0] text-[#717171] font-bold text-xs transition-all active:scale-95 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              @click="confirmFlagSpam"
+              :disabled="isSubmittingFlag || !selectedReportForFlag?.sos_device_hash"
+              class="px-5 py-2.5 rounded-full bg-[#902715] hover:bg-[#7a2012] text-white font-black text-xs shadow-md transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+            >
+              <span v-if="isSubmittingFlag">Flagging...</span>
+              <span v-else>Confirm & Flag Device</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -365,10 +499,17 @@ const toastMessage = ref('')
 let staleTimer = null
 let pollTimer = null
 
+// ── Dropdown & Modal State ──
+const activeDropdownId = ref(null)
+const showSpamModal = ref(false)
+const selectedReportForFlag = ref(null)
+const spamReason = ref('')
+const isSubmittingFlag = ref(false)
+const flagError = ref('')
+
 // ── Pagination State ──
 const currentPage = ref(1)
 const rowsPerPage = ref(10)
-
 
 // ── Multi-Attribute SOS Filters State ──
 const filters = ref({
@@ -429,6 +570,100 @@ const paginatedQueue = computed(() => {
   return filteredQueue.value.slice(start, start + rowsPerPage.value)
 })
 
+function formatCallbackNumber(num) {
+  if (!num) return ''
+  const str = String(num).trim()
+  if (/^09\d{9}$/.test(str)) {
+    return `${str.slice(0, 4)} ${str.slice(4, 7)} ${str.slice(7)}`
+  }
+  return str
+}
+
+async function copyToClipboard(text) {
+  if (!text) return
+  try {
+    await navigator.clipboard.writeText(text)
+    toastMessage.value = `Copied ${text} to clipboard`
+  } catch (err) {
+    console.warn('Clipboard copy failed:', err)
+  }
+}
+
+function toggleDropdown(id) {
+  activeDropdownId.value = activeDropdownId.value === id ? null : id
+}
+
+function handleDocumentClick() {
+  activeDropdownId.value = null
+}
+
+function handleClaim(item) {
+  activeDropdownId.value = null
+  claimAlert(item.id)
+}
+
+function handleResolve(item) {
+  activeDropdownId.value = null
+  markResolved(item.id)
+}
+
+function openSpamModal(item) {
+  activeDropdownId.value = null
+  selectedReportForFlag.value = item
+  spamReason.value = ''
+  flagError.value = ''
+  showSpamModal.value = true
+}
+
+function closeSpamModal() {
+  showSpamModal.value = false
+  selectedReportForFlag.value = null
+  spamReason.value = ''
+  flagError.value = ''
+  isSubmittingFlag.value = false
+}
+
+async function confirmFlagSpam() {
+  if (!selectedReportForFlag.value) return
+  const report = selectedReportForFlag.value
+  const deviceHash = report.sos_device_hash
+
+  if (!deviceHash) {
+    flagError.value = 'Cannot flag device: Report missing device hash.'
+    return
+  }
+
+  isSubmittingFlag.value = true
+  flagError.value = ''
+
+  try {
+    const operatorId = authStore.profile?.id || authStore.user?.email || authStore.user?.id || 'operator'
+
+    const res = await sosStore.flagDevice({
+      device_hash: deviceHash,
+      flagged_by: operatorId,
+      reason: spamReason.value.trim()
+    })
+
+    if (!res.success) {
+      flagError.value = `Failed to flag device: ${res.error?.message || res.reason || 'Unknown error'}`
+      return
+    }
+
+    toastMessage.value = `Device marked as spam/prank.`
+    closeSpamModal()
+
+    if (sosStore.fetchActiveReports) {
+      await sosStore.fetchActiveReports()
+    }
+  } catch (err) {
+    console.error('Exception during device flag:', err)
+    flagError.value = 'An unexpected error occurred while flagging device.'
+  } finally {
+    isSubmittingFlag.value = false
+  }
+}
+
 function toggleAssignedAreaOnly() {
   filters.value.assignedAreaOnly = !filters.value.assignedAreaOnly
 }
@@ -451,6 +686,7 @@ async function manualRefresh() {
 }
 
 onMounted(async () => {
+  document.addEventListener('click', handleDocumentClick)
   if (sosStore.fetchActiveReports) {
     await sosStore.fetchActiveReports()
   }
@@ -475,6 +711,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  document.removeEventListener('click', handleDocumentClick)
   sosStore.unsubscribeRealtimeSOS()
   if (staleTimer) {
     clearInterval(staleTimer)
@@ -502,9 +739,9 @@ async function markResolved(id) {
 
 function formatTimeAgo(dateStr) {
   if (!dateStr) return 'Just now'
-  
+
   const date = new Date(dateStr)
-  
+
   return date.toLocaleDateString('en-PH', {
     month: '2-digit',
     day: '2-digit',

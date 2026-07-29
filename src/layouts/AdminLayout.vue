@@ -114,9 +114,15 @@ const ChartIcon = {
     h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2.2', d: 'M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' })
   ])
 }
+const FlagIcon = {
+  render: () => h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24', class: 'w-4 h-4' }, [
+    h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2.2', d: 'M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9' })
+  ])
+}
 
 const tabs = [
   { to: '/admin/sos-feed', label: 'Live SOS', icon: LightningIcon },
+  { to: '/admin/flagged-sos', label: 'Flagged SOS', icon: FlagIcon },
   { to: '/admin/community-reports', label: 'Reports', icon: DocumentIcon },
   { to: '/admin/hotspot-map', label: 'Hotspot Map', icon: MapIcon },
   { to: '/admin/aegis', label: 'Aegis AI', icon: ShieldIcon },

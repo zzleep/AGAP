@@ -8,7 +8,23 @@
       ]"
     >
       <!-- Background Ambient Glow Effect -->
-      <div class="absolute -right-12 -bottom-12 w-40 h-40 rounded-full bg-white/10 blur-3xl pointer-events-none"></div>
+      <div class="absolute -right-12 -bottom-12 w-40 h-40 rounded-full bg-white/10 blur-3xl pointer-events-none z-0"></div>
+
+      <!-- Santa Rosa Arch Background Landmark Watermark (Seamless, Dynamic Theme Tinted) -->
+      <svg
+        class="absolute right-2 -bottom-1 w-20 h-auto opacity-15 pointer-events-none z-0 transition-colors duration-700"
+        :class="activeTheme.archFill || 'text-white'"
+        viewBox="0 0 200 230"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <!-- Santa Rosa Arch Silhouette Path (3 Top Windows, Arch Vault & Column Bases) -->
+        <path
+          fill-rule="evenodd"
+          clip-rule="evenodd"
+          d="M 20 10 H 180 V 195 H 145 V 200 H 180 V 230 H 145 V 110 A 45 45 0 0 0 55 110 V 230 H 20 V 200 H 55 V 195 H 20 Z M 50 25 H 78 V 39 H 50 Z M 86 25 H 114 V 39 H 86 Z M 122 25 H 150 V 39 H 122 Z"
+        />
+      </svg>
 
       <!-- Top Hero Row: Icon + Temp + Condition Stack & High-Value Stat -->
       <div class="flex items-center justify-between gap-2.5 relative z-10">
@@ -235,49 +251,56 @@ const THEMES = {
     badgeBg: 'bg-[#F7FB41] text-[#902715]',
     tempColor: 'text-[#F7FB41]',
     subtitleColor: 'text-white/80',
-    iconType: 'thunderstorm'
+    iconType: 'thunderstorm',
+    archFill: 'text-[#F7FB41]'
   },
   rain: {
     bgClass: 'bg-gradient-to-br from-[#122B38] via-[#1F3A4B] to-[#2A4D64]',
     badgeBg: 'bg-[#E3EBF0] text-[#1F3A4B]',
     tempColor: 'text-[#F7FB41]',
     subtitleColor: 'text-white/80',
-    iconType: 'rain'
+    iconType: 'rain',
+    archFill: 'text-[#E3EBF0]'
   },
   cold: {
     bgClass: 'bg-gradient-to-br from-[#0F232E] via-[#1A3848] to-[#2D546B]',
     badgeBg: 'bg-[#70D6FF] text-[#0F232E]',
     tempColor: 'text-[#70D6FF]',
     subtitleColor: 'text-white/80',
-    iconType: 'breeze'
+    iconType: 'breeze',
+    archFill: 'text-[#70D6FF]'
   },
   heat: {
     bgClass: 'bg-gradient-to-br from-[#7A1D0B] via-[#902715] to-[#D14D3E]',
     badgeBg: 'bg-[#F7FB41] text-[#902715]',
     tempColor: 'text-[#F7FB41]',
     subtitleColor: 'text-white/90',
-    iconType: 'heat'
+    iconType: 'heat',
+    archFill: 'text-[#F7FB41]'
   },
   clear_night: {
     bgClass: 'bg-gradient-to-br from-[#0A1118] via-[#142332] to-[#1F3A4B]',
     badgeBg: 'bg-[#F7FB41] text-[#0A1118]',
     tempColor: 'text-[#F7FB41]',
     subtitleColor: 'text-white/80',
-    iconType: 'moon'
+    iconType: 'moon',
+    archFill: 'text-[#F7FB41]'
   },
   cloudy: {
     bgClass: 'bg-gradient-to-br from-[#2C3E50] via-[#1F3A4B] to-[#4A6572]',
     badgeBg: 'bg-[#E3EBF0] text-[#1F3A4B]',
     tempColor: 'text-white',
     subtitleColor: 'text-white/80',
-    iconType: 'cloud'
+    iconType: 'cloud',
+    archFill: 'text-[#E3EBF0]'
   },
   clear_day: {
     bgClass: 'bg-gradient-to-br from-[#902715] via-[#A8321A] to-[#D14D3E]',
     badgeBg: 'bg-[#F7FB41] text-[#902715]',
     tempColor: 'text-[#F7FB41]',
     subtitleColor: 'text-white/90',
-    iconType: 'sun'
+    iconType: 'sun',
+    archFill: 'text-[#F7FB41]'
   }
 }
 
