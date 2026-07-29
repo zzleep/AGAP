@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Spam suppression engine** — main dispatch feed auto-filters SOS from actively flagged device hashes while preserving all null-hash reports (legacy devices) to guarantee no legitimate report is ever suppressed
 - **Santa Rosa Arch watermark** — SVG landmark silhouette embedded in the home hero card with per-theme dynamic tinting
 
+### ⚠️ Breaking Changes
+
+- **Header language toggle removed** — the inline globe icon + FIL/EN label in the citizen header has been replaced with a Settings gear icon. Users must now navigate to `/app/settings` to switch languages. This affects all existing PWA clients until they re-cache the updated app shell.
+- **IndexedDB schema v1→v2** — the persistent GPS database upgraded from schema v1 to v2, adding a `user_profile` object store. The `upgrade()` callback handles migration transparently on first load, but downgrading to v1 of the app will cause IndexedDB open failures. This is a forward-only schema bump.
+- **Onboarding redirect** — users without `agap_onboarding_done` in localStorage are redirected from `/app/*` routes to `/app/setup`. Returning users with the flag set are unaffected, but clearing localStorage or installing fresh will trigger the onboarding flow before any other citizen page loads.
+
 ### Changed
 
 - **Header language toggle replaced** — globe icon with language label removed from `CitizenLayout.vue` header; language switching moved to the new Settings page
