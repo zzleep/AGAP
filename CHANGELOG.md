@@ -5,6 +5,24 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1](https://github.com/zzleep/AGAP/compare/v2.0.0...v2.0.1) (2026-07-29)
+
+
+### Bug Fixes
+
+* fixed PWA icons and configs ([45375b5](https://github.com/zzleep/AGAP/commit/45375b5f1149f8945442bfaa06cde6b6e8bd2250))
+
+
+### Bug Fixes
+
+- **PWA icons** — added new app icon set (`agap_pwa_icon.png`, `apple-touch-icon-180.png`, `apple-touch-icon-precomposed.png`, `apple-touch-icon.png`) with proper paths in `index.html`
+- **UI inconsistencies** — resolved visual alignment issues across citizen and admin layouts
+- **PWA config** — corrected Vite PWA plugin configuration for proper asset resolution and caching
+- **Router guard** — added route-level check to prevent unnecessary re-initialization on navigation
+- **CSS refinements** — applied `overscroll-behavior: contain` and `scrollbar-gutter: stable` to prevent layout shift
+
+---
+
 ## [2.0.0](https://github.com/zzleep/AGAP/compare/v1.1.0...v2.0.0) (2026-07-29)
 
 
