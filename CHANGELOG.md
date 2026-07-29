@@ -5,6 +5,62 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0](https://github.com/zzleep/AGAP/compare/v1.1.0...v2.0.0) (2026-07-29)
+
+
+### ⚠️ Breaking Changes
+
+* **Onboarding & SOS callback module** — header language toggle replaced with Settings gear icon; citizen pages redirect new users through onboarding flow; IndexedDB schema upgraded from v1 to v2 with new `user_profile` store ([e13d09f](https://github.com/zzleep/AGAP/commit/e13d09f941addb18691094f3fdad6ca7eba51fc4))
+
+
+### Features
+
+* **Onboarding, SOS Callback Module, Device tagging, and Spam Suppression** — 2-screen citizen onboarding, dedicated Settings page, callback number capture with Philippine mobile normalization, persistent SOS device hashing via IndexedDB, contact number column with tel: links in dispatch feed, contextual dropdown dispatch actions, spam/prank flagging with confirmation modal, `/admin/flagged-sos` review page, and automatic spam suppression in the main feed ([e13d09f](https://github.com/zzleep/AGAP/commit/e13d09f941addb18691094f3fdad6ca7eba51fc4))
+
+
+### Bug Fixes
+
+* **debugging tools removed** — stripped extraneous debug UI elements from Settings page; added onboarding background ([756000b](https://github.com/zzleep/AGAP/commit/756000b1dc499142a4ad878292af111b4ea2f66b))
+
+---
+
+## [2.0.0] — 2026-07-29
+
+### Added
+
+- **Citizen onboarding flow** — 2-screen setup (`OnboardingView.vue`) guiding GPS permission grant and optional callback number capture on first launch; auto-redirects new users and skips if already completed
+- **Settings page** (`SettingsView.vue`) — dedicated screen for language selection, emergency callback number editing, and SOS device hash inspection
+- **Callback number utility** (`callbackNumber.js`) — Philippine mobile number normalizer (`+639` / `639` → `09XXXXXXXXX`) with validation
+- **IndexedDB v2 upgrade** — `user_profile` object store caching `callback_number` and `sos_device_hash` with lazy init and in-memory caching
+- **SOS device tagging** — every SOS dispatch includes a persistent `sos_device_hash` (UUID) across all paths (REST, Supabase SDK, IndexedDB offline) enabling device-level tracking without compromising emergency reporting
+- **SOS callback number capture** — `callback_number` appended to all SOS payloads wherever a saved number exists; fully optional and never gates emergency dispatch
+- **Contact Number column** — in `LiveSOSFeed.vue` with `tel:` protocol links and copy-to-clipboard for dispatchers
+- **Dispatch action dropdown menu** — contextual multi-action dropdown replacing single-action buttons with "Claim & Dispatch", "Mark Resolved", and "Mark as Spam/Prank" options
+- **Spam/ Pranks confirmation modal** — optional reason logging when flagging SOS as spam, recorded to the `flagged_devices` table
+- **Flagged SOS admin page** — `/admin/flagged-sos` route and `FlaggedSOSView.vue` with device unhashing, flagged report review, and device un-flagging
+- **Flagged SOS nav tab** — "Flagged SOS" entry added to the admin navigation rail with flag icon
+- **Spam suppression engine** — main dispatch feed auto-filters SOS from actively flagged device hashes while preserving all null-hash reports (legacy devices) to guarantee no legitimate report is ever suppressed
+- **Santa Rosa Arch watermark** — SVG landmark silhouette embedded in the home hero card with per-theme dynamic tinting
+
+### ⚠️ Breaking Changes
+
+- **Header language toggle removed** — the inline globe icon + FIL/EN label in the citizen header has been replaced with a Settings gear icon. Users must now navigate to `/app/settings` to switch languages. This affects all existing PWA clients until they re-cache the updated app shell.
+- **IndexedDB schema v1→v2** — the persistent GPS database upgraded from schema v1 to v2, adding a `user_profile` object store. The `upgrade()` callback handles migration transparently on first load, but downgrading to v1 of the app will cause IndexedDB open failures. This is a forward-only schema bump.
+- **Onboarding redirect** — users without `agap_onboarding_done` in localStorage are redirected from `/app/*` routes to `/app/setup`. Returning users with the flag set are unaffected, but clearing localStorage or installing fresh will trigger the onboarding flow before any other citizen page loads.
+
+### Changed
+
+- **Header language toggle replaced** — globe icon with language label removed from `CitizenLayout.vue` header; language switching moved to the new Settings page
+- **CitizenLayout bottom nav** — hidden during onboarding flow (`/app/setup`) so the setup screen is presented without navigation chrome
+- **Main content padding** — adjusted bottom padding from `pb-28` to `pb-6` on the setup route for a cleaner first-run layout
+- **IndexedDB schema v1→v2** — non-breaking migration; existing `locations` store preserved, `user_profile` store added alongside
+- **SOS payload expansion** — `callback_number` and `sos_device_hash` fields added to REST API and Supabase SDK paths; both default to `null` / generated UUID when absent
+
+### Fixed
+
+- **Debugging visuals removed** — extraneous debug UI elements stripped from Settings page
+- **Onboarding background display** — corrected background context so the onboarding view renders consistently with the app theme
+
 ## [1.1.0](https://github.com/zzleep/AGAP/compare/v1.0.3...v1.1.0) (2026-07-28)
 
 ### Added
@@ -152,5 +208,6 @@ Initial release of AGAP — the first merge of the `dev` branch into `main`.
 - Removed dangling `test:smoke` script referencing nonexistent file
 - Redundant `ENABLE ROW LEVEL SECURITY` in migration 2 (no-op)
 
+[2.0.0]: https://github.com/zzleep/AGAP/releases/tag/v2.0.0
 [1.0.1]: https://github.com/zzleep/AGAP/releases/tag/v1.0.1
 [1.0.0]: https://github.com/zzleep/AGAP/releases/tag/v1.0.0
