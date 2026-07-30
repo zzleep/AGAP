@@ -5,6 +5,34 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.2](https://github.com/zzleep/AGAP/compare/v2.2.1...v2.2.2) (2026-07-30)
+
+
+### Bug Fixes
+
+* restore rAF deferral in renderRiskZones without console.warn ([9161de8](https://github.com/zzleep/AGAP/commit/9161de8c334c3534b2f06e5c978d2986782d7105))
+
+## [2.2.1](https://github.com/zzleep/AGAP/compare/v2.2.0...v2.2.1) (2026-07-30)
+
+
+### Bug Fixes
+
+* replace rAF polling with map.once('style.load') in renderRiskZones ([03a2752](https://github.com/zzleep/AGAP/commit/03a275230ebd0a5d43fcf366528446be77d44726))
+
+## [2.2.0](https://github.com/zzleep/AGAP/compare/v2.1.0...v2.2.0) (2026-07-30)
+
+
+### Features
+
+* **citizen:** overhaul GPS location permissions & phone input validation ([6589193](https://github.com/zzleep/AGAP/commit/6589193476c213a50aff2630d723c91c8545b7e0))
+* **map:** add flood zone toggle button and gap-fill base layer ([c41c833](https://github.com/zzleep/AGAP/commit/c41c83390f4a77d97da2431d9f64478b5f5ed0b6))
+* **map:** add flood zone toggle button with gap-fill base layer ([0257cbd](https://github.com/zzleep/AGAP/commit/0257cbd1c0851388d5fa9a13c3c41f30d45c9005))
+
+
+### Bug Fixes
+
+* address code review comments ([300bf8b](https://github.com/zzleep/AGAP/commit/300bf8b09685bbf23928971e51b04ffb7631a5f2))
+
 ## [2.1.0](https://github.com/zzleep/AGAP/compare/v2.0.1...v2.1.0) (2026-07-30)
 
 
