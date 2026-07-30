@@ -26,6 +26,14 @@ export const useConnectivityStore = defineStore('connectivity', () => {
 
   const effectiveRtt = computed(() => Math.max(rtt.value, measuredRtt.value))
 
+  const isSlowConnection = computed(() => {
+    if (!isOnline.value) return false // offline is handled separately
+    if (effectiveType.value === 'slow-2g' || effectiveType.value === '2g') return true
+    if (effectiveType.value === '3g') return true
+    if (effectiveRtt.value > 500) return true
+    return false
+  })
+
   const mode = computed(() => {
     if (!isOnline.value) return 'offline'
     if (effectiveType.value === '2g' || effectiveType.value === 'slow-2g' || effectiveRtt.value > 1000) {
@@ -123,6 +131,7 @@ export const useConnectivityStore = defineStore('connectivity', () => {
     lastOfflineAt,
     isPrewarmed,
     mode,
+    isSlowConnection,
     bannerConfig,
     initListeners,
     destroyListeners,

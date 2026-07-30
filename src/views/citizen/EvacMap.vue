@@ -93,6 +93,14 @@
     >
       <div ref="mapContainerEl" class="absolute inset-0 z-10"></div>
 
+      <!-- Loading overlay: shown while mapbox-gl (750KB) downloads on slow networks -->
+      <div v-if="mapLoading && !mapError" class="absolute inset-0 z-20 flex items-center justify-center bg-[#e5e7eb]/80 backdrop-blur-sm">
+        <div class="flex flex-col items-center gap-2">
+          <div class="w-6 h-6 border-2 border-[#902715] border-t-transparent rounded-full animate-spin"></div>
+          <p class="text-xs font-bold text-[#717171]">Loading map…</p>
+        </div>
+      </div>
+
       <div
         v-if="userLocation && nearestEvacCenter"
         class="absolute left-3 top-3 z-30 max-w-[calc(100%-8rem)] rounded-2xl border border-black/10 bg-white/90 p-3 text-xs shadow-m3-lg backdrop-blur-md"
@@ -156,12 +164,14 @@
 <script setup>
 import { onMounted, watch, ref, onUnmounted, nextTick, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import mapboxgl from 'mapbox-gl'
-import MapboxWorker from 'mapbox-gl/dist/mapbox-gl-csp-worker?worker'
+// mapbox-gl is dynamically imported to avoid blocking render with its 750KB download
+// on 3G/slow 4G. Static imports would block the entire component from mounting.
 import 'mapbox-gl/dist/mapbox-gl.css'
 
-mapboxgl.workerClass = MapboxWorker
+let mapboxgl = null
+const mapLoading = ref(true)
 import { useFlowStore } from '@/stores/flowStore'
+import { useConnectivityStore } from '@/stores/connectivityStore'
 import { supabase } from '@/lib/supabase'
 import { useGPS } from '@/composables/useGPS'
 import { EVAC_CENTERS } from '@/data/evac_deets.vue'
@@ -171,6 +181,7 @@ import fallbackRoutes from '@/data/evac_routes.json'
 
 const { t } = useI18n()
 const flow = useFlowStore()
+const connectivity = useConnectivityStore()
 const { cachedLocation, isLocating, initGPS, refreshLocation, startLiveTracking, stopLiveTracking } = useGPS()
 let map = null
 
@@ -253,12 +264,14 @@ onMounted(async () => {
   window.addEventListener('orientationchange', handleViewportResize)
   document.addEventListener('fullscreenchange', handleFullscreenChange)
 
+  // Throttle autopilot on slow connections to avoid hammering the network
+  const autopilotIntervalMs = connectivity.isSlowConnection ? 60000 : 15000
   autopilotIntervalId = setInterval(() => {
     runAutopilotCycle(false)
-  }, 15000)
+  }, autopilotIntervalMs)
 
   await nextTick()
-  await loadEvacRoutes()
+  loadEvacRoutes() // non-blocking: renders bundled data instantly, refreshes from Supabase in background
   initMapboxMap()
 
   initGPS().then(() => {
@@ -284,21 +297,48 @@ onUnmounted(() => {
   document.body.classList.remove('overflow-hidden')
 })
 
-function initMapboxMap() {
-  if (!mapContainerEl.value) return
-
-  if (!mapboxToken) {
-    mapError.value = 'Set VITE_MAPBOX_ACCESS_TOKEN in your environment to load this map.'
-    return
-  }
-
-  if (typeof mapboxgl.setTelemetryEnabled === 'function') {
-    mapboxgl.setTelemetryEnabled(false)
-  }
-
-  mapboxgl.accessToken = mapboxToken
-
+async function ensureMapboxGl() {
+  if (mapboxgl) return mapboxgl
+  mapLoading.value = true
   try {
+    const [mapboxModule, workerModule] = await Promise.all([
+      import('mapbox-gl'),
+      import('mapbox-gl/dist/mapbox-gl-csp-worker?worker')
+    ])
+    mapboxgl = mapboxModule.default || mapboxModule
+    mapboxgl.workerClass = workerModule.default || workerModule
+    return mapboxgl
+  } catch (err) {
+    console.error('Failed to load mapbox-gl:', err)
+    mapError.value = 'Map engine failed to load on this network. Please retry when connected to a faster network.'
+    mapLoading.value = false
+    throw err
+  }
+}
+
+async function initMapboxMap() {
+  if (!mapContainerEl.value) return
+  try {
+    await ensureMapboxGl()
+
+    // Emergency app: use OSM raster tiles on slow connections for instant render
+    // Mapbox vector tiles add 5-15s load time on 3G/slow 4G which is unacceptable
+    if (connectivity.isSlowConnection) {
+      initOsmMapInternal()
+      return
+    }
+
+    if (!mapboxToken) {
+      initOsmMapInternal()
+      return
+    }
+
+    if (typeof mapboxgl.setTelemetryEnabled === 'function') {
+      mapboxgl.setTelemetryEnabled(false)
+    }
+
+    mapboxgl.accessToken = mapboxToken
+
     map = new mapboxgl.Map({
       container: mapContainerEl.value,
       style: 'mapbox://styles/mapbox/streets-v12',
@@ -319,11 +359,12 @@ function initMapboxMap() {
       }
     })
 
-    map.on('load', async () => {
+    map.on('load', () => {
+      mapLoading.value = false
       addBoundaryLayer()
       renderEvacMarkers()
-      await renderEvacRouteLine()
-      await runAutopilotCycle(true)
+      renderEvacRouteLine()
+      runAutopilotCycle(true)
       renderRoutes()
       handleViewportResize()
       mapError.value = ''
@@ -335,7 +376,47 @@ function initMapboxMap() {
     setTimeout(() => { if (map) map.resize() }, 500)
   } catch (err) {
     console.error('Mapbox GL initialization error:', err)
-    mapError.value = 'Failed to initialize Mapbox GL: ' + (err.message || String(err))
+    if (!map) initOsmMapInternal()
+    mapLoading.value = false
+  }
+}
+
+function initOsmMapInternal() {
+  if (!mapContainerEl.value || map) return
+
+  if (mapboxToken && typeof mapboxgl.setTelemetryEnabled === 'function') {
+    mapboxgl.setTelemetryEnabled(false)
+  }
+  mapboxgl.accessToken = mapboxToken || ''
+  try {
+    map = new mapboxgl.Map({
+      container: mapContainerEl.value,
+      style: osmRasterStyle,
+      center: SANTA_ROSA_CENTER,
+      zoom: 15,
+      minZoom: 12,
+      maxZoom: 16
+    })
+
+    map.on('load', () => {
+      mapLoading.value = false
+      addBoundaryLayer()
+      renderEvacMarkers()
+      renderEvacRouteLine()
+      runAutopilotCycle(true)
+      renderRoutes()
+      handleViewportResize()
+      mapError.value = ''
+    })
+
+    requestAnimationFrame(() => { if (map) map.resize() })
+    setTimeout(() => { if (map) map.resize() }, 50)
+    setTimeout(() => { if (map) map.resize() }, 200)
+    setTimeout(() => { if (map) map.resize() }, 500)
+  } catch (err) {
+    console.error('OSM map initialization error:', err)
+    mapError.value = 'Failed to initialize map.'
+    mapLoading.value = false
   }
 }
 
@@ -352,18 +433,21 @@ function handleViewportResize() {
 }
 
 async function loadEvacRoutes() {
+  // Use bundled data immediately for instant render on slow networks
+  routesData.value = fallbackRoutes
+
+  // Background-refresh from Supabase (non-blocking, updates map when data arrives)
   try {
     if (typeof navigator !== 'undefined' && navigator.onLine) {
       const { data, error } = await supabase.from('evac_routes').select('*')
       if (!error && data && data.length > 0) {
         routesData.value = data
-        return
+        renderRoutes()
       }
     }
   } catch (err) {
-    console.warn('Using offline evacuation routes fallback:', err.message)
+    console.warn('bundled routes already shown, supabase update failed:', err.message)
   }
-  routesData.value = fallbackRoutes
 }
 
 function renderRoutes() {
@@ -584,6 +668,8 @@ async function renderEvacRouteLine() {
 
   if (evacRouteAbortController) evacRouteAbortController.abort()
   evacRouteAbortController = new AbortController()
+  // 10s timeout prevents hanging on slow 3G networks
+  const mapboxRouteTimeout = setTimeout(() => evacRouteAbortController.abort(), 10000)
 
   const origin = `${userLocation.value.longitude},${userLocation.value.latitude}`
   const destination = `${nearestEvacCenter.value.coords.longitude},${nearestEvacCenter.value.coords.latitude}`
@@ -617,9 +703,11 @@ async function renderEvacRouteLine() {
       geometry: route.geometry
     })
   } catch (err) {
-    if (err?.name === 'AbortError') return
-
-    console.warn('Using fallback evacuation route line:', err)
+    if (err?.name === 'AbortError') {
+      console.warn('Mapbox Directions timed out on slow network, using fallback route')
+    } else {
+      console.warn('Using fallback evacuation route line:', err)
+    }
     nearestEvacRouteInfo.value = null
     routeReason.value = 'Road route unavailable; using direct fallback path.'
     addRouteLine({
@@ -636,6 +724,8 @@ async function renderEvacRouteLine() {
         ]
       }
     }, true)
+  } finally {
+    clearTimeout(mapboxRouteTimeout)
   }
 }
 

@@ -75,9 +75,12 @@ export function useWeather() {
 
     // 2. Fetch live from OpenWeatherMap API
     if (typeof navigator !== 'undefined' && navigator.onLine && OWM_API_KEY) {
+      const owmController = new AbortController()
+      const owmTimeout = setTimeout(() => owmController.abort(), 10000)
       try {
         const res = await fetch(
-          `https://api.openweathermap.org/data/2.5/weather?lat=${SANTA_ROSA_LAT}&lon=${SANTA_ROSA_LON}&units=metric&appid=${OWM_API_KEY}`
+          `https://api.openweathermap.org/data/2.5/weather?lat=${SANTA_ROSA_LAT}&lon=${SANTA_ROSA_LON}&units=metric&appid=${OWM_API_KEY}`,
+          { signal: owmController.signal }
         )
         if (res.ok) {
           const raw = await res.json()
@@ -101,7 +104,13 @@ export function useWeather() {
           console.warn('OpenWeatherMap API response not OK:', res.status)
         }
       } catch (owmErr) {
-        console.warn('OpenWeatherMap live fetch failed:', owmErr.message)
+        if (owmErr.name === 'AbortError') {
+          console.warn('OpenWeatherMap fetch timed out (10s)')
+        } else {
+          console.warn('OpenWeatherMap live fetch failed:', owmErr.message)
+        }
+      } finally {
+        clearTimeout(owmTimeout)
       }
     }
 

@@ -55,8 +55,15 @@
     </div>
 
     <!-- Leaflet Map Container -->
-    <div class="rounded-3xl overflow-hidden border border-[#E0E0E0] shadow-m3-md">
+    <div class="rounded-3xl overflow-hidden border border-[#E0E0E0] shadow-m3-md relative">
       <div ref="mapContainer" class="h-[460px] w-full bg-[#e5e7eb]"></div>
+      <!-- Loading overlay for slow networks -->
+      <div v-if="isMapLoading && !isRefreshing" class="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center z-[1000] transition-opacity duration-300">
+        <div class="flex flex-col items-center gap-2">
+          <div class="w-6 h-6 border-2 border-[#902715] border-t-transparent rounded-full animate-spin"></div>
+          <p class="text-xs font-bold text-[#717171]">Loading map data...</p>
+        </div>
+      </div>
     </div>
 
     <!-- Demo Simulation Controls -->
@@ -101,6 +108,7 @@ const weatherStore = useWeatherStore()
 const mapContainer = ref(null)
 const isRefreshing = ref(false)
 const secondsAgo = ref(0)
+const isMapLoading = ref(true)
 const floodZones = ref([])
 const evacRoutes = ref([])
 
@@ -146,13 +154,22 @@ const riskColors = {
 
 onMounted(async () => {
   initMap()
-  await loadFloodZones()
-  await loadEvacRoutes()
-  await weatherStore.fetchWeather()
+  // Use bundled data immediately — no network wait
+  floodZones.value = floodZonesData
+  evacRoutes.value = evacRoutesData.features || evacRoutesData
   renderFloodZones()
   renderEvacRoutes()
+  isMapLoading.value = false
 
-  // Start ticker
+  // Background-refresh from Supabase (non-blocking, updates map when data arrives)
+  loadFloodZones()
+  loadEvacRoutes()
+
+  // Fire weather but DON'T await — it has its own cache layer + fallback chain
+  // On 3G the OWM timeout + Supabase fallback can take 10-15s, blocking the whole page
+  weatherStore.fetchWeather()
+
+  // Start ticker immediately (not blocked by weather)
   tickerInterval = setInterval(() => {
     secondsAgo.value = Math.floor((Date.now() - flowStore.lastUpdated) / 1000)
   }, 1000)
@@ -271,13 +288,13 @@ async function loadFloodZones() {
           properties: { name: zone.zone_name, severity: zone.severity },
           geometry: zone.geojson?.geometry || zone.geojson
         }))
-        return
+        renderFloodZones()
+        return // Supabase data wins, no need for bundled fallback
       }
     }
   } catch (err) {
-    console.warn('Using bundled flood zone fallback:', err.message)
+    console.warn('Supabase flood zone fetch failed, using bundled data:', err.message)
   }
-  floodZones.value = floodZonesData
 }
 
 async function loadEvacRoutes() {
@@ -295,13 +312,13 @@ async function loadEvacRoutes() {
           },
           geometry: route.geojson?.geometry || route.geojson
         }))
-        return
+        renderEvacRoutes()
+        return // Supabase data wins, no need for bundled fallback
       }
     }
   } catch (err) {
-    console.warn('Using bundled evacuation route fallback:', err.message)
+    console.warn('Supabase evac route fetch failed, using bundled data:', err.message)
   }
-  evacRoutes.value = evacRoutesData.features || evacRoutesData
 }
 
 function onSliderChange(e) {
