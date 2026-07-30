@@ -113,24 +113,26 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
-  const authStore = useAuthStore()
-
-  if (!authStore.isInitialized) {
-    await authStore.initializeAuth()
-  }
-
   const isAdminRoute = to.path.startsWith('/admin')
   const isLoginPage = to.name === 'admin-login'
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth) || (isAdminRoute && !isLoginPage)
 
-  if (requiresAuth) {
-    if (!authStore.isAuthenticated || !authStore.profile) {
-      return next({ name: 'admin-login', query: { redirect: to.fullPath } })
+  // Only initialize admin auth on admin routes — keeps citizen app launches 100% non-blocking & offline-first
+  if (isAdminRoute || requiresAuth || isLoginPage) {
+    const authStore = useAuthStore()
+    if (!authStore.isInitialized) {
+      await authStore.initializeAuth()
     }
-  }
 
-  if (isLoginPage && authStore.isAuthenticated && authStore.profile) {
-    return next({ name: 'admin-sos-feed' })
+    if (requiresAuth) {
+      if (!authStore.isAuthenticated || !authStore.profile) {
+        return next({ name: 'admin-login', query: { redirect: to.fullPath } })
+      }
+    }
+
+    if (isLoginPage && authStore.isAuthenticated && authStore.profile) {
+      return next({ name: 'admin-sos-feed' })
+    }
   }
 
   const isAppRoute = to.path.startsWith('/app')

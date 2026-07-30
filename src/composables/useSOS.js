@@ -74,72 +74,79 @@ export function useSOS() {
    * or iOS sendBeacon fallback.
    */
   async function dispatchSOS(coords) {
+    if (typeof window !== 'undefined') window._agapIsSendingSOS = true
     sosStore.deliveryState = 'sending'
-    const hash = sosStore.userHash || sosStore.initUserHash()
 
-    // Concurrently fetch callback_number and sos_device_hash from IndexedDB/memory with non-blocking fallbacks
-    const [retrievedCallbackNumber, retrievedDeviceHash] = await Promise.all([
-      coords.callback_number !== undefined
-        ? Promise.resolve(coords.callback_number)
-        : getCallbackNumber().catch((err) => {
-            console.warn('IndexedDB getCallbackNumber error in dispatchSOS:', err)
-            return null
-          }),
-      coords.sos_device_hash !== undefined
-        ? Promise.resolve(coords.sos_device_hash)
-        : getSOSDeviceHash().catch((err) => {
-            console.warn('IndexedDB getSOSDeviceHash error in dispatchSOS:', err)
-            return null
-          })
-    ])
-
-    const fallbackDeviceHash = crypto.randomUUID ? crypto.randomUUID() : 'dev_' + Date.now()
-    const finalDeviceHash = retrievedDeviceHash || fallbackDeviceHash
-
-    const payload = {
-      latitude: coords.latitude,
-      longitude: coords.longitude,
-      user_hash: hash,
-      barangay: coords.barangay || findNearestBarangay(coords.latitude, coords.longitude),
-      mode: connectivity.mode === 'online' ? 'online' : 'degraded_signal',
-      callback_number: retrievedCallbackNumber ?? null,
-      sos_device_hash: finalDeviceHash
-    }
-    const body = JSON.stringify(payload)
-    const url = `${SUPABASE_URL}/rest/v1/sos_reports`
-
-    const record = {
-      id: crypto.randomUUID ? crypto.randomUUID() : 'sos_' + Date.now(),
-      ...payload,
-      status: 'pending',
-      created_at: new Date().toISOString()
-    }
-    sosStore.currentSOS = record
-    sosStore.activeReports.unshift(record)
-
-    // Direct REST fetch with Workbox BackgroundSync handling for Chromium and standard fetch for Safari/Firefox
     try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal'
-        },
-        body
-      })
-      if (res.ok) {
-        sosStore.deliveryState = 'sent'
-      } else {
-        console.warn(`SOS POST failed: ${res.status} ${res.statusText}`)
-        sosStore.deliveryState = 'queued'
-      }
-    } catch (err) {
-      sosStore.deliveryState = 'queued'
-      console.warn('SOS POST request queued for offline sync:', err)
-    }
+      const hash = sosStore.userHash || sosStore.initUserHash()
 
-    return record
+      // Concurrently fetch callback_number and sos_device_hash from IndexedDB/memory with non-blocking fallbacks
+      const [retrievedCallbackNumber, retrievedDeviceHash] = await Promise.all([
+        coords.callback_number !== undefined
+          ? Promise.resolve(coords.callback_number)
+          : getCallbackNumber().catch((err) => {
+              console.warn('IndexedDB getCallbackNumber error in dispatchSOS:', err)
+              return null
+            }),
+        coords.sos_device_hash !== undefined
+          ? Promise.resolve(coords.sos_device_hash)
+          : getSOSDeviceHash().catch((err) => {
+              console.warn('IndexedDB getSOSDeviceHash error in dispatchSOS:', err)
+              return null
+            })
+      ])
+
+      const fallbackDeviceHash = crypto.randomUUID ? crypto.randomUUID() : 'dev_' + Date.now()
+      const finalDeviceHash = retrievedDeviceHash || fallbackDeviceHash
+
+      const payload = {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        user_hash: hash,
+        barangay: coords.barangay || findNearestBarangay(coords.latitude, coords.longitude),
+        mode: connectivity.mode === 'online' ? 'online' : 'degraded_signal',
+        callback_number: retrievedCallbackNumber ?? null,
+        sos_device_hash: finalDeviceHash
+      }
+      const body = JSON.stringify(payload)
+      const url = `${SUPABASE_URL}/rest/v1/sos_reports`
+
+      const record = {
+        id: crypto.randomUUID ? crypto.randomUUID() : 'sos_' + Date.now(),
+        ...payload,
+        status: 'pending',
+        created_at: new Date().toISOString()
+      }
+      sosStore.currentSOS = record
+      sosStore.activeReports.unshift(record)
+
+      // Direct REST fetch with Workbox BackgroundSync handling for Chromium and standard fetch for Safari/Firefox
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body
+        })
+        if (res.ok) {
+          sosStore.deliveryState = 'sent'
+        } else {
+          console.warn(`SOS POST failed: ${res.status} ${res.statusText}`)
+          sosStore.deliveryState = 'queued'
+        }
+      } catch (err) {
+        sosStore.deliveryState = 'queued'
+        console.warn('SOS POST request queued for offline sync:', err)
+      }
+
+      return record
+    } catch (err) {
+      console.warn('dispatchSOS error:', err)
+      return null
+    }
   }
 
   /**
