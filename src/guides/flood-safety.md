@@ -8,7 +8,7 @@ summary: Evacuation steps for rising river & lake waters.
 
 # Flood & River Overflow Guide
 
-> **High-Risk Zones**: Barangays Aplaya, Sinalhan, Caingin, Tagapo, Santo Domingo, Malitlit, Dita, Market Area, and Poblacion.
+> **High-Risk Zones**: Barangays Aplaya, Sinalhan, Caingin, Tagapo, Santo Domingo, Malitlit, Dita, Market Area, Kanluran, and Malusak.
 
 ## 1. Monitoring & Early Warning Triggers
 - **Silang-Santa Rosa River Level**: Monitor CDRRMO bridge gauge markers. When water reaches **Orange Level (Warning)**, prepare Go-Bags immediately.
@@ -22,7 +22,7 @@ summary: Evacuation steps for rising river & lake waters.
 
 ## 3. Designated Evacuation Centers in Santa Rosa
 - **Santa Rosa Multi-Purpose Complex (City Coliseum)** — *Brgy. Macabling*
-- **Santa Rosa Central Elementary School** — *Brgy. Poblacion*
+- **Santa Rosa Central Elementary School** — *Brgy. Kanluran (Poblacion Ward 1)*
 - **Balibago Elementary School** — *Brgy. Balibago*
 - **Aplaya Elementary School & Covered Court** — *Brgy. Aplaya*
 - **Sinalhan Elementary School & Gym** — *Brgy. Sinalhan*

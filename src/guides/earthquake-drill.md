@@ -21,7 +21,7 @@ summary: Ground shaking & fault line safety procedures.
 - **Industrial Park Protocol**: Factories in Laguna Technopark and Greenfield Automotive Park should execute automated emergency shutoff for gas lines and evacuate to designated company assembly grounds.
 
 ## 3. Designated Open-Space Assembly Grounds in Santa Rosa
-- **Santa Rosa City Plaza** — *Brgy. Poblacion*
+- **Santa Rosa City Plaza** — *Brgy. Kanluran (Poblacion Ward 1)*
 - **Santa Rosa City Hall Grounds** — *Brgy. Tagapo*
 - **Nuvali Central Park & Solenad Open Fields** — *Brgy. Don Jose / Santo Domingo*
 - **Barangay Sports Complexes & Open Grounds** — *All Barangays*
