@@ -5,7 +5,7 @@
 
     <!-- Citizen Header (Standard M3 Light Surface Header with Safe Area Inset) -->
     <header class="bg-white/80 backdrop-blur-md border-b border-black/5 sticky top-0 z-40 px-4 pb-3 shadow-m3-sm" style="padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));">
-      <div class="max-w-md mx-auto flex items-center justify-between">
+      <div class="max-w-md mx-auto w-full flex items-center justify-between">
         <router-link to="/app" class="flex items-center group">
           <img src="/agap icon.svg" alt="AGAP" class="h-10 w-auto object-contain flex-shrink-0 transition-transform group-hover:scale-105" />
         </router-link>
