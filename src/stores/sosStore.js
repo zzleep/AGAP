@@ -280,14 +280,6 @@ export const useSOSStore = defineStore('sos', () => {
       currentSOS.value = localSOSRecord
       activeReports.value.unshift(localSOSRecord)
 
-      if (typeof window !== 'undefined' && !('SyncManager' in window) && typeof navigator !== 'undefined' && navigator.sendBeacon) {
-        const beaconUrl = `${url}?apikey=${SUPABASE_ANON_KEY}`
-        const blob = new Blob([body], { type: 'application/json' })
-        const queued = navigator.sendBeacon(beaconUrl, blob)
-        deliveryState.value = queued ? 'sent' : 'queued'
-        return localSOSRecord
-      }
-
       const response = await fetch(url, {
         method: 'POST',
         headers: {

@@ -117,18 +117,7 @@ export function useSOS() {
     sosStore.currentSOS = record
     sosStore.activeReports.unshift(record)
 
-    // iOS Safari Fallback: sendBeacon (since Safari lacks BackgroundSync API support)
-    if (typeof window !== 'undefined' && !('SyncManager' in window) && typeof navigator !== 'undefined' && navigator.sendBeacon) {
-      const beaconUrl = `${url}?apikey=${SUPABASE_ANON_KEY}`
-      const blob = new Blob([body], { type: 'application/json' })
-      navigator.sendBeacon(beaconUrl, blob)
-      // sendBeacon only confirms that the browser accepted the request, not that
-      // CDRRMO received it. Keep the resident-facing state conservative.
-      sosStore.deliveryState = 'queued'
-      return record
-    }
-
-    // Direct REST fetch with Workbox BackgroundSync handling
+    // Direct REST fetch with Workbox BackgroundSync handling for Chromium and standard fetch for Safari/Firefox
     try {
       const res = await fetch(url, {
         method: 'POST',
@@ -153,10 +142,48 @@ export function useSOS() {
     return record
   }
 
+  /**
+   * Flushes queued SOS report when network connection returns on non-SyncManager browsers (Safari/iOS).
+   */
+  async function flushQueuedSOS() {
+    if (!connectivity.isOnline) return
+    if (sosStore.deliveryState !== 'queued' || !sosStore.currentSOS) return
+
+    const record = sosStore.currentSOS
+    const body = JSON.stringify({
+      latitude: record.latitude,
+      longitude: record.longitude,
+      user_hash: record.user_hash,
+      barangay: record.barangay,
+      mode: record.mode,
+      callback_number: record.callback_number,
+      sos_device_hash: record.sos_device_hash
+    })
+    const url = `${SUPABASE_URL}/rest/v1/sos_reports`
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body
+      })
+      if (res.ok) {
+        sosStore.deliveryState = 'sent'
+      }
+    } catch (err) {
+      console.warn('Failed to flush queued SOS on reconnect:', err)
+    }
+  }
+
   return {
     warmConnection,
     syncDegradedHeartbeat,
     stopDegradedHeartbeat,
+    flushQueuedSOS,
     dispatchSOS
   }
 }
