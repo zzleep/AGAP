@@ -124,10 +124,10 @@ export function useGPS() {
     }).catch(() => {})
   }
 
-  async function clearGPSCache() {
+  function buildFallbackLocation() {
     const fallbackLat = 14.3123
     const fallbackLng = 121.1114
-    const fallback = {
+    return {
       latitude: fallbackLat,
       longitude: fallbackLng,
       accuracy: 0,
@@ -135,6 +135,10 @@ export function useGPS() {
       timestamp: Date.now(),
       isFallback: true
     }
+  }
+
+  async function clearGPSCache() {
+    const fallback = buildFallbackLocation()
     try {
       const db = await getDB()
       await db.delete(STORE_NAME, 'last_known')
@@ -245,16 +249,7 @@ export function useGPS() {
     const userPref = typeof localStorage !== 'undefined' ? localStorage.getItem('agap_location_pref') : null
     if (!force && userPref === 'skipped') {
       isLocating.value = false
-      const fallbackLat = 14.3123
-      const fallbackLng = 121.1114
-      const fallback = {
-        latitude: fallbackLat,
-        longitude: fallbackLng,
-        accuracy: 0,
-        barangay: findNearestBarangay(fallbackLat, fallbackLng),
-        timestamp: Date.now(),
-        isFallback: true
-      }
+      const fallback = buildFallbackLocation()
       await saveToCache(fallback)
       return { success: false, skipped: true }
     }
@@ -264,16 +259,7 @@ export function useGPS() {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       isLocating.value = false
       if (!cachedLocation.value) {
-        const fallbackLat = 14.3123
-        const fallbackLng = 121.1114
-        const fallback = {
-          latitude: fallbackLat,
-          longitude: fallbackLng,
-          accuracy: 0,
-          barangay: findNearestBarangay(fallbackLat, fallbackLng),
-          timestamp: Date.now(),
-          isFallback: true
-        }
+        const fallback = buildFallbackLocation()
         await saveToCache(fallback)
       }
       return { success: false, unsupported: true }
@@ -298,16 +284,7 @@ export function useGPS() {
       console.warn('GPS initial position error, using fallback')
       isLocating.value = false
       if (!cachedLocation.value) {
-        const fallbackLat = 14.3123
-        const fallbackLng = 121.1114
-        const fallback = {
-          latitude: fallbackLat,
-          longitude: fallbackLng,
-          accuracy: 0,
-          barangay: findNearestBarangay(fallbackLat, fallbackLng),
-          timestamp: Date.now(),
-          isFallback: true
-        }
+        const fallback = buildFallbackLocation()
         await saveToCache(fallback)
       }
       return { success: false, fallback: true }
@@ -356,14 +333,26 @@ export function useGPS() {
 
   function startLiveTracking() {
     const userPref = typeof localStorage !== 'undefined' ? localStorage.getItem('agap_location_pref') : null
-    if (userPref === 'skipped') return
+    if (userPref === 'skipped') {
+      if (locationWatchId !== null && typeof navigator !== 'undefined' && navigator.geolocation) {
+        navigator.geolocation.clearWatch(locationWatchId)
+        locationWatchId = null
+      }
+      return
+    }
     if (typeof navigator === 'undefined' || !navigator.geolocation) return
     if (locationWatchId !== null) return
 
     locationWatchId = navigator.geolocation.watchPosition(
       async (pos) => {
         const currentPref = typeof localStorage !== 'undefined' ? localStorage.getItem('agap_location_pref') : null
-        if (currentPref === 'skipped') return
+        if (currentPref === 'skipped') {
+          if (locationWatchId !== null && typeof navigator !== 'undefined' && navigator.geolocation) {
+            navigator.geolocation.clearWatch(locationWatchId)
+            locationWatchId = null
+          }
+          return
+        }
         const loc = buildLocationFromPosition(pos)
         await saveToCache(loc)
       },

@@ -131,7 +131,7 @@
             v-model="phoneInput"
             type="tel"
             maxlength="11"
-            @input="phoneInput = phoneInput.replace(/\D/g, '').slice(0, 11)"
+            @input="phoneInput = sanitizePhoneNumber(phoneInput)"
             placeholder="09__ ___ ____"
             class="w-full px-4 py-3.5 rounded-xl border-2 border-gray-300 focus:border-[#902715] focus:ring-0 text-lg font-mono tracking-wide text-[#0A0A0A] bg-white transition-colors"
           />
@@ -194,7 +194,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGPS } from '@/composables/useGPS'
-import { normalizeCallbackNumber, looksValid } from '@/utils/callbackNumber'
+import { normalizeCallbackNumber, looksValid, sanitizePhoneNumber } from '@/utils/callbackNumber'
 
 const router = useRouter()
 const { initGPS, setCallbackNumber, clearGPSCache } = useGPS()

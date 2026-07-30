@@ -117,7 +117,7 @@ let activePointerId = null
 const isLocationFallback = computed(() => !cachedLocation.value || cachedLocation.value.isFallback)
 
 async function handleEnableGPS() {
-  const res = await initGPS()
+  const res = await initGPS(true)
   if (res?.denied) {
     showGpsGuideModal.value = true
     return

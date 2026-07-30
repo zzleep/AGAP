@@ -61,7 +61,7 @@
             v-model="phoneInput"
             type="tel"
             maxlength="11"
-            @input="phoneInput = phoneInput.replace(/\D/g, '').slice(0, 11)"
+            @input="phoneInput = sanitizePhoneNumber(phoneInput)"
             :placeholder="$t('settings.phonePlaceholder')"
             class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-[#902715] focus:ring-0 text-base font-mono tracking-wide text-[#0A0A0A] bg-white transition-colors"
           />
@@ -199,7 +199,7 @@
     >
       <div
         v-if="toastMessage"
-        class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-[#0A0A0A] text-white px-5 py-3 rounded-full text-sm font-bold shadow-m3-lg flex items-center gap-2"
+        class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-[#0A0A0A] text-[#ffffff] px-5 py-3 rounded-full text-sm font-bold shadow-m3-lg flex items-center gap-2"
       >
         <svg class="w-5 h-5 text-green-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
@@ -222,7 +222,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useGPS } from '@/composables/useGPS'
 import { useLocaleStore } from '@/stores/localeStore'
-import { normalizeCallbackNumber, looksValid } from '@/utils/callbackNumber'
+import { normalizeCallbackNumber, looksValid, sanitizePhoneNumber } from '@/utils/callbackNumber'
 import GpsGuideModal from '@/components/common/GpsGuideModal.vue'
 
 const { t } = useI18n()
@@ -245,7 +245,7 @@ const isPhoneInvalidWarningVisible = computed(() => {
 })
 
 async function handleTestLocation() {
-  const res = await initGPS()
+  const res = await initGPS(true)
   if (res?.denied) {
     showGpsGuideModal.value = true
     return

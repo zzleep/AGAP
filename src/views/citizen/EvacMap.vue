@@ -217,7 +217,7 @@ const showGpsGuideModal = ref(false)
 let map = null
 
 async function refreshLocationAndSafety() {
-  const res = await initGPS()
+  const res = await initGPS(true)
   if (res?.denied) {
     showGpsGuideModal.value = true
     return
