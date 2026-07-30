@@ -188,6 +188,10 @@
     "locationRefreshed": "Na-refresh na ang Lokasyon",
     "gpsLockFailed": "Hindi makuha ang GPS - Gamit ang Naka-cache na Lokasyon"
   },
+  "update": {
+    "available": "May bagong bersyon na available",
+    "refresh": "I-update"
+  },
   "common": {
     "low": "Mababa",
     "moderate": "Katamtaman",

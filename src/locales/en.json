@@ -188,6 +188,10 @@
     "locationRefreshed": "Location Refreshed",
     "gpsLockFailed": "GPS Lock Failed - Using Cached Location"
   },
+  "update": {
+    "available": "A new version is available",
+    "refresh": "Update"
+  },
   "common": {
     "low": "Low",
     "moderate": "Moderate",
