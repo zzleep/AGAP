@@ -608,12 +608,9 @@ function addBoundaryLayer() {
 function renderRiskZones() {
   if (!map) return
 
-  if (!map.isStyleLoaded()) {
-    // Style may still be loading (e.g., OSM fallback via setStyle).
-    // Wait for the next style.load once instead of polling every frame.
-    map.once('style.load', () => renderRiskZones())
-    return
-  }
+  // renderRiskZones is always called from inside the map load handler,
+  // where the style is guaranteed to be loaded. Bail out silently if not.
+  if (!map.isStyleLoaded()) return
 
   try {
     // Clean up previous layers/sources
