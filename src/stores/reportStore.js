@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { supabase } from '@/lib/supabase'
+import { fetchWithRetry } from '@/utils/fetchWithRetry'
+import { useConnectivityStore } from '@/stores/connectivityStore'
 
 export const useReportStore = defineStore('report', () => {
   const reports = ref([])
@@ -58,6 +60,9 @@ export const useReportStore = defineStore('report', () => {
 
   function subscribeRealtimeReports() {
     if (reportChannel.value) return
+    // Skip Realtime on slow connections — rely on periodic fetchReports instead
+    const connectivity = useConnectivityStore()
+    if (connectivity.isSlowConnection) return
     reportChannel.value = supabase
       .channel('public:community_reports')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'community_reports' }, (payload) => {
@@ -92,18 +97,32 @@ export const useReportStore = defineStore('report', () => {
     }
   }
 
+  // Tear down Realtime when the network slows, re-establish when it recovers
+  watch(() => useConnectivityStore().isSlowConnection, (isSlow) => {
+    if (isSlow && reportChannel.value) {
+      unsubscribeRealtimeReports()
+    } else if (!isSlow && !reportChannel.value) {
+      subscribeRealtimeReports()
+    }
+  })
+
   async function fetchReports() {
     try {
-      const { data, error } = await supabase
-        .from('community_reports')
-        .select('*')
-        .order('created_at', { ascending: false })
-      if (!error && data) {
-        reports.value = data.map(item => ({
-          ...item,
-          ai_plausibility: normalizePlausibility(item.ai_plausibility)
-        }))
-      }
+      const data = await fetchWithRetry(() =>
+        supabase
+          .from('community_reports')
+          .select('id, raw_description, barangay, image_url, status, ai_category, ai_priority, ai_department, ai_plausibility, ai_reasoning, created_at, latitude, longitude')
+          .order('created_at', { ascending: false })
+          .limit(200)
+          .then(res => {
+            if (res.error) throw res.error
+            return res.data.map(item => ({
+              ...item,
+              ai_plausibility: normalizePlausibility(item.ai_plausibility)
+            }))
+          })
+      )
+      reports.value = data
     } catch (err) {
       console.warn('Fetch community reports fallback:', err)
     }
