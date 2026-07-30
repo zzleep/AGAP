@@ -161,14 +161,13 @@ const isSetupRoute = computed(() => route.path === '/app/setup' || route.name ==
 
 const localeStore = useLocaleStore()
 const connectivity = useConnectivityStore()
-const { warmConnection, syncDegradedHeartbeat, stopDegradedHeartbeat, flushQueuedSOS } = useSOS()
+const { warmConnection, syncDegradedHeartbeat, stopDegradedHeartbeat } = useSOS()
 const { initGPS, startBackgroundRefresh } = useGPS()
 
 function handleNetworkReconnect() {
   connectivity.isPrewarmed = false
   warmConnection()
   syncDegradedHeartbeat()
-  flushQueuedSOS()
 }
 
 function handleVisibilityChange() {
