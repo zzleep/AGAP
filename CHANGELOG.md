@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1](https://github.com/zzleep/AGAP/compare/v2.2.0...v2.2.1) (2026-07-30)
+
+
+### Bug Fixes
+
+* replace rAF polling with map.once('style.load') in renderRiskZones ([03a2752](https://github.com/zzleep/AGAP/commit/03a275230ebd0a5d43fcf366528446be77d44726))
+
 ## [2.2.0](https://github.com/zzleep/AGAP/compare/v2.1.0...v2.2.0) (2026-07-30)
 
 
