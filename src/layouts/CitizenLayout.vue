@@ -5,7 +5,7 @@
 
     <!-- Citizen Header (Standard M3 Light Surface Header with Safe Area Inset) -->
     <header class="bg-white/80 backdrop-blur-md border-b border-black/5 sticky top-0 z-40 px-4 pb-3 shadow-m3-sm" style="padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));">
-      <div class="max-w-md mx-auto flex items-center justify-between">
+      <div class="w-full mx-auto flex items-center justify-between">
         <router-link to="/app" class="flex items-center group">
           <img src="/agap icon.svg" alt="AGAP" class="h-10 w-auto object-contain flex-shrink-0 transition-transform group-hover:scale-105" />
         </router-link>
@@ -37,13 +37,13 @@
     </header>
 
     <!-- Main Content Area -->
-    <main :class="['flex-1 max-w-md mx-auto w-full p-4', isSetupRoute ? 'pb-6' : 'pb-16']">
+    <main :class="['flex-1 w-full max-w-md mx-auto p-4', isSetupRoute ? 'pb-6' : 'pb-16']">
       <router-view />
     </main>
 
     <!-- Citizen Bottom Navigation Floating Glass Dock -->
     <div v-if="!isSetupRoute" class="fixed left-0 right-0 z-50 px-4 pointer-events-none" style="bottom: calc(0.25rem + env(safe-area-inset-bottom, 0px));">
-      <nav class="max-w-md mx-auto glass-dock rounded-full p-2 flex items-center justify-around pointer-events-auto shadow-m3-lg">
+      <nav class="w-full mx-auto glass-dock rounded-full p-2 flex items-center justify-around pointer-events-auto shadow-m3-lg">
         <router-link
           to="/app"
           v-slot="{ isExactActive }"
