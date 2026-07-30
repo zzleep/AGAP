@@ -3,12 +3,34 @@ import { ref, onUnmounted } from 'vue'
 const needRefresh = ref(false)
 let wb = null
 let initPromise = null
+
+// ── Singleton lifecycle management ───────────────────────────
+// Reference counter: tracks how many components are currently
+// using this composable so the polling interval is only cleared
+// when every caller has unmounted.
+let refCount = 0
 let updateInterval = null
 const UPDATE_POLL_MS = 30_000
+
+function startPolling() {
+  if (updateInterval || typeof window === 'undefined' || !('serviceWorker' in navigator)) return
+  updateInterval = setInterval(() => {
+    if (wb) wb.update()
+  }, UPDATE_POLL_MS)
+}
+
+function stopPolling() {
+  if (!updateInterval) return
+  clearInterval(updateInterval)
+  updateInterval = null
+}
 
 /**
  * Composable that monitors the service worker lifecycle using workbox-window
  * and surfaces when a new version of the app is available.
+ *
+ * Singleton — all callers share the same Workbox instance and polling
+ * interval. The interval lives until every caller has unmounted.
  *
  * Usage:
  *   const { needRefresh, updateServiceWorker } = useUpdatePrompt()
@@ -16,30 +38,29 @@ const UPDATE_POLL_MS = 30_000
  *   // On button click: call updateServiceWorker() to activate the new version
  */
 export function useUpdatePrompt() {
-  // Initialise once (module singleton) but call register() on every mount
-  // so the browser checks for SW updates immediately.
+  // ── Bootstrap the Workbox instance once ───────────────────
   if (!initPromise && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
     initPromise = initSWRegistration()
   }
 
-  // Proactive polling: check for updates every 30s so the banner appears
-  // promptly after a deploy even if the user hasn't navigated.
+  // ── Mount tracking ────────────────────────────────────────
+  refCount++
+
+  // Trigger an immediate update check on mount so a freshly
+  // deployed SW is noticed without waiting for the next poll.
   if (wb) {
     wb.update()
   } else if (initPromise) {
     initPromise.then(() => wb?.update())
   }
 
-  if (!updateInterval && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-    updateInterval = setInterval(() => {
-      if (wb) wb.update()
-    }, UPDATE_POLL_MS)
-  }
+  // Start the background poll if this is the first caller.
+  startPolling()
 
   onUnmounted(() => {
-    if (updateInterval) {
-      clearInterval(updateInterval)
-      updateInterval = null
+    refCount--
+    if (refCount <= 0) {
+      stopPolling()
     }
   })
 
