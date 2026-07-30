@@ -12,7 +12,7 @@ export default defineConfig({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.js',
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       injectRegister: 'auto',
       includeAssets: ['agap_pwa_icon.png', 'apple-touch-icon.png', 'apple-touch-icon-precomposed.png', 'hero.svg', 'agap icon.svg', 'favicon.svg', 'pwa-192x192.svg', 'pwa-512x512.svg', 'robots.txt'],
       manifest: {

@@ -71,10 +71,6 @@ async function notifyClientsToRefreshGPS() {
   windows.forEach(client => client.postMessage({ type: 'AGAP_GPS_REFRESH' }))
 }
 
-self.addEventListener('install', () => {
-  self.skipWaiting()
-})
-
 self.addEventListener('activate', event => {
   event.waitUntil(
     (async () => {
@@ -101,5 +97,8 @@ self.addEventListener('periodicsync', event => {
 self.addEventListener('message', event => {
   if (event.data?.type === 'AGAP_GPS_REFRESH_NOW') {
     event.waitUntil(notifyClientsToRefreshGPS())
+  }
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting()
   }
 })
