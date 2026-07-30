@@ -17,12 +17,14 @@
       <!-- Actions -->
       <div class="flex items-center gap-2 shrink-0">
         <button
+          type="button"
           @click="dismissed = true"
           class="text-sr-onyx-subtle hover:text-sr-onyx text-xs font-semibold underline transition-colors"
         >
           {{ t('connectivity.dismiss', 'Dismiss') }}
         </button>
         <button
+          type="button"
           @click="updateServiceWorker()"
           class="bg-sr-brandy text-sr-canary text-xs font-bold px-3 py-1.5 rounded-md hover:bg-sr-brandy-hover active:bg-sr-brandy-light transition-colors shadow-sm"
         >
