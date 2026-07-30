@@ -144,7 +144,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" />
           </svg>
-          <span>{{ showFloodZones ? 'Flood' : 'Flood' }}</span>
+          <span>{{ showFloodZones ? 'Hide Flood' : 'Show Flood' }}</span>
         </button>
       </div>
 
@@ -258,6 +258,7 @@ let lastAutopilotRunAt = 0
 let lastMovementSnapshot = null
 let lastStuckSignalAt = 0
 const showFloodZones = ref(true)
+let riskZoneHandlersAttached = false
 
 // ── Safety Meter computed properties ──
 const safetyMeterColor = computed(() => {
@@ -610,10 +611,15 @@ function renderRiskZones() {
     }
 
     // Merge all risk data into one FeatureCollection with risk_level property
+    // Guard toPolygonFeature result before spreading — it may return null
+    function enrichFeature(f, riskLevel) {
+      const poly = toPolygonFeature(f)
+      return poly ? { ...poly, properties: { ...f.properties, risk_level: riskLevel } } : null
+    }
     const mergedFeatures = [
-      ...highRiskData.features.map(f => ({ ...toPolygonFeature(f), properties: { ...f.properties, risk_level: 'high' } })),
-      ...modRiskData.features.map(f => ({ ...toPolygonFeature(f), properties: { ...f.properties, risk_level: 'moderate' } })),
-      ...lowRiskData.features.map(f => ({ ...toPolygonFeature(f), properties: { ...f.properties, risk_level: 'low' } }))
+      ...highRiskData.features.map(f => enrichFeature(f, 'high')),
+      ...modRiskData.features.map(f => enrichFeature(f, 'moderate')),
+      ...lowRiskData.features.map(f => enrichFeature(f, 'low'))
     ].filter(Boolean)
 
     const mergedCollection = { type: 'FeatureCollection', features: mergedFeatures }
@@ -649,23 +655,27 @@ function renderRiskZones() {
       })
     })
 
-    // Click handler on each fill layer
-    const labelMap = { high: 'High Risk', moderate: 'Moderate Risk', low: 'Low Risk' }
-    levels.forEach(({ id, color }) => {
-      const fillId = `risk-zone-${id}-fill`
-      map.on('click', fillId, event => {
-        const popupHtml = `
-          <div class="p-1 text-slate-900">
-            <h4 class="font-bold text-xs" style="color:${color}">${labelMap[id]}</h4>
-            <p class="text-[11px] text-slate-600 mt-0.5">Santa Rosa risk zone</p>
-          </div>
-        `
-        new mapboxgl.Popup({ closeButton: true, closeOnClick: true })
-          .setLngLat(event.lngLat)
-          .setHTML(popupHtml)
-          .addTo(map)
+    // Click handler on each fill layer (attached once — re-runs of renderRiskZones
+    // remove and re-add layers but must not stack duplicate listeners).
+    if (!riskZoneHandlersAttached) {
+      const labelMap = { high: 'High Risk', moderate: 'Moderate Risk', low: 'Low Risk' }
+      levels.forEach(({ id, color }) => {
+        const fillId = `risk-zone-${id}-fill`
+        map.on('click', fillId, event => {
+          const popupHtml = `
+            <div class="p-1 text-slate-900">
+              <h4 class="font-bold text-xs" style="color:${color}">${labelMap[id]}</h4>
+              <p class="text-[11px] text-slate-600 mt-0.5">Santa Rosa risk zone</p>
+            </div>
+          `
+          new mapboxgl.Popup({ closeButton: true, closeOnClick: true })
+            .setLngLat(event.lngLat)
+            .setHTML(popupHtml)
+            .addTo(map)
+        })
       })
-    })
+      riskZoneHandlersAttached = true
+    }
 
     console.log('Risk zones rendered successfully (merged, priority-ordered)')
   } catch (err) {
