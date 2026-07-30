@@ -61,6 +61,22 @@
             <span>Calculates safe evacuation routes to the nearest center</span>
           </div>
         </div>
+
+        <!-- Browser Permission Denied Warning Banner -->
+        <div
+          v-if="locationDeniedError"
+          class="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs space-y-1.5 animate-fade-in"
+        >
+          <div class="flex items-center space-x-2 font-bold text-amber-950">
+            <svg class="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>Location permission blocked in browser</span>
+          </div>
+          <p class="text-[11px] leading-relaxed text-amber-900">
+            Your browser prevented AGAP from accessing location. Please unblock location in your browser site settings (tap 🔒 in address bar), or tap <strong>"Continue without location"</strong> below.
+          </p>
+        </div>
       </div>
 
       <!-- Equal Visual Weight & Tappability Actions for Screen 1 -->
@@ -114,6 +130,8 @@
           <input
             v-model="phoneInput"
             type="tel"
+            maxlength="11"
+            @input="phoneInput = phoneInput.replace(/\D/g, '').slice(0, 11)"
             placeholder="09__ ___ ____"
             class="w-full px-4 py-3.5 rounded-xl border-2 border-gray-300 focus:border-[#902715] focus:ring-0 text-lg font-mono tracking-wide text-[#0A0A0A] bg-white transition-colors"
           />
@@ -135,7 +153,8 @@
       <div class="space-y-3 pt-2">
         <button
           @click="handleSavePhone"
-          class="w-full py-4 px-5 rounded-2xl font-black text-base transition-all duration-200 flex items-center justify-center space-x-2 bg-[#902715] text-white hover:bg-[#7a2012] shadow-m3-sm active:scale-[0.99] cursor-pointer"
+          :disabled="!phoneInput.trim()"
+          class="w-full py-4 px-5 rounded-2xl font-black text-base transition-all duration-200 flex items-center justify-center space-x-2 bg-[#902715] text-white hover:bg-[#7a2012] shadow-m3-sm active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span>Save number</span>
         </button>
@@ -178,10 +197,11 @@ import { useGPS } from '@/composables/useGPS'
 import { normalizeCallbackNumber, looksValid } from '@/utils/callbackNumber'
 
 const router = useRouter()
-const { initGPS, setCallbackNumber } = useGPS()
+const { initGPS, setCallbackNumber, clearGPSCache } = useGPS()
 
 const currentStep = ref(1)
 const isLocating = ref(false)
+const locationDeniedError = ref(false)
 const phoneInput = ref('')
 const toastMessage = ref('')
 
@@ -195,17 +215,27 @@ const isPhoneInvalidWarningVisible = computed(() => {
 
 async function handleAllowGPS() {
   isLocating.value = true
+  locationDeniedError.value = false
   try {
-    await initGPS()
+    const res = await initGPS()
+    if (res?.denied) {
+      locationDeniedError.value = true
+      return
+    }
+    localStorage.setItem('agap_location_pref', 'granted')
+    currentStep.value = 2
   } catch (err) {
     console.warn('GPS init error in onboarding:', err)
+    currentStep.value = 2
   } finally {
     isLocating.value = false
-    currentStep.value = 2
   }
 }
 
-function handleSkipGPS() {
+async function handleSkipGPS() {
+  locationDeniedError.value = false
+  localStorage.setItem('agap_location_pref', 'skipped')
+  await clearGPSCache()
   currentStep.value = 2
 }
 
@@ -215,6 +245,10 @@ function completeOnboarding() {
 }
 
 async function handleSavePhone() {
+  if (!phoneInput.value.trim()) {
+    handleSkipPhone()
+    return
+  }
   await setCallbackNumber(phoneInput.value)
   toastMessage.value = 'Callback number saved!'
   setTimeout(() => {

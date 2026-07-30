@@ -39,6 +39,27 @@
         </span>
       </div>
 
+      <!-- GPS Fallback / Disabled Pill -->
+      <div
+        v-if="userLocation?.isFallback"
+        class="p-2.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center justify-between gap-2"
+      >
+        <div class="flex items-center gap-1.5 min-w-0">
+          <svg class="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+          <span class="font-semibold text-[11px] truncate">Using default location. Enable GPS for live route.</span>
+        </div>
+        <button
+          type="button"
+          @click="refreshLocationAndSafety"
+          :disabled="isLocating"
+          class="px-2.5 py-1 rounded-xl bg-[#902715] text-[#F7FB41] font-black text-[10px] uppercase tracking-wider shrink-0 hover:bg-[#781f11] active:scale-95 transition-all shadow-xs"
+        >
+          Enable GPS
+        </button>
+      </div>
+
       <p v-if="stuckAlert" class="text-[11px] font-extrabold text-[#902715] flex items-center gap-1.5 pt-0.5">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -150,6 +171,13 @@
         </button>
       </div>
     </div>
+
+    <!-- GPS Settings Guide Modal -->
+    <GpsGuideModal
+      :show="showGpsGuideModal"
+      @close="showGpsGuideModal = false"
+      @retry="refreshLocationAndSafety"
+    />
   </div>
 </template>
 
@@ -168,11 +196,27 @@ import { EVAC_CENTERS } from '@/data/evac_deets.vue'
 import { BARANGAY_COORDS } from '@/data/barangay_coords'
 import santaRosaBoundaries from '@/data/santa_rosa_boundaries.json'
 import fallbackRoutes from '@/data/evac_routes.json'
+import GpsGuideModal from '@/components/common/GpsGuideModal.vue'
 
 const { t } = useI18n()
 const flow = useFlowStore()
 const { cachedLocation, isLocating, initGPS, refreshLocation, startLiveTracking, stopLiveTracking } = useGPS()
+const showGpsGuideModal = ref(false)
 let map = null
+
+async function refreshLocationAndSafety() {
+  const res = await initGPS()
+  if (res?.denied) {
+    showGpsGuideModal.value = true
+    return
+  }
+  const loc = await refreshLocation(true)
+  if (loc && loc.isFallback) {
+    showGpsGuideModal.value = true
+  } else {
+    syncUserLocation()
+  }
+}
 
 const osmRasterStyle = {
   version: 8,
@@ -261,9 +305,11 @@ onMounted(async () => {
   await loadEvacRoutes()
   initMapboxMap()
 
-  initGPS().then(() => {
+  initGPS().then((res) => {
     syncUserLocation()
-    startLiveTracking()
+    if (!res || !res.skipped) {
+      startLiveTracking()
+    }
   }).catch(err => {
     console.warn('Non-fatal GPS acquisition delay:', err)
   })
@@ -938,11 +984,6 @@ function clearEvacRouteLine() {
     if (map.getLayer(evacRouteFallbackLayerId)) map.removeLayer(evacRouteFallbackLayerId)
     if (map.getSource(evacRouteSourceId)) map.removeSource(evacRouteSourceId)
   }
-}
-
-async function refreshLocationAndSafety() {
-  await refreshLocation(true)
-  await runAutopilotCycle(true)
 }
 
 async function refreshCurrentLocation() {
