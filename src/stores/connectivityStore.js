@@ -5,6 +5,7 @@ export const useConnectivityStore = defineStore('connectivity', () => {
   const isOnline = ref(typeof navigator !== 'undefined' ? navigator.onLine : true)
   const effectiveType = ref(getEffectiveType())
   const rtt = ref(getRTT())
+  const measuredRtt = ref(0)
   const lastOnlineAt = ref(isOnline.value ? Date.now() : null)
   const lastOfflineAt = ref(!isOnline.value ? Date.now() : null)
   const isPrewarmed = ref(false)
@@ -23,9 +24,26 @@ export const useConnectivityStore = defineStore('connectivity', () => {
     return 0
   }
 
+  const effectiveRtt = computed(() => Math.max(rtt.value, measuredRtt.value))
+
+  const isSlowConnection = computed(() => {
+    if (!isOnline.value) return false // offline is handled separately
+    // Sensitive trigger for behaviour adaptation (skip Realtime, throttle autopilot,
+    // use OSM tiles). Activates before the UI banner switches to 'degraded_signal',
+    // so the app proactively reduces network usage without alarming the user.
+    // This is why we include 3g and RTT > 500ms here but not in mode.
+    if (effectiveType.value === 'slow-2g' || effectiveType.value === '2g') return true
+    if (effectiveType.value === '3g') return true
+    if (effectiveRtt.value > 500) return true
+    return false
+  })
+
   const mode = computed(() => {
     if (!isOnline.value) return 'offline'
-    if (effectiveType.value === '2g' || effectiveType.value === 'slow-2g' || rtt.value > 1000) {
+    // Stricter threshold for the user-facing banner — only flag connections
+    // that are genuinely painful (2G or RTT > 1000ms). 3g and moderate
+    // latency (500–1000ms) silently trigger isSlowConnection instead.
+    if (effectiveType.value === '2g' || effectiveType.value === 'slow-2g' || effectiveRtt.value > 1000) {
       return 'degraded_signal'
     }
     return 'online'
@@ -35,6 +53,8 @@ export const useConnectivityStore = defineStore('connectivity', () => {
     switch (mode.value) {
       case 'online':
         return {
+          labelKey: 'connectivity.online',
+          messageKey: 'connectivity.onlineMsg',
           label: 'Online',
           bgClass: 'bg-emerald-600 text-white',
           icon: 'wifi',
@@ -42,14 +62,18 @@ export const useConnectivityStore = defineStore('connectivity', () => {
         }
       case 'degraded_signal':
         return {
-          label: 'Weak / Degraded Signal',
+          labelKey: 'connectivity.degraded',
+          messageKey: 'connectivity.degradedMsg',
+          label: 'Weak Signal',
           bgClass: 'bg-amber-600 text-white',
           icon: 'wifi-off',
-          message: 'Signal congested — SOS requests will queue automatically via BackgroundSync / sendBeacon'
+          message: 'Your emergency details are saved safely. Any SOS request will automatically send as soon as signal improves.'
         }
       case 'offline':
       default:
         return {
+          labelKey: 'connectivity.offline',
+          messageKey: 'connectivity.offlineMsg',
           label: 'Offline Mode',
           bgClass: 'bg-rose-700 text-white',
           icon: 'signal-slash',
@@ -109,10 +133,12 @@ export const useConnectivityStore = defineStore('connectivity', () => {
     isOnline,
     effectiveType,
     rtt,
+    measuredRtt,
     lastOnlineAt,
     lastOfflineAt,
     isPrewarmed,
     mode,
+    isSlowConnection,
     bannerConfig,
     initListeners,
     destroyListeners,

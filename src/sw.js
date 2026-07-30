@@ -1,6 +1,6 @@
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching'
 import { registerRoute } from 'workbox-routing'
-import { CacheFirst, NetworkOnly } from 'workbox-strategies'
+import { CacheFirst, NetworkOnly, StaleWhileRevalidate } from 'workbox-strategies'
 import { BackgroundSyncPlugin } from 'workbox-background-sync'
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 import { ExpirationPlugin } from 'workbox-expiration'
@@ -27,6 +27,22 @@ registerRoute(
   ({ url }) => url.pathname.includes('/rest/v1/sos_reports'),
   new NetworkOnly({ plugins: [sosQueue] }),
   'POST'
+)
+
+// Cache Supabase REST API GET responses (evac routes, flood zones, reports, weather)
+// Serves cached data instantly on slow networks while refreshing in the background.
+registerRoute(
+  ({ url, request }) => {
+    if (request.method !== 'GET') return false
+    return /\/rest\/v1\//.test(url.pathname)
+  },
+  new StaleWhileRevalidate({
+    cacheName: 'supabase-api-cache',
+    plugins: [
+      new ExpirationPlugin({ maxEntries: 80, maxAgeSeconds: 10 * 60 }), // 10 min TTL
+      new CacheableResponsePlugin({ statuses: [0, 200] })
+    ]
+  })
 )
 
 const GPS_REFRESH_INTERVAL_MS = 60 * 1000

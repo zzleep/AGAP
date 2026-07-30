@@ -248,10 +248,68 @@
                   {{ item.barangay }}
                 </td>
 
-                <!-- GPS Coordinates -->
-                <td class="py-3.5 px-5 whitespace-nowrap font-mono font-bold text-[#902715] text-xs">
-                  {{ typeof item.latitude === 'number' ? item.latitude.toFixed(4) : item.latitude }},
-                  {{ typeof item.longitude === 'number' ? item.longitude.toFixed(4) : item.longitude }}
+                <!-- GPS Coordinates with Interactive Quick Actions -->
+                <td class="py-3.5 px-5 whitespace-nowrap font-mono text-xs">
+                  <div class="relative inline-block text-left" @click.stop>
+                    <button
+                      @click="toggleGpsDropdown(item.id)"
+                      class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#902715]/10 text-[#902715] font-black border border-[#902715]/20 hover:bg-[#902715] hover:text-white transition-all shadow-xs group"
+                      title="Click for GPS dispatch actions"
+                    >
+                      <svg class="w-3.5 h-3.5 text-[#902715] group-hover:text-white transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      </svg>
+                      <span>{{ typeof item.latitude === 'number' ? item.latitude.toFixed(4) : item.latitude }}, {{ typeof item.longitude === 'number' ? item.longitude.toFixed(4) : item.longitude }}</span>
+                      <svg class="w-3 h-3 opacity-70 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                      </svg>
+                    </button>
+
+                    <!-- Contextual GPS Actions Dropdown Popover -->
+                    <div
+                      v-if="activeGpsDropdownId === item.id"
+                      class="absolute left-0 mt-1.5 w-60 rounded-2xl bg-white border border-[#1F3A4B]/20 shadow-2xl py-2 z-50 text-left font-sans text-xs space-y-1 animate-fade-in"
+                    >
+                      <div class="px-3.5 py-1 border-b border-[#E0E0E0] mb-1">
+                        <p class="text-[10px] font-black uppercase tracking-wider text-[#717171]">GPS Dispatch Actions</p>
+                        <p class="font-mono text-[11px] font-bold text-[#1F3A4B] truncate">
+                          {{ item.latitude }}, {{ item.longitude }}
+                        </p>
+                      </div>
+
+                      <!-- 1. Open in Google Maps -->
+                      <a
+                        :href="getGoogleMapsUrl(item.latitude, item.longitude)"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        @click="activeGpsDropdownId = null"
+                        class="w-full px-3.5 py-2 text-xs font-bold text-[#1F3A4B] hover:bg-[#EEF4FB] hover:text-[#902715] flex items-center gap-2.5 transition-colors"
+                      >
+                        <svg class="w-4 h-4 text-[#902715] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                        </svg>
+                        <div class="flex flex-col text-left">
+                          <span class="font-black text-xs">Open Google Maps</span>
+                          <span class="text-[10px] text-[#717171] font-normal">External GPS directions for drivers</span>
+                        </div>
+                      </a>
+
+                      <!-- 2. Copy Exact Coordinates -->
+                      <button
+                        @click="copyCoords(item.latitude, item.longitude)"
+                        class="w-full px-3.5 py-2 text-xs font-bold text-[#1F3A4B] hover:bg-[#EEF4FB] flex items-center gap-2.5 transition-colors text-left"
+                      >
+                        <svg class="w-4 h-4 text-[#717171] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                        <div class="flex flex-col text-left">
+                          <span class="font-black text-xs">Copy Raw Lat/Lng</span>
+                          <span class="text-[10px] text-[#717171] font-normal">Copy {{ item.latitude }}, {{ item.longitude }}</span>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
                 </td>
 
                 <!-- Contact Number -->
@@ -486,12 +544,13 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useSOSStore } from '@/stores/sosStore'
 import { useAuthStore } from '@/stores/authStore'
 import { BARANGAY_LIST } from '@/data/barangay_coords'
 
 const route = useRoute()
+const router = useRouter()
 const sosStore = useSOSStore()
 const authStore = useAuthStore()
 
@@ -501,6 +560,7 @@ let pollTimer = null
 
 // ── Dropdown & Modal State ──
 const activeDropdownId = ref(null)
+const activeGpsDropdownId = ref(null)
 const showSpamModal = ref(false)
 const selectedReportForFlag = ref(null)
 const spamReason = ref('')
@@ -590,11 +650,27 @@ async function copyToClipboard(text) {
 }
 
 function toggleDropdown(id) {
+  activeGpsDropdownId.value = null
   activeDropdownId.value = activeDropdownId.value === id ? null : id
+}
+
+function toggleGpsDropdown(id) {
+  activeDropdownId.value = null
+  activeGpsDropdownId.value = activeGpsDropdownId.value === id ? null : id
 }
 
 function handleDocumentClick() {
   activeDropdownId.value = null
+  activeGpsDropdownId.value = null
+}
+
+function getGoogleMapsUrl(lat, lng) {
+  return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
+}
+
+function copyCoords(lat, lng) {
+  activeGpsDropdownId.value = null
+  copyToClipboard(`${lat}, ${lng}`)
 }
 
 function handleClaim(item) {
