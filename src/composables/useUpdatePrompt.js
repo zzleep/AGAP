@@ -1,12 +1,12 @@
 import { ref } from 'vue'
 
 const needRefresh = ref(false)
-let registrationRef = null
-let initPromise = null
+let wb = null
+let registrationAttempted = false
 
 /**
- * Composable that monitors the service worker lifecycle and surfaces
- * when a new version of the app is available.
+ * Composable that monitors the service worker lifecycle using workbox-window
+ * and surfaces when a new version of the app is available.
  *
  * Usage:
  *   const { needRefresh, updateServiceWorker } = useUpdatePrompt()
@@ -14,48 +14,39 @@ let initPromise = null
  *   // On button click: call updateServiceWorker() to activate the new version
  */
 export function useUpdatePrompt() {
-  if (!initPromise) {
-    initPromise = initSWMonitoring()
+  if (!registrationAttempted && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+    registrationAttempted = true
+    initSWRegistration()
   }
 
-  async function initSWMonitoring() {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return
-
+  async function initSWRegistration() {
     try {
-      const reg = await navigator.serviceWorker.ready
-      registrationRef = reg
+      const { Workbox } = await import('workbox-window')
+      wb = new Workbox('/sw.js')
 
-      // If a new SW is already waiting (installed but not activated), surface it
-      if (reg.waiting && navigator.serviceWorker.controller) {
+      // When a new SW is installed and waiting (prompt flow)
+      wb.addEventListener('waiting', () => {
         needRefresh.value = true
-      }
-
-      // Listen for future updates
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing
-        if (!newWorker) return
-
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            // A new version has finished installing and is waiting to activate
-            needRefresh.value = true
-          }
-        })
       })
+
+      // When the waiting SW takes control — reload to apply the new version
+      wb.addEventListener('controlling', () => {
+        window.location.reload()
+      })
+
+      wb.register()
     } catch (err) {
-      console.warn('[UpdatePrompt] SW monitoring init failed:', err)
+      console.warn('[UpdatePrompt] Workbox registration failed:', err)
     }
   }
 
   /**
-   * Activates the waiting service worker, which triggers a controllerchange
-   * event and a safe page reload (handled by the existing agapSafeReload
-   * mechanism in main.js).
+   * Activates the waiting service worker by sending SKIP_WAITING.
+   * The worker will activate and trigger controllerchange → page reload.
    */
   function updateServiceWorker() {
-    if (!registrationRef || !registrationRef.waiting) return
-
-    registrationRef.waiting.postMessage({ type: 'SKIP_WAITING' })
+    if (!wb) return
+    wb.messageSW({ type: 'SKIP_WAITING' })
     needRefresh.value = false
   }
 
