@@ -5,6 +5,16 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.4](https://github.com/zzleep/AGAP/compare/v2.2.3...v2.2.4) (2026-07-30)
+
+
+### Bug Fixes
+
+* address code review comments on SOS flag, auth timeout, localStorage guard, unmount guard ([f1e676b](https://github.com/zzleep/AGAP/commit/f1e676bc30ab98c417bf17e3c99ca537c6e41e78))
+* **EvacMap:** persist flood zone toggle state across page refreshes ([1daab67](https://github.com/zzleep/AGAP/commit/1daab67e8f8910990e60d1a7b54b95f80d9e7f41))
+* **EvacMap:** persist flood zone toggle state across page refreshes ([b2238a6](https://github.com/zzleep/AGAP/commit/b2238a6cb41c71b078a204b255e89a812de1c17c))
+* route optimization ([5fa3fee](https://github.com/zzleep/AGAP/commit/5fa3feea16249afd0849abb911bcfae01b7c5af4))
+
 ## [2.2.3](https://github.com/zzleep/AGAP/compare/v2.2.2...v2.2.3) (2026-07-30)
 
 
