@@ -5,6 +5,14 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.2](https://github.com/zzleep/AGAP/compare/v2.3.1...v2.3.2) (2026-07-30)
+
+
+### Bug Fixes
+
+* address code review comments on useUpdatePrompt singleton lifecycle ([a732129](https://github.com/zzleep/AGAP/commit/a7321294c910fb2c70a78a81048a5a5cf9e9bf34))
+* address code review comments on useUpdatePrompt singleton lifecycle ([96605db](https://github.com/zzleep/AGAP/commit/96605db960c9de85d9804d91ebadf438ce6faa0e))
+
 ## [2.3.1](https://github.com/zzleep/AGAP/compare/v2.3.0...v2.3.1) (2026-07-30)
 
 
