@@ -301,8 +301,23 @@ let autopilotIntervalId = null
 let lastAutopilotRunAt = 0
 let lastMovementSnapshot = null
 let lastStuckSignalAt = 0
-const showFloodZones = ref(true)
+const showFloodZones = ref(getShowFloodZones())
+function getShowFloodZones() {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return true
+  try {
+    return JSON.parse(localStorage.getItem('agap_show_flood_zones') ?? 'true')
+  } catch {
+    return true
+  }
+}
 let riskZoneHandlersAttached = false
+
+const RISK_ZONE_LAYER_IDS = [
+  'risk-zone-base-fill',
+  'risk-zone-high-fill', 'risk-zone-high-outline',
+  'risk-zone-moderate-fill', 'risk-zone-moderate-outline',
+  'risk-zone-low-fill', 'risk-zone-low-outline'
+]
 
 // ── Safety Meter computed properties ──
 const safetyMeterColor = computed(() => {
@@ -617,13 +632,7 @@ function renderRiskZones() {
 
   try {
     // Clean up previous layers/sources
-    const allLayerIds = [
-      'risk-zone-base-fill',
-      'risk-zone-high-fill', 'risk-zone-high-outline',
-      'risk-zone-moderate-fill', 'risk-zone-moderate-outline',
-      'risk-zone-low-fill', 'risk-zone-low-outline'
-    ]
-    allLayerIds.forEach(id => { if (map.getLayer(id)) map.removeLayer(id) })
+    RISK_ZONE_LAYER_IDS.forEach(id => { if (map.getLayer(id)) map.removeLayer(id) })
     if (map.getSource('risk-zones')) map.removeSource('risk-zones')
 
     // Base fill: cover the entire city boundary so gaps between risk zones
@@ -701,6 +710,13 @@ function renderRiskZones() {
         paint: { 'line-color': color, 'line-width': 1.5, 'line-opacity': 0.7 }
       })
     })
+
+    // Apply persisted visibility state from localStorage
+    if (!showFloodZones.value) {
+      RISK_ZONE_LAYER_IDS.forEach(id => {
+        if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none')
+      })
+    }
 
     // Click handler on each fill layer (attached once — re-runs of renderRiskZones
     // remove and re-add layers but must not stack duplicate listeners).
@@ -1333,16 +1349,11 @@ function recenterMap() {
 
 function toggleFloodZones() {
   showFloodZones.value = !showFloodZones.value
+  localStorage.setItem('agap_show_flood_zones', JSON.stringify(showFloodZones.value))
   if (!map || !map.isStyleLoaded()) return
 
-  const layerIds = [
-    'risk-zone-base-fill',
-    'risk-zone-high-fill', 'risk-zone-high-outline',
-    'risk-zone-moderate-fill', 'risk-zone-moderate-outline',
-    'risk-zone-low-fill', 'risk-zone-low-outline'
-  ]
   const visibility = showFloodZones.value ? 'visible' : 'none'
-  layerIds.forEach(id => {
+  RISK_ZONE_LAYER_IDS.forEach(id => {
     if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visibility)
   })
 }

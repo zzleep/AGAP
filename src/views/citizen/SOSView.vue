@@ -170,6 +170,11 @@ function startHold(event) {
   if (isBusy.value || isHolding.value) return
   if (event?.button !== undefined && event.button !== 0) return
 
+  // Start SW reload protection window immediately at t=0.0s of user hold intent
+  if (typeof window !== 'undefined') {
+    window._agapIsSendingSOS = true
+  }
+
   // Asynchronously trigger pre-warm right at t=0.0s of hold start
   warmConnection(true)
 
@@ -206,6 +211,14 @@ function clearHold() {
   activePointerId = null
   isHolding.value = false
   holdProgress.value = 0
+
+  // If hold was cancelled prior to dispatch and no confirmation banner is active, release protection
+  if (!isDispatching.value && !deliveryMessage.value && typeof window !== 'undefined') {
+    window._agapIsSendingSOS = false
+    if (window._agapPendingReload && typeof window.agapSafeReload === 'function') {
+      window.agapSafeReload('hold-cancelled')
+    }
+  }
 }
 
 async function finishHold() {
@@ -234,9 +247,24 @@ async function finishHold() {
   } finally {
     isDispatching.value = false
     holdProgress.value = 0
+    // Re-activate protection so the confirmation banner is not interrupted by a reload.
+    // dispatchSOS clears the flag in its own finally, so we re-set it here.
+    if (deliveryMessage.value && typeof window !== 'undefined') {
+      window._agapIsSendingSOS = true
+    }
   }
 }
 
-onBeforeUnmount(clearHold)
+onBeforeUnmount(() => {
+  clearHold()
+  // Only release SOS protection on unmount if no dispatch is in progress
+  // and no confirmation banner is active, to avoid mid-dispatch reloads.
+  if (typeof window !== 'undefined' && !isDispatching.value && !deliveryMessage.value) {
+    window._agapIsSendingSOS = false
+    if (window._agapPendingReload && typeof window.agapSafeReload === 'function') {
+      window.agapSafeReload('sos-view-unmounted')
+    }
+  }
+})
 </script>
 

@@ -25,6 +25,34 @@ if (typeof window !== 'undefined') {
       return originalSendBeacon.apply(this, arguments)
     }
   }
+
+  window._agapIsSendingSOS = false
+  window._agapPendingReload = false
+
+  window.agapSafeReload = function (source) {
+    if (window._agapIsSendingSOS) {
+      console.warn(`[AGAP SW Update] Deferring SW reload (${source}) until active SOS session finishes.`)
+      window._agapPendingReload = true
+      return
+    }
+    console.info(`[AGAP SW Update] Executing safe reload (${source}).`)
+    window.location.reload()
+  }
+
+  // Catch Vite dynamic chunk import errors post-deploy and reload safely
+  window.addEventListener('vite:preloadError', () => {
+    window.agapSafeReload('vite:preloadError')
+  })
+
+  // Safe Service Worker controllerchange handling
+  if ('serviceWorker' in navigator) {
+    let refreshing = false
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return
+      refreshing = true
+      window.agapSafeReload('controllerchange')
+    })
+  }
 }
 
 import { createApp } from 'vue'

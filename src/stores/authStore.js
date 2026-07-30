@@ -42,27 +42,54 @@ export const useAuthStore = defineStore('auth', () => {
   async function initializeAuth() {
     if (isInitialized.value) return
     isLoading.value = true
+    let isTimedOut = false
+
+    let timeoutId
+    const timeoutPromise = new Promise((resolve) => {
+      timeoutId = setTimeout(() => {
+        isTimedOut = true
+        resolve('TIMEOUT')
+      }, 3000)
+    })
+
     try {
-      const { data: { session: currentSession } } = await supabase.auth.getSession()
-      session.value = currentSession
-      user.value = currentSession?.user || null
+      const result = await Promise.race([
+        (async () => {
+          const { data: { session: currentSession } } = await supabase.auth.getSession()
+          if (isTimedOut) return 'CANCELLED'
 
-      if (currentSession?.user) {
-        await fetchProfile(currentSession.user.id)
-      }
+          session.value = currentSession
+          user.value = currentSession?.user || null
 
-      supabase.auth.onAuthStateChange(async (event, newSession) => {
-        session.value = newSession
-        user.value = newSession?.user || null
-
-        if (newSession?.user) {
-          if (!profile.value || profile.value.id !== newSession.user.id) {
-            await fetchProfile(newSession.user.id)
+          if (currentSession?.user && !isTimedOut) {
+            await fetchProfile(currentSession.user.id)
           }
-        } else {
-          profile.value = null
-        }
-      })
+
+          if (!isTimedOut) {
+            supabase.auth.onAuthStateChange(async (event, newSession) => {
+              if (isTimedOut) return
+              session.value = newSession
+              user.value = newSession?.user || null
+
+              if (newSession?.user) {
+                if (!profile.value || profile.value.id !== newSession.user.id) {
+                  await fetchProfile(newSession.user.id)
+                }
+              } else {
+                profile.value = null
+              }
+            })
+          }
+          clearTimeout(timeoutId)
+          return 'SUCCESS'
+        })(),
+        timeoutPromise
+      ])
+
+      if (result === 'TIMEOUT') {
+        clearTimeout(timeoutId)
+        console.warn('Auth initialization timed out after 3000ms - failing closed')
+      }
     } catch (err) {
       console.warn('Auth initialization error:', err)
     } finally {
