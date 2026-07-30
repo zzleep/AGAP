@@ -172,6 +172,7 @@ let mapboxgl = null
 const mapLoading = ref(true)
 import { useFlowStore } from '@/stores/flowStore'
 import { useConnectivityStore } from '@/stores/connectivityStore'
+import { NETWORK_CONFIG } from '@/lib/networkConfig'
 import { supabase } from '@/lib/supabase'
 import { useGPS } from '@/composables/useGPS'
 import { EVAC_CENTERS } from '@/data/evac_deets.vue'
@@ -265,10 +266,14 @@ onMounted(async () => {
   document.addEventListener('fullscreenchange', handleFullscreenChange)
 
   // Throttle autopilot on slow connections to avoid hammering the network
-  const autopilotIntervalMs = connectivity.isSlowConnection ? 60000 : 15000
-  autopilotIntervalId = setInterval(() => {
-    runAutopilotCycle(false)
-  }, autopilotIntervalMs)
+  function startAutopilot() {
+    if (autopilotIntervalId) clearInterval(autopilotIntervalId)
+    const ms = connectivity.isSlowConnection ? NETWORK_CONFIG.autopilotInterval.slow : NETWORK_CONFIG.autopilotInterval.fast
+    autopilotIntervalId = setInterval(() => runAutopilotCycle(false), ms)
+  }
+  startAutopilot()
+  // Dynamically reconfigures autopilot when network condition changes
+  watch(() => connectivity.isSlowConnection, () => { startAutopilot() })
 
   await nextTick()
   loadEvacRoutes() // non-blocking: renders bundled data instantly, refreshes from Supabase in background
@@ -376,7 +381,8 @@ async function initMapboxMap() {
     setTimeout(() => { if (map) map.resize() }, 500)
   } catch (err) {
     console.error('Mapbox GL initialization error:', err)
-    if (!map) initOsmMapInternal()
+    // Only attempt OSM fallback if mapboxgl loaded successfully but the map init threw
+    if (!map && mapboxgl) initOsmMapInternal()
     mapLoading.value = false
   }
 }
@@ -669,7 +675,7 @@ async function renderEvacRouteLine() {
   if (evacRouteAbortController) evacRouteAbortController.abort()
   evacRouteAbortController = new AbortController()
   // 10s timeout prevents hanging on slow 3G networks
-  const mapboxRouteTimeout = setTimeout(() => evacRouteAbortController.abort(), 10000)
+  const mapboxRouteTimeout = setTimeout(() => evacRouteAbortController.abort(), NETWORK_CONFIG.mapboxDirectionsTimeout)
 
   const origin = `${userLocation.value.longitude},${userLocation.value.latitude}`
   const destination = `${nearestEvacCenter.value.coords.longitude},${nearestEvacCenter.value.coords.latitude}`

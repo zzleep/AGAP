@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { supabase } from '@/lib/supabase'
+import { NETWORK_CONFIG } from '@/lib/networkConfig'
 
 const OWM_API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY || ''
 const SANTA_ROSA_LAT = 14.3123
@@ -76,7 +77,7 @@ export function useWeather() {
     // 2. Fetch live from OpenWeatherMap API
     if (typeof navigator !== 'undefined' && navigator.onLine && OWM_API_KEY) {
       const owmController = new AbortController()
-      const owmTimeout = setTimeout(() => owmController.abort(), 10000)
+      const owmTimeout = setTimeout(() => owmController.abort(), NETWORK_CONFIG.owmFetchTimeout)
       try {
         const res = await fetch(
           `https://api.openweathermap.org/data/2.5/weather?lat=${SANTA_ROSA_LAT}&lon=${SANTA_ROSA_LON}&units=metric&appid=${OWM_API_KEY}`,

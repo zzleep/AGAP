@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'http://localhost:54321'
 export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'anon-key-placeholder'
 
-const REQUEST_TIMEOUT_MS = 15000
+import { NETWORK_CONFIG } from './networkConfig'
 
 function createFetchWithTimeout(defaultTimeoutMs) {
   return async function fetchWithTimeout(url, options = {}) {
@@ -30,6 +30,6 @@ function createFetchWithTimeout(defaultTimeoutMs) {
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   global: {
-    fetch: createFetchWithTimeout(REQUEST_TIMEOUT_MS)
+    fetch: createFetchWithTimeout(NETWORK_CONFIG.supabaseTimeout)
   }
 })
