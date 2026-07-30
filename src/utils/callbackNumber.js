@@ -51,3 +51,14 @@ export function looksValid(normalized) {
   }
   return PH_MOBILE_11.test(normalized)
 }
+
+/**
+ * Sanitizes phone input in real-time: removes non-digits and caps length at 11.
+ *
+ * @param {string|null|undefined} val
+ * @returns {string}
+ */
+export function sanitizePhoneNumber(val) {
+  if (!val) return ''
+  return String(val).replace(/\D/g, '').slice(0, 11)
+}
