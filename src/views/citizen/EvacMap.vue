@@ -609,8 +609,9 @@ function renderRiskZones() {
   if (!map) return
 
   if (!map.isStyleLoaded()) {
-    console.warn('renderRiskZones: style not loaded yet, deferring…')
-    requestAnimationFrame(() => renderRiskZones())
+    // Style may still be loading (e.g., OSM fallback via setStyle).
+    // Wait for the next style.load once instead of polling every frame.
+    map.once('style.load', () => renderRiskZones())
     return
   }
 
