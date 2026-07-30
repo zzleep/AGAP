@@ -190,6 +190,7 @@
   },
   "update": {
     "available": "May bagong bersyon na available",
+    "description": "Handa na ang bagong bersyon ng AGAP. Mag-update para sa mga pinakabagong feature at pagpapabuti.",
     "refresh": "I-update"
   },
   "common": {

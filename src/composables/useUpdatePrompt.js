@@ -1,8 +1,10 @@
-import { ref } from 'vue'
+import { ref, onUnmounted } from 'vue'
 
 const needRefresh = ref(false)
 let wb = null
-let registrationAttempted = false
+let initPromise = null
+let updateInterval = null
+const UPDATE_POLL_MS = 30_000
 
 /**
  * Composable that monitors the service worker lifecycle using workbox-window
@@ -14,10 +16,32 @@ let registrationAttempted = false
  *   // On button click: call updateServiceWorker() to activate the new version
  */
 export function useUpdatePrompt() {
-  if (!registrationAttempted && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-    registrationAttempted = true
-    initSWRegistration()
+  // Initialise once (module singleton) but call register() on every mount
+  // so the browser checks for SW updates immediately.
+  if (!initPromise && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+    initPromise = initSWRegistration()
   }
+
+  // Proactive polling: check for updates every 30s so the banner appears
+  // promptly after a deploy even if the user hasn't navigated.
+  if (wb) {
+    wb.update()
+  } else if (initPromise) {
+    initPromise.then(() => wb?.update())
+  }
+
+  if (!updateInterval && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+    updateInterval = setInterval(() => {
+      if (wb) wb.update()
+    }, UPDATE_POLL_MS)
+  }
+
+  onUnmounted(() => {
+    if (updateInterval) {
+      clearInterval(updateInterval)
+      updateInterval = null
+    }
+  })
 
   async function initSWRegistration() {
     try {
@@ -34,7 +58,7 @@ export function useUpdatePrompt() {
         window.location.reload()
       })
 
-      wb.register()
+      await wb.register()
     } catch (err) {
       console.warn('[UpdatePrompt] Workbox registration failed:', err)
     }
