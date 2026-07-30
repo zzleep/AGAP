@@ -608,10 +608,10 @@ function addBoundaryLayer() {
 function renderRiskZones() {
   if (!map) return
 
+  // Style may be mid-transition (e.g. OSM fallback via setStyle).
+  // Defer silently until the render loop picks up the new style.
   if (!map.isStyleLoaded()) {
-    // Style may still be loading (e.g., OSM fallback via setStyle).
-    // Wait for the next style.load once instead of polling every frame.
-    map.once('style.load', () => renderRiskZones())
+    requestAnimationFrame(() => renderRiskZones())
     return
   }
 
