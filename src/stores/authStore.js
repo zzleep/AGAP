@@ -44,12 +44,13 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading.value = true
     let isTimedOut = false
 
-    const timeoutPromise = new Promise((resolve) =>
-      setTimeout(() => {
+    let timeoutId
+    const timeoutPromise = new Promise((resolve) => {
+      timeoutId = setTimeout(() => {
         isTimedOut = true
         resolve('TIMEOUT')
       }, 3000)
-    )
+    })
 
     try {
       const result = await Promise.race([
@@ -79,12 +80,14 @@ export const useAuthStore = defineStore('auth', () => {
               }
             })
           }
+          clearTimeout(timeoutId)
           return 'SUCCESS'
         })(),
         timeoutPromise
       ])
 
       if (result === 'TIMEOUT') {
+        clearTimeout(timeoutId)
         console.warn('Auth initialization timed out after 3000ms - failing closed')
       }
     } catch (err) {

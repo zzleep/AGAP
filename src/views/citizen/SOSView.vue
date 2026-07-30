@@ -247,14 +247,19 @@ async function finishHold() {
   } finally {
     isDispatching.value = false
     holdProgress.value = 0
-    // Protection window remains active while confirmation banner ("Sent" / "Queued") is visible
+    // Re-activate protection so the confirmation banner is not interrupted by a reload.
+    // dispatchSOS clears the flag in its own finally, so we re-set it here.
+    if (deliveryMessage.value && typeof window !== 'undefined') {
+      window._agapIsSendingSOS = true
+    }
   }
 }
 
 onBeforeUnmount(() => {
   clearHold()
-  // Release SOS protection window when resident leaves/unmounts SOSView
-  if (typeof window !== 'undefined') {
+  // Only release SOS protection on unmount if no dispatch is in progress
+  // and no confirmation banner is active, to avoid mid-dispatch reloads.
+  if (typeof window !== 'undefined' && !isDispatching.value && !deliveryMessage.value) {
     window._agapIsSendingSOS = false
     if (window._agapPendingReload && typeof window.agapSafeReload === 'function') {
       window.agapSafeReload('sos-view-unmounted')

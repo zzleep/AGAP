@@ -301,7 +301,15 @@ let autopilotIntervalId = null
 let lastAutopilotRunAt = 0
 let lastMovementSnapshot = null
 let lastStuckSignalAt = 0
-const showFloodZones = ref(JSON.parse(localStorage.getItem('agap_show_flood_zones') ?? 'true'))
+const showFloodZones = ref(getShowFloodZones())
+function getShowFloodZones() {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return true
+  try {
+    return JSON.parse(localStorage.getItem('agap_show_flood_zones') ?? 'true')
+  } catch {
+    return true
+  }
+}
 let riskZoneHandlersAttached = false
 
 const RISK_ZONE_LAYER_IDS = [

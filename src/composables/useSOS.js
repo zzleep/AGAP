@@ -146,6 +146,8 @@ export function useSOS() {
     } catch (err) {
       console.warn('dispatchSOS error:', err)
       return null
+    } finally {
+      if (typeof window !== 'undefined') window._agapIsSendingSOS = false
     }
   }
 
