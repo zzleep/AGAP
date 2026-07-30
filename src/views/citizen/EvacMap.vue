@@ -608,9 +608,12 @@ function addBoundaryLayer() {
 function renderRiskZones() {
   if (!map) return
 
-  // renderRiskZones is always called from inside the map load handler,
-  // where the style is guaranteed to be loaded. Bail out silently if not.
-  if (!map.isStyleLoaded()) return
+  // Style may be mid-transition (e.g. OSM fallback via setStyle).
+  // Defer silently until the render loop picks up the new style.
+  if (!map.isStyleLoaded()) {
+    requestAnimationFrame(() => renderRiskZones())
+    return
+  }
 
   try {
     // Clean up previous layers/sources
