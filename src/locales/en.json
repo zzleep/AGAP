@@ -190,6 +190,7 @@
   },
   "update": {
     "available": "A new version is available",
+    "description": "A new version of AGAP is ready. Update to get the latest features and improvements.",
     "refresh": "Update"
   },
   "common": {

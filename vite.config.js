@@ -12,8 +12,8 @@ export default defineConfig({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.js',
-      registerType: 'prompt',
-      injectRegister: 'auto',
+      registerType: 'autoUpdate',
+      injectRegister: false,
       includeAssets: ['agap_pwa_icon.png', 'apple-touch-icon.png', 'apple-touch-icon-precomposed.png', 'hero.svg', 'agap icon.svg', 'favicon.svg', 'pwa-192x192.svg', 'pwa-512x512.svg', 'robots.txt'],
       manifest: {
         name: 'AGAP - Santa Rosa Disaster Response',

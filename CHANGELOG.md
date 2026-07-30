@@ -5,6 +5,14 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1](https://github.com/zzleep/AGAP/compare/v2.3.0...v2.3.1) (2026-07-30)
+
+
+### Bug Fixes
+
+* **update-banner:** add proactive wb.update() polling for faster update detection and redesign UI/UX ([e72861f](https://github.com/zzleep/AGAP/commit/e72861f20e416fdf2f5a9a432e3ec9d3413081d9))
+
+
 ## [2.3.0](https://github.com/zzleep/AGAP/compare/v2.2.4...v2.3.0) (2026-07-30)
 
 
