@@ -10,6 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Bug Fixes
 
+* improve update banner speed and UI/UX redesign ([20e19f1](https://github.com/zzleep/AGAP/commit/20e19f15068a149b2b4aa2f500ecea8a10caf506))
+* improve update banner speed and UI/UX redesign ([e72861f](https://github.com/zzleep/AGAP/commit/e72861f26c8ba74476623ec62f127f3f810c2cc2))
+* use workbox-window Workbox for reliable SW update detection ([9a71ca4](https://github.com/zzleep/AGAP/commit/9a71ca49232e2d078b7b955890709edb1dc6ab84))
+
+## [2.3.1](https://github.com/zzleep/AGAP/compare/v2.3.0...v2.3.1) (2026-07-30)
+
+
+### Bug Fixes
+
 * **update-banner:** add proactive wb.update() polling for faster update detection and redesign UI/UX ([e72861f](https://github.com/zzleep/AGAP/commit/e72861f20e416fdf2f5a9a432e3ec9d3413081d9))
 
 
