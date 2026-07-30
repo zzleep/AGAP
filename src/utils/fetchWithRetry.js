@@ -8,8 +8,10 @@
  * @param {(attempt: number, maxRetries: number) => void} [options.onRetry] - Called before each retry
  * @returns {Promise<T>}
  */
+import { NETWORK_CONFIG } from '@/lib/networkConfig'
+
 export async function fetchWithRetry(fn, options = {}) {
-  const { retries = 2, baseDelay = 1000, onRetry } = options
+  const { retries = NETWORK_CONFIG.retry.maxAttempts, baseDelay = NETWORK_CONFIG.retry.baseDelayMs, onRetry } = options
   let lastError
 
   for (let attempt = 0; attempt <= retries; attempt++) {

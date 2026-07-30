@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import { getCallbackNumber, getSOSDeviceHash } from '../composables/useGPS.js'
@@ -118,6 +118,15 @@ export const useSOSStore = defineStore('sos', () => {
       sosChannel.value = null
     }
   }
+
+  // Tear down Realtime when the network slows, re-establish when it recovers
+  watch(() => useConnectivityStore().isSlowConnection, (isSlow) => {
+    if (isSlow && sosChannel.value) {
+      unsubscribeRealtimeSOS()
+    } else if (!isSlow && !sosChannel.value) {
+      subscribeToRealtimeSOS()
+    }
+  })
 
   function initUserHash() {
     let hash = localStorage.getItem('agap_user_hash')

@@ -28,6 +28,10 @@ export const useConnectivityStore = defineStore('connectivity', () => {
 
   const isSlowConnection = computed(() => {
     if (!isOnline.value) return false // offline is handled separately
+    // Sensitive trigger for behaviour adaptation (skip Realtime, throttle autopilot,
+    // use OSM tiles). Activates before the UI banner switches to 'degraded_signal',
+    // so the app proactively reduces network usage without alarming the user.
+    // This is why we include 3g and RTT > 500ms here but not in mode.
     if (effectiveType.value === 'slow-2g' || effectiveType.value === '2g') return true
     if (effectiveType.value === '3g') return true
     if (effectiveRtt.value > 500) return true
@@ -36,6 +40,9 @@ export const useConnectivityStore = defineStore('connectivity', () => {
 
   const mode = computed(() => {
     if (!isOnline.value) return 'offline'
+    // Stricter threshold for the user-facing banner — only flag connections
+    // that are genuinely painful (2G or RTT > 1000ms). 3g and moderate
+    // latency (500–1000ms) silently trigger isSlowConnection instead.
     if (effectiveType.value === '2g' || effectiveType.value === 'slow-2g' || effectiveRtt.value > 1000) {
       return 'degraded_signal'
     }

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { fetchWithRetry } from '@/utils/fetchWithRetry'
 import { useConnectivityStore } from '@/stores/connectivityStore'
@@ -96,6 +96,15 @@ export const useReportStore = defineStore('report', () => {
       reportChannel.value = null
     }
   }
+
+  // Tear down Realtime when the network slows, re-establish when it recovers
+  watch(() => useConnectivityStore().isSlowConnection, (isSlow) => {
+    if (isSlow && reportChannel.value) {
+      unsubscribeRealtimeReports()
+    } else if (!isSlow && !reportChannel.value) {
+      subscribeRealtimeReports()
+    }
+  })
 
   async function fetchReports() {
     try {
