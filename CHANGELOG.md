@@ -5,6 +5,19 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0](https://github.com/zzleep/AGAP/compare/v2.2.4...v2.3.0) (2026-07-30)
+
+
+### Features
+
+* add new version update notification banner with PWA prompt flow ([b0a9c6c](https://github.com/zzleep/AGAP/commit/b0a9c6cc95a925220c17df6e980940e8325a603e))
+* new version update notification banner ([eef41ab](https://github.com/zzleep/AGAP/commit/eef41ab4b5d0dcea05a1733b83047ed262943724))
+
+
+### Bug Fixes
+
+* **UpdateBanner:** add type='button' to prevent form submission ([f2971e5](https://github.com/zzleep/AGAP/commit/f2971e5ede5318916837baa0e19a5dd4c2e9473d))
+
 ## [2.2.4](https://github.com/zzleep/AGAP/compare/v2.2.3...v2.2.4) (2026-07-30)
 
 
