@@ -39,6 +39,27 @@
         </span>
       </div>
 
+      <!-- GPS Fallback / Disabled Pill -->
+      <div
+        v-if="userLocation?.isFallback"
+        class="p-2.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center justify-between gap-2"
+      >
+        <div class="flex items-center gap-1.5 min-w-0">
+          <svg class="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+          <span class="font-semibold text-[11px] truncate">Using default location. Enable GPS for live route.</span>
+        </div>
+        <button
+          type="button"
+          @click="refreshLocationAndSafety"
+          :disabled="isLocating"
+          class="px-2.5 py-1 rounded-xl bg-[#902715] text-[#F7FB41] font-black text-[10px] uppercase tracking-wider shrink-0 hover:bg-[#781f11] active:scale-95 transition-all shadow-xs"
+        >
+          Enable GPS
+        </button>
+      </div>
+
       <p v-if="stuckAlert" class="text-[11px] font-extrabold text-[#902715] flex items-center gap-1.5 pt-0.5">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -93,6 +114,14 @@
     >
       <div ref="mapContainerEl" class="absolute inset-0 z-10"></div>
 
+      <!-- Loading overlay: shown while mapbox-gl (750KB) downloads on slow networks -->
+      <div v-if="mapLoading && !mapError" class="absolute inset-0 z-20 flex items-center justify-center bg-[#e5e7eb]/80 backdrop-blur-sm">
+        <div class="flex flex-col items-center gap-2">
+          <div class="w-6 h-6 border-2 border-[#902715] border-t-transparent rounded-full animate-spin"></div>
+          <p class="text-xs font-bold text-[#717171]">Loading map…</p>
+        </div>
+      </div>
+
       <div
         v-if="userLocation && nearestEvacCenter"
         class="absolute left-3 top-3 z-30 max-w-[calc(100%-8rem)] rounded-2xl border border-black/10 bg-white/90 p-3 text-xs shadow-m3-lg backdrop-blur-md"
@@ -114,16 +143,29 @@
         </div>
       </div>
 
-      <!-- Top Control Floating Pill -->
-      <div class="absolute top-3 right-3 z-30">
+      <!-- Top Control Floating Pill Stack -->
+      <div class="absolute top-3 right-3 z-30 flex flex-col gap-1.5">
+        <!-- Expand Toggle -->
         <button
           @click="toggleExpand"
           class="px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md hover:bg-white text-[#0A0A0A] font-bold text-[11px] border border-black/10 shadow-m3-md transition-transform active:scale-95 flex items-center space-x-1.5"
         >
-          <!-- Minimize screen icon when expanded, Expand screen icon when collapsed -->
           <svg v-if="isExpanded" class="w-3.5 h-3.5 text-[#902715]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 4l5 5m0 0H5m4 0V5m10-1l-5 5m0 0h4m-4 0V5M4 20l5-5m0 0H5m4 0v4m10 0l-5-5m0 0h4m-4 0v4"/></svg>
           <svg v-else class="w-3.5 h-3.5 text-[#902715]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
           <span>{{ isExpanded ? 'Exit' : 'Expand' }}</span>
+        </button>
+
+        <!-- Flood Zones Toggle -->
+        <button
+          @click="toggleFloodZones"
+          class="px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md hover:bg-white text-[#0A0A0A] font-bold text-[11px] border border-black/10 shadow-m3-md transition-transform active:scale-95 flex items-center space-x-1.5"
+          :class="showFloodZones ? '' : 'opacity-50'"
+        >
+          <svg class="w-3.5 h-3.5" :class="showFloodZones ? 'text-[#1F3A4B]' : 'text-[#717171]'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" />
+          </svg>
+          <span>{{ showFloodZones ? 'Hide Flood' : 'Show Flood' }}</span>
         </button>
       </div>
 
@@ -150,29 +192,59 @@
         </button>
       </div>
     </div>
+
+    <!-- GPS Settings Guide Modal -->
+    <GpsGuideModal
+      :show="showGpsGuideModal"
+      @close="showGpsGuideModal = false"
+      @retry="refreshLocationAndSafety"
+    />
   </div>
 </template>
 
 <script setup>
 import { onMounted, watch, ref, onUnmounted, nextTick, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import mapboxgl from 'mapbox-gl'
-import MapboxWorker from 'mapbox-gl/dist/mapbox-gl-csp-worker?worker'
+// mapbox-gl is dynamically imported to avoid blocking render with its 750KB download
+// on 3G/slow 4G. Static imports would block the entire component from mounting.
 import 'mapbox-gl/dist/mapbox-gl.css'
 
-mapboxgl.workerClass = MapboxWorker
+let mapboxgl = null
+const mapLoading = ref(true)
 import { useFlowStore } from '@/stores/flowStore'
+import { useConnectivityStore } from '@/stores/connectivityStore'
+import { NETWORK_CONFIG } from '@/lib/networkConfig'
 import { supabase } from '@/lib/supabase'
 import { useGPS } from '@/composables/useGPS'
 import { EVAC_CENTERS } from '@/data/evac_deets.vue'
 import { BARANGAY_COORDS } from '@/data/barangay_coords'
 import santaRosaBoundaries from '@/data/santa_rosa_boundaries.json'
 import fallbackRoutes from '@/data/evac_routes.json'
+import highRiskData from '@/data/high_risk.json'
+import modRiskData from '@/data/mod.json'
+import lowRiskData from '@/data/low.json'
+import GpsGuideModal from '@/components/common/GpsGuideModal.vue'
 
 const { t } = useI18n()
 const flow = useFlowStore()
+const connectivity = useConnectivityStore()
 const { cachedLocation, isLocating, initGPS, refreshLocation, startLiveTracking, stopLiveTracking } = useGPS()
+const showGpsGuideModal = ref(false)
 let map = null
+
+async function refreshLocationAndSafety() {
+  const res = await initGPS(true)
+  if (res?.denied) {
+    showGpsGuideModal.value = true
+    return
+  }
+  const loc = await refreshLocation(true)
+  if (loc && loc.isFallback) {
+    showGpsGuideModal.value = true
+  } else {
+    syncUserLocation()
+  }
+}
 
 const osmRasterStyle = {
   version: 8,
@@ -229,6 +301,8 @@ let autopilotIntervalId = null
 let lastAutopilotRunAt = 0
 let lastMovementSnapshot = null
 let lastStuckSignalAt = 0
+const showFloodZones = ref(true)
+let riskZoneHandlersAttached = false
 
 // ── Safety Meter computed properties ──
 const safetyMeterColor = computed(() => {
@@ -253,17 +327,25 @@ onMounted(async () => {
   window.addEventListener('orientationchange', handleViewportResize)
   document.addEventListener('fullscreenchange', handleFullscreenChange)
 
-  autopilotIntervalId = setInterval(() => {
-    runAutopilotCycle(false)
-  }, 15000)
+  // Throttle autopilot on slow connections to avoid hammering the network
+  function startAutopilot() {
+    if (autopilotIntervalId) clearInterval(autopilotIntervalId)
+    const ms = connectivity.isSlowConnection ? NETWORK_CONFIG.autopilotInterval.slow : NETWORK_CONFIG.autopilotInterval.fast
+    autopilotIntervalId = setInterval(() => runAutopilotCycle(false), ms)
+  }
+  startAutopilot()
+  // Dynamically reconfigures autopilot when network condition changes
+  watch(() => connectivity.isSlowConnection, () => { startAutopilot() })
 
   await nextTick()
-  await loadEvacRoutes()
+  loadEvacRoutes() // non-blocking: renders bundled data instantly, refreshes from Supabase in background
   initMapboxMap()
 
-  initGPS().then(() => {
+  initGPS().then((res) => {
     syncUserLocation()
-    startLiveTracking()
+    if (!res || !res.skipped) {
+      startLiveTracking()
+    }
   }).catch(err => {
     console.warn('Non-fatal GPS acquisition delay:', err)
   })
@@ -284,21 +366,48 @@ onUnmounted(() => {
   document.body.classList.remove('overflow-hidden')
 })
 
-function initMapboxMap() {
-  if (!mapContainerEl.value) return
-
-  if (!mapboxToken) {
-    mapError.value = 'Set VITE_MAPBOX_ACCESS_TOKEN in your environment to load this map.'
-    return
-  }
-
-  if (typeof mapboxgl.setTelemetryEnabled === 'function') {
-    mapboxgl.setTelemetryEnabled(false)
-  }
-
-  mapboxgl.accessToken = mapboxToken
-
+async function ensureMapboxGl() {
+  if (mapboxgl) return mapboxgl
+  mapLoading.value = true
   try {
+    const [mapboxModule, workerModule] = await Promise.all([
+      import('mapbox-gl'),
+      import('mapbox-gl/dist/mapbox-gl-csp-worker?worker')
+    ])
+    mapboxgl = mapboxModule.default || mapboxModule
+    mapboxgl.workerClass = workerModule.default || workerModule
+    return mapboxgl
+  } catch (err) {
+    console.error('Failed to load mapbox-gl:', err)
+    mapError.value = 'Map engine failed to load on this network. Please retry when connected to a faster network.'
+    mapLoading.value = false
+    throw err
+  }
+}
+
+async function initMapboxMap() {
+  if (!mapContainerEl.value) return
+  try {
+    await ensureMapboxGl()
+
+    // Emergency app: use OSM raster tiles on slow connections for instant render
+    // Mapbox vector tiles add 5-15s load time on 3G/slow 4G which is unacceptable
+    if (connectivity.isSlowConnection) {
+      initOsmMapInternal()
+      return
+    }
+
+    if (!mapboxToken) {
+      initOsmMapInternal()
+      return
+    }
+
+    if (typeof mapboxgl.setTelemetryEnabled === 'function') {
+      mapboxgl.setTelemetryEnabled(false)
+    }
+
+    mapboxgl.accessToken = mapboxToken
+
     map = new mapboxgl.Map({
       container: mapContainerEl.value,
       style: 'mapbox://styles/mapbox/streets-v12',
@@ -319,11 +428,13 @@ function initMapboxMap() {
       }
     })
 
-    map.on('load', async () => {
+    map.on('load', () => {
+      mapLoading.value = false
       addBoundaryLayer()
+      renderRiskZones()
       renderEvacMarkers()
-      await renderEvacRouteLine()
-      await runAutopilotCycle(true)
+      renderEvacRouteLine()
+      runAutopilotCycle(true)
       renderRoutes()
       handleViewportResize()
       mapError.value = ''
@@ -335,7 +446,49 @@ function initMapboxMap() {
     setTimeout(() => { if (map) map.resize() }, 500)
   } catch (err) {
     console.error('Mapbox GL initialization error:', err)
-    mapError.value = 'Failed to initialize Mapbox GL: ' + (err.message || String(err))
+    // Only attempt OSM fallback if mapboxgl loaded successfully but the map init threw
+    if (!map && mapboxgl) initOsmMapInternal()
+    mapLoading.value = false
+  }
+}
+
+function initOsmMapInternal() {
+  if (!mapContainerEl.value || map) return
+
+  if (mapboxToken && typeof mapboxgl.setTelemetryEnabled === 'function') {
+    mapboxgl.setTelemetryEnabled(false)
+  }
+  mapboxgl.accessToken = mapboxToken || ''
+  try {
+    map = new mapboxgl.Map({
+      container: mapContainerEl.value,
+      style: osmRasterStyle,
+      center: SANTA_ROSA_CENTER,
+      zoom: 15,
+      minZoom: 12,
+      maxZoom: 16
+    })
+
+    map.on('load', () => {
+      mapLoading.value = false
+      addBoundaryLayer()
+      renderRiskZones()
+      renderEvacMarkers()
+      renderEvacRouteLine()
+      runAutopilotCycle(true)
+      renderRoutes()
+      handleViewportResize()
+      mapError.value = ''
+    })
+
+    requestAnimationFrame(() => { if (map) map.resize() })
+    setTimeout(() => { if (map) map.resize() }, 50)
+    setTimeout(() => { if (map) map.resize() }, 200)
+    setTimeout(() => { if (map) map.resize() }, 500)
+  } catch (err) {
+    console.error('OSM map initialization error:', err)
+    mapError.value = 'Failed to initialize map.'
+    mapLoading.value = false
   }
 }
 
@@ -352,18 +505,21 @@ function handleViewportResize() {
 }
 
 async function loadEvacRoutes() {
+  // Use bundled data immediately for instant render on slow networks
+  routesData.value = fallbackRoutes
+
+  // Background-refresh from Supabase (non-blocking, updates map when data arrives)
   try {
     if (typeof navigator !== 'undefined' && navigator.onLine) {
       const { data, error } = await supabase.from('evac_routes').select('*')
       if (!error && data && data.length > 0) {
         routesData.value = data
-        return
+        renderRoutes()
       }
     }
   } catch (err) {
-    console.warn('Using offline evacuation routes fallback:', err.message)
+    console.warn('bundled routes already shown, supabase update failed:', err.message)
   }
-  routesData.value = fallbackRoutes
 }
 
 function renderRoutes() {
@@ -447,6 +603,128 @@ function addBoundaryLayer() {
       'line-dasharray': [4, 4]
     }
   })
+}
+
+function renderRiskZones() {
+  if (!map) return
+
+  // renderRiskZones is always called from inside the map load handler,
+  // where the style is guaranteed to be loaded. Bail out silently if not.
+  if (!map.isStyleLoaded()) return
+
+  try {
+    // Clean up previous layers/sources
+    const allLayerIds = [
+      'risk-zone-base-fill',
+      'risk-zone-high-fill', 'risk-zone-high-outline',
+      'risk-zone-moderate-fill', 'risk-zone-moderate-outline',
+      'risk-zone-low-fill', 'risk-zone-low-outline'
+    ]
+    allLayerIds.forEach(id => { if (map.getLayer(id)) map.removeLayer(id) })
+    if (map.getSource('risk-zones')) map.removeSource('risk-zones')
+
+    // Base fill: cover the entire city boundary so gaps between risk zones
+    // don't show bare map tiles. Sits beneath all risk zone layers.
+    if (map.getSource('santa-rosa-boundary')) {
+      map.addLayer({
+        id: 'risk-zone-base-fill',
+        type: 'fill',
+        source: 'santa-rosa-boundary',
+        paint: {
+          'fill-color': '#e4ece4',
+          'fill-opacity': 0.35
+        }
+      })
+    }
+
+    // Convert LineString → Polygon by closing the ring.
+    // The source data was stored as unclosed LineStrings but represents
+    // risk zone boundaries that should render as filled polygons.
+    function toPolygonFeature(feature) {
+      const t = feature.geometry.type
+      if (t === 'Polygon' || t === 'MultiPolygon') return feature
+      if (t === 'LineString') {
+        const coords = feature.geometry.coordinates
+        const ring = [...coords]
+        const first = ring[0]
+        const last = ring[ring.length - 1]
+        if (first[0] !== last[0] || first[1] !== last[1]) ring.push([...first])
+        return { ...feature, geometry: { type: 'Polygon', coordinates: [ring] } }
+      }
+      return null // skip unknown types
+    }
+
+    // Merge all risk data into one FeatureCollection with risk_level property
+    // Guard toPolygonFeature result before spreading — it may return null
+    function enrichFeature(f, riskLevel) {
+      const poly = toPolygonFeature(f)
+      return poly ? { ...poly, properties: { ...f.properties, risk_level: riskLevel } } : null
+    }
+    const mergedFeatures = [
+      ...highRiskData.features.map(f => enrichFeature(f, 'high')),
+      ...modRiskData.features.map(f => enrichFeature(f, 'moderate')),
+      ...lowRiskData.features.map(f => enrichFeature(f, 'low'))
+    ].filter(Boolean)
+
+    const mergedCollection = { type: 'FeatureCollection', features: mergedFeatures }
+
+    map.addSource('risk-zones', { type: 'geojson', data: mergedCollection })
+
+    // Render in priority order: low → moderate → high (high on top).
+    // Higher risk levels visually dominate overlap areas.
+    const levels = [
+      { id: 'low',      color: '#556B2F', opacity: 0.35 },
+      { id: 'moderate', color: '#D14D3E', opacity: 0.40 },
+      { id: 'high',     color: '#902715', opacity: 0.50 }
+    ]
+
+    levels.forEach(({ id, color, opacity }) => {
+      const fillId = `risk-zone-${id}-fill`
+      const outlineId = `risk-zone-${id}-outline`
+
+      map.addLayer({
+        id: fillId,
+        type: 'fill',
+        source: 'risk-zones',
+        filter: ['==', ['get', 'risk_level'], id],
+        paint: { 'fill-color': color, 'fill-opacity': opacity }
+      })
+
+      map.addLayer({
+        id: outlineId,
+        type: 'line',
+        source: 'risk-zones',
+        filter: ['==', ['get', 'risk_level'], id],
+        paint: { 'line-color': color, 'line-width': 1.5, 'line-opacity': 0.7 }
+      })
+    })
+
+    // Click handler on each fill layer (attached once — re-runs of renderRiskZones
+    // remove and re-add layers but must not stack duplicate listeners).
+    if (!riskZoneHandlersAttached) {
+      const labelMap = { high: 'High Risk', moderate: 'Moderate Risk', low: 'Low Risk' }
+      levels.forEach(({ id, color }) => {
+        const fillId = `risk-zone-${id}-fill`
+        map.on('click', fillId, event => {
+          const popupHtml = `
+            <div class="p-1 text-slate-900">
+              <h4 class="font-bold text-xs" style="color:${color}">${labelMap[id]}</h4>
+              <p class="text-[11px] text-slate-600 mt-0.5">Santa Rosa risk zone</p>
+            </div>
+          `
+          new mapboxgl.Popup({ closeButton: true, closeOnClick: true })
+            .setLngLat(event.lngLat)
+            .setHTML(popupHtml)
+            .addTo(map)
+        })
+      })
+      riskZoneHandlersAttached = true
+    }
+
+    console.log('Risk zones rendered successfully (merged, priority-ordered)')
+  } catch (err) {
+    console.error('Risk zone rendering failed:', err)
+  }
 }
 
 function renderEvacMarkers() {
@@ -584,6 +862,8 @@ async function renderEvacRouteLine() {
 
   if (evacRouteAbortController) evacRouteAbortController.abort()
   evacRouteAbortController = new AbortController()
+  // 10s timeout prevents hanging on slow 3G networks
+  const mapboxRouteTimeout = setTimeout(() => evacRouteAbortController.abort(), NETWORK_CONFIG.mapboxDirectionsTimeout)
 
   const origin = `${userLocation.value.longitude},${userLocation.value.latitude}`
   const destination = `${nearestEvacCenter.value.coords.longitude},${nearestEvacCenter.value.coords.latitude}`
@@ -617,9 +897,11 @@ async function renderEvacRouteLine() {
       geometry: route.geometry
     })
   } catch (err) {
-    if (err?.name === 'AbortError') return
-
-    console.warn('Using fallback evacuation route line:', err)
+    if (err?.name === 'AbortError') {
+      console.warn('Mapbox Directions timed out on slow network, using fallback route')
+    } else {
+      console.warn('Using fallback evacuation route line:', err)
+    }
     nearestEvacRouteInfo.value = null
     routeReason.value = 'Road route unavailable; using direct fallback path.'
     addRouteLine({
@@ -636,6 +918,8 @@ async function renderEvacRouteLine() {
         ]
       }
     }, true)
+  } finally {
+    clearTimeout(mapboxRouteTimeout)
   }
 }
 
@@ -940,11 +1224,6 @@ function clearEvacRouteLine() {
   }
 }
 
-async function refreshLocationAndSafety() {
-  await refreshLocation(true)
-  await runAutopilotCycle(true)
-}
-
 async function refreshCurrentLocation() {
   await refreshLocation(true)
 }
@@ -1047,6 +1326,22 @@ function recenterMap() {
   } else {
     map.easeTo({ center: SANTA_ROSA_CENTER, zoom: 13, duration: 700 })
   }
+}
+
+function toggleFloodZones() {
+  showFloodZones.value = !showFloodZones.value
+  if (!map || !map.isStyleLoaded()) return
+
+  const layerIds = [
+    'risk-zone-base-fill',
+    'risk-zone-high-fill', 'risk-zone-high-outline',
+    'risk-zone-moderate-fill', 'risk-zone-moderate-outline',
+    'risk-zone-low-fill', 'risk-zone-low-outline'
+  ]
+  const visibility = showFloodZones.value ? 'visible' : 'none'
+  layerIds.forEach(id => {
+    if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visibility)
+  })
 }
 
 async function toggleExpand() {

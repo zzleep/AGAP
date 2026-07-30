@@ -1,9 +1,11 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import { getCallbackNumber, getSOSDeviceHash } from '../composables/useGPS.js'
 import { findNearestBarangay } from '@/data/barangay_coords'
+import { fetchWithRetry } from '@/utils/fetchWithRetry'
+import { useConnectivityStore } from '@/stores/connectivityStore'
 
 export const useSOSStore = defineStore('sos', () => {
   const deliveryState = ref('idle') // 'idle' | 'sending' | 'queued' | 'sent' | 'error'
@@ -83,6 +85,9 @@ export const useSOSStore = defineStore('sos', () => {
 
   function subscribeToRealtimeSOS() {
     if (sosChannel.value) return
+    // Skip Realtime on slow connections (2G/3G) — rely on periodic fetchActiveReports instead
+    const connectivity = useConnectivityStore()
+    if (connectivity.isSlowConnection) return
 
     sosChannel.value = supabase
       .channel('public:sos_reports')
@@ -114,6 +119,15 @@ export const useSOSStore = defineStore('sos', () => {
     }
   }
 
+  // Tear down Realtime when the network slows, re-establish when it recovers
+  watch(() => useConnectivityStore().isSlowConnection, (isSlow) => {
+    if (isSlow && sosChannel.value) {
+      unsubscribeRealtimeSOS()
+    } else if (!isSlow && !sosChannel.value) {
+      subscribeToRealtimeSOS()
+    }
+  })
+
   function initUserHash() {
     let hash = localStorage.getItem('agap_user_hash')
     if (!hash) {
@@ -126,11 +140,17 @@ export const useSOSStore = defineStore('sos', () => {
 
   async function fetchFlaggedDevices() {
     try {
-      const { data, error } = await supabase
-        .from('flagged_devices')
-        .select('device_hash')
-        .eq('active', true)
-      if (!error && data) {
+      const data = await fetchWithRetry(() =>
+        supabase
+          .from('flagged_devices')
+          .select('device_hash')
+          .eq('active', true)
+          .then(res => {
+            if (res.error) throw res.error
+            return res.data
+          })
+      )
+      if (data) {
         flaggedDeviceHashes.value = new Set(data.map(d => d.device_hash).filter(Boolean))
       }
     } catch (err) {
@@ -142,15 +162,19 @@ export const useSOSStore = defineStore('sos', () => {
     isLoading.value = true
     try {
       await fetchFlaggedDevices()
-      const { data, error } = await supabase
-        .from('sos_reports')
-        .select('*')
-        .gte('created_at', new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString())
-        .order('created_at', { ascending: false })
-        .limit(200)
-      if (!error && data) {
-        activeReports.value = data
-      }
+      const data = await fetchWithRetry(() =>
+        supabase
+          .from('sos_reports')
+          .select('*')
+          .gte('created_at', new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString())
+          .order('created_at', { ascending: false })
+          .limit(200)
+          .then(res => {
+            if (res.error) throw res.error
+            return res.data
+          })
+      )
+      activeReports.value = data
     } catch (err) {
       console.warn('Fetch active reports fallback:', err)
     } finally {

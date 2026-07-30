@@ -5,6 +5,25 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0](https://github.com/zzleep/AGAP/compare/v2.0.1...v2.1.0) (2026-07-30)
+
+
+### Features
+
+* add interactive GPS dropdown with Google Maps and copy actions to SOS Feed ([d3504cf](https://github.com/zzleep/AGAP/commit/d3504cf1f8296369f40e9180fa6d9105d7f113d1))
+* **connectivity:** optimize connection ([3862c17](https://github.com/zzleep/AGAP/commit/3862c17d3a59560246420520bcb93c0f4c82dda9))
+
+
+### Bug Fixes
+
+* **guides:** replace non-existent Barangay Poblacion with actual barangay names ([0fe1901](https://github.com/zzleep/AGAP/commit/0fe1901d4f536e1eb27ad00868db06600d81d4f4))
+* **review:** wire fetchWithRetry to central config, dynamic realtime subscriptions, clarify threshold intent ([39da9bb](https://github.com/zzleep/AGAP/commit/39da9bbf4e99127a187685a16cd4ffb788fcbe9c))
+
+
+### Performance Improvements
+
+* **slow-network:** optimize app-side for 3G/slow 4G reliability ([f72c5e8](https://github.com/zzleep/AGAP/commit/f72c5e8dfaab925a73eb8a44ff21efea41f0f1fe))
+
 ## [2.0.1](https://github.com/zzleep/AGAP/compare/v2.0.0...v2.0.1) (2026-07-29)
 
 
