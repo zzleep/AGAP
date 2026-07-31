@@ -119,6 +119,10 @@ export function useSOS() {
       }
       sosStore.currentSOS = record
       sosStore.activeReports.unshift(record)
+      // A new request invalidates the previous self-service readback
+      sosStore.mySosStatus = null
+      // Persist immediately so a crash/reload right after dispatch cannot lose the request
+      sosStore.persistActiveSOS()
 
       // Direct REST fetch with Workbox BackgroundSync handling for Chromium and standard fetch for Safari/Firefox
       try {
