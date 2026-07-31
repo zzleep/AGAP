@@ -174,6 +174,9 @@ function handleNetworkReconnect() {
 function handleVisibilityChange() {
   if (document.visibilityState === 'visible') {
     warmConnection()
+    // Retry delivering a queued SOS when the user returns to the tab —
+    // the online event may have fired while the tab was backgrounded.
+    flushQueuedSOS()
   }
   syncDegradedHeartbeat()
 }
@@ -185,6 +188,10 @@ watch(() => connectivity.mode, () => {
 onMounted(() => {
   localeStore.initLocale()
   warmConnection()
+  // Flush a queued SOS on mount: after a reload the page is often ALREADY
+  // online, so no 'online' event will fire to trigger handleNetworkReconnect.
+  // flushQueuedSOS no-ops unless deliveryState === 'queued' && currentSOS.
+  flushQueuedSOS()
   initGPS()
   startBackgroundRefresh()
   syncDegradedHeartbeat()

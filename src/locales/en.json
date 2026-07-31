@@ -96,6 +96,7 @@
     "call911": "Call 911",
     "textLocation": "Text my location",
     "batteryTip": "Power and network can fail in disasters. Between checks, put your phone in airplane mode to save battery, then check for updates every 30 minutes.",
+    "osSosTip": "Your phone's built-in emergency SOS (press the power button 5 times) can call for help even with no signal — use it too.",
     "smsFallbackCopied": "Location copied",
     "statusQueuedDetail": "This request has NOT reached anyone yet. It is saved on this phone and will be sent automatically if the network returns. If you can send a text, do it now.",
     "truthTitle": "Your request has not reached anyone",

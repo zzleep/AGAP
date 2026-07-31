@@ -100,6 +100,7 @@
         <p class="text-[11px] font-mono text-white/70">{{ sosCoords.lat }}, {{ sosCoords.lng }}</p>
         <div class="my-2.5 h-px bg-white/15" aria-hidden="true"></div>
         <p class="text-[11px] font-medium leading-relaxed text-white/70">{{ t('sos.batteryTip') }}</p>
+        <p class="mt-2 rounded-lg bg-white/10 px-2.5 py-2 text-[11px] font-bold leading-relaxed text-[#F7FB41]">{{ t('sos.osSosTip') }}</p>
       </div>
 
       <!-- Timeline steps -->
@@ -222,7 +223,7 @@
 
     <!-- Victim Update Status Panel -->
     <div
-      v-if="sos.hasActiveSOS && displayStatus !== 'resolved'"
+      v-if="sos.hasActiveSOS && displayStatus !== 'resolved' && sos.deliveryState !== 'queued'"
       class="rounded-3xl border border-[#1F3A4B]/15 bg-white p-5 shadow-sm"
     >
       <button
@@ -675,9 +676,15 @@ async function runUpdate(kind) {
     res = await sos.updateMySOS({ note: 'still_here' })
   }
   updateBusy.value = null
-  updateFeedback.value = res && res.success
-    ? { ok: true, msg: t('sos.updateSuccess') }
-    : { ok: false, msg: t('sos.updateFailed') }
+  if (res && res.success) {
+    updateFeedback.value = { ok: true, msg: t('sos.updateSuccess') }
+  } else if (res && res.reason === 'offline') {
+    // Offline is expected and already surfaced by the connectivity banner —
+    // don't alarm the victim with an error for a state they can see.
+    updateFeedback.value = null
+  } else {
+    updateFeedback.value = { ok: false, msg: t('sos.updateFailed') }
+  }
   if (kind === 'rescue' && res && res.success) {
     showRescueConfirm.value = false
   }

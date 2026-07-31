@@ -96,6 +96,7 @@
     "call911": "Tumawag sa 911",
     "textLocation": "I-text ang aking lokasyon",
     "batteryTip": "Maaaring mawalan ng kuryente at network sa kalamidad. Sa pagitan ng mga pag-check, ilagay ang iyong phone sa airplane mode para makatipid ng baterya, at i-check ang mga update tuwing 30 minuto.",
+    "osSosTip": "Ang built-in emergency SOS ng iyong phone (pindutin nang 5 beses ang power button) ay makakatawag ng tulong kahit walang signal — gamitin din iyon.",
     "smsFallbackCopied": "Nakopya ang lokasyon",
     "statusQueuedDetail": "HINDI pa nakakarating sa kanino man ang request na ito. Naka-save ito sa phone na ito at awtomatikong ipapadala kapag bumalik ang network. Kung kaya mong mag-text, gawin mo na ngayon.",
     "truthTitle": "Hindi pa nakakarating ang iyong request sa kanino man",
