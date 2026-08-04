@@ -468,7 +468,6 @@ import { useSOSStore } from '@/stores/sosStore'
 import { useSOS } from '@/composables/useSOS'
 import { useGPS } from '@/composables/useGPS'
 import { useConnectivityStore } from '@/stores/connectivityStore'
-import { findNearestBarangay } from '@/data/barangay_coords'
 import GpsGuideModal from '@/components/common/GpsGuideModal.vue'
 
 const HOLD_DURATION_MS = 2000
@@ -657,17 +656,12 @@ async function runUpdate(kind) {
     } finally {
       updateLocating.value = false
     }
-    if (!coords) {
-      // Same fallback pattern as performDispatch
-      const fallbackLat = 14.3123
-      const fallbackLng = 121.1114
-      coords = {
-        latitude: fallbackLat,
-        longitude: fallbackLng,
-        accuracy: 0,
-        barangay: findNearestBarangay(fallbackLat, fallbackLng),
-        isFallback: true
-      }
+    // Never fabricate a position: without a real fix (live or recent cached),
+    // the update is refused and the user is taken through GPS re-enable.
+    if (!coords || coords.isFallback) {
+      updateBusy.value = null
+      handleEnableGPS()
+      return
     }
     res = await sos.updateMySOS({ latitude: coords.latitude, longitude: coords.longitude, note: 'moved' })
   } else if (kind === 'rescue') {
@@ -784,16 +778,12 @@ async function performDispatch() {
 
   try {
     let coords = await refreshLocation(true)
-    if (!coords) {
-      const fallbackLat = 14.3123
-      const fallbackLng = 121.1114
-      coords = {
-        latitude: fallbackLat,
-        longitude: fallbackLng,
-        accuracy: 0,
-        barangay: findNearestBarangay(fallbackLat, fallbackLng),
-        isFallback: true
-      }
+    // Refuse to dispatch with a fabricated or missing position: a fallback or
+    // null coords must never reach responders. Open the GPS guide instead.
+    if (!coords || coords.isFallback) {
+      clearHold()
+      showGpsGuideModal.value = true
+      return
     }
     await dispatchSOS(coords)
   } finally {

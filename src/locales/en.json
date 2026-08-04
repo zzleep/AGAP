@@ -244,7 +244,8 @@
   "gps": {
     "locationSaved": "Location Saved",
     "locationRefreshed": "Location Refreshed",
-    "gpsLockFailed": "GPS Lock Failed - Using Cached Location"
+    "gpsLockFailed": "GPS Lock Failed - Using Cached Location",
+    "approximateLocation": "Approximate location - GPS accuracy is limited. Refresh to try again."
   },
   "update": {
     "available": "A new version is available",

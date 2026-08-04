@@ -244,7 +244,8 @@
   "gps": {
     "locationSaved": "Nai-save na ang Lokasyon",
     "locationRefreshed": "Na-refresh na ang Lokasyon",
-    "gpsLockFailed": "Hindi makuha ang GPS - Gamit ang Naka-cache na Lokasyon"
+    "gpsLockFailed": "Hindi makuha ang GPS - Gamit ang Naka-cache na Lokasyon",
+    "approximateLocation": "Tinatayang lokasyon - limitado ang katumpakan ng GPS. I-refresh para subukan muli."
   },
   "update": {
     "available": "May bagong bersyon na available",
