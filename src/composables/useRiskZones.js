@@ -181,7 +181,15 @@ export function useRiskZones({ map, mapboxgl }) {
 
   function toggleFloodZones() {
     showFloodZones.value = !showFloodZones.value
-    localStorage.setItem('agap_show_flood_zones', JSON.stringify(showFloodZones.value))
+    // Mirror getShowFloodZones' guards: persist only when storage is available
+    // so SSR / non-browser contexts never throw on the write path.
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('agap_show_flood_zones', JSON.stringify(showFloodZones.value))
+      } catch (err) {
+        console.warn('Failed to persist flood zone preference:', err)
+      }
+    }
     if (!map.value || !map.value.isStyleLoaded()) return
 
     const visibility = showFloodZones.value ? 'visible' : 'none'

@@ -231,6 +231,16 @@ export function useMapboxMap({ onMapReady }) {
     window.removeEventListener('resize', handleViewportResize)
     window.removeEventListener('orientationchange', handleViewportResize)
     document.removeEventListener('fullscreenchange', handleFullscreenChange)
+
+    // Reset expansion state and restore body scrolling so a later mount
+    // doesn't inherit stale fullscreen/overlay state.
+    if (isExpanded.value) {
+      isExpanded.value = false
+      if (typeof document !== 'undefined' && document.body && document.body.classList) {
+        document.body.classList.remove('overflow-hidden')
+      }
+    }
+
     map.value = null
   }
 
