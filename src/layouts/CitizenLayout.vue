@@ -37,7 +37,7 @@
     </header>
 
     <!-- Main Content Area -->
-    <main :class="['flex-1 max-w-md mx-auto w-full p-4', isSetupRoute ? 'pb-6' : 'pb-16']">
+    <main :class="['flex-1 max-w-md mx-auto w-full p-4', isSetupRoute ? 'pb-6' : 'pb-[calc(5.25rem+env(safe-area-inset-bottom,0px))]']">
       <router-view />
     </main>
 

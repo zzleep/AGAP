@@ -131,14 +131,14 @@ function renderSimpleMarkdown(md) {
   return md
     .replace(/\r/g, '')
     .replace(/\s*SOP\s*/gi, ' ')
-    .replace(/^# (.*$)/gim, '<h1 class="font-expressive text-base font-black text-[#902715] mt-3 mb-1.5 tracking-tight">$1</h1>')
-    .replace(/^## (.*$)/gim, '<h2 class="font-expressive text-xs font-black text-[#1F3A4B] mt-3.5 mb-1 tracking-tight flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#1F3A4B] inline-block"></span>$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1 class="font-expressive text-base font-black text-[#0A0A0A] mt-3 mb-1.5 tracking-tight">$1</h1>')
+    .replace(/^## (.*$)/gim, '<h2 class="font-expressive text-sm font-black text-[#0A0A0A] mt-3.5 mb-1 tracking-tight flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#0A0A0A] inline-block"></span>$1</h2>')
     .replace(/^### (.*$)/gim, '<h3 class="font-expressive text-xs font-bold text-[#0A0A0A] mt-2 mb-1">$1</h3>')
     .replace(/^> (.*$)/gim, '<blockquote class="border-l-3 border-[#902715] p-2.5 bg-[#FDFBF7] text-[#902715] text-[11px] font-bold rounded-r-xl my-2 shadow-m3-xs border-r border-t border-b border-[#E0E0E0]">$1</blockquote>')
-    .replace(/^\- (.*$)/gim, '<li class="ml-3.5 list-disc text-[#333333] mb-1 text-xs font-medium leading-relaxed">$1</li>')
+    .replace(/^\- (.*$)/gim, '<li class="ml-3.5 list-disc text-[#0A0A0A] mb-1 text-xs font-medium leading-relaxed">$1</li>')
     .replace(/`([^`]+)`/gim, '<code class="px-1.5 py-0.5 rounded bg-[#F5F5F5] text-[#902715] font-mono text-[11px] font-bold border border-[#E0E0E0]">$1</code>')
     .replace(/\*\*(.*?)\*\*/gim, '<strong class="font-black text-[#0A0A0A]">$1</strong>')
-    .replace(/\*(.*?)\*/gim, '<span class="font-bold text-[#1F3A4B]">$1</span>')
+    .replace(/\*(.*?)\*/gim, '<span class="font-bold text-[#0A0A0A]">$1</span>')
     .replace(/\n\n/g, '<div class="h-1.5"></div>')
 }
 </script>

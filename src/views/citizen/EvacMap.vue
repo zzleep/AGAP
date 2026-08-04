@@ -31,11 +31,11 @@
       <!-- Line 2: Location Subtitle & Walk Time -->
       <div class="flex flex-wrap items-center gap-2 text-xs font-semibold text-[#717171]">
         <span v-if="userLocation">
-          {{ userLocation.barangay || $t('home.currentLocation') }} · {{ formatDistanceToKm(nearestEvacDistance) }} km away
+          {{ userLocation.barangay || $t('home.currentLocation') }} · {{ formatDistanceToKm(nearestEvacDistance) }} km {{ $t('evacMap.straightLine') }}
         </span>
         <span v-else>{{ $t('evacMap.locationHint') }}</span>
         <span v-if="nearestEvacRouteInfo" class="px-2.5 py-0.5 rounded-full bg-[#902715]/10 text-[#902715] font-extrabold text-[11px]">
-          {{ formatDistanceToKm(nearestEvacRouteInfo.distanceKm) }} km route · {{ formatDurationToMinutes(nearestEvacRouteInfo.durationMinutes) }} min walk
+          {{ formatDistanceToKm(nearestEvacRouteInfo.distanceKm) }} km {{ $t('evacMap.walkingRoute') }} · {{ formatDurationToMinutes(nearestEvacRouteInfo.durationMinutes) }} min walk
         </span>
       </div>
 
@@ -129,7 +129,7 @@
         <p class="text-[9px] font-extrabold uppercase tracking-wider text-[#717171] leading-tight break-words">{{ $t('evacMap.routeGuide') }}</p>
         <p class="mt-0.5 font-expressive text-sm font-black text-[#0A0A0A] leading-tight break-words">{{ nearestEvacCenter.name }}</p>
         <p class="mt-0.5 text-[#717171] text-[11px] leading-tight">
-          {{ $t('evacMap.fromYou') }} {{ formatDistanceToKm(nearestEvacDistance) }} km
+          {{ formatDistanceToKm(nearestEvacDistance) }} km {{ $t('evacMap.straightLine') }} {{ $t('evacMap.fromYou') }}
         </p>
       </div>
 
@@ -170,7 +170,7 @@
       </div>
 
       <!-- Bottom Status & Recenter Floating Glass Dock -->
-      <div class="absolute bottom-3 left-3 right-3 bg-white/90 backdrop-blur-md p-3 rounded-2xl border border-black/10 text-xs flex justify-between items-center z-20 shadow-m3-lg">
+      <div class="absolute bottom-24 left-3 right-3 bg-white/90 backdrop-blur-md p-3 rounded-2xl border border-black/10 text-xs flex justify-between items-center z-[60] shadow-m3-lg">
         <div class="space-y-0.5">
           <span class="text-[#717171] block text-[9px] font-extrabold uppercase tracking-wider">{{ $t('evacMap.activeRiskFilter') }}</span>
           <span
