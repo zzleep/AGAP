@@ -125,57 +125,10 @@
 
     <!-- 2x2 Expressive Action Grid with Earthy Slate Blue Integration -->
     <div class="grid grid-cols-2 gap-3.5">
-      <!-- 1. Emergency SOS Tile (Primary High Urgency - Photo + Dark Scrim) -->
-      <router-link
-        to="/app/sos"
-        class="expressive-tile expressive-tile--emergency group relative flex min-h-40 flex-col justify-end overflow-hidden rounded-[2rem] shadow-m3-md transition-all duration-300 ease-out hover:scale-[1.02] hover:brightness-105"
-      >
-        <img src="/photos/sos.jpg" alt="Emergency SOS" class="absolute inset-0 h-full w-full object-cover" />
-        <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent"></div>
-        <div class="relative z-10 flex items-center justify-between gap-2 p-5">
-          <span class="font-expressive text-sm font-black leading-tight text-white">{{ $t('home.triggerSos') }}</span>
-          <svg class="h-4 w-4 shrink-0 text-white/80 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
-        </div>
-      </router-link>
-
-      <!-- 2. Evacuation Routes Tile (Navigation & Safe Passage - Photo + Dark Scrim) -->
-      <router-link
-        to="/app/map"
-        class="expressive-tile expressive-tile--map group relative flex min-h-40 flex-col justify-end overflow-hidden rounded-[2rem] shadow-m3-md transition-all duration-300 ease-out hover:scale-[1.02] hover:brightness-105"
-      >
-        <img src="/photos/map.jpg" alt="Evacuation routes" class="absolute inset-0 h-full w-full object-cover" />
-        <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent"></div>
-        <div class="relative z-10 flex items-center justify-between gap-2 p-5">
-          <span class="font-expressive text-sm font-black leading-tight text-white">{{ $t('home.evacuationRoutes') }}</span>
-          <svg class="h-4 w-4 shrink-0 text-white/80 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
-        </div>
-      </router-link>
-
-      <!-- 3. Disaster Guides Tile (Knowledge & Guidance - Photo + Dark Scrim) -->
-      <router-link
-        to="/app/guides"
-        class="expressive-tile expressive-tile--guides group relative flex min-h-40 flex-col justify-end overflow-hidden rounded-[2rem] shadow-m3-md transition-all duration-300 ease-out hover:scale-[1.02] hover:brightness-105"
-      >
-        <img src="/photos/guides.jpg" alt="Disaster guides" class="absolute inset-0 h-full w-full object-cover" />
-        <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent"></div>
-        <div class="relative z-10 flex items-center justify-between gap-2 p-5">
-          <span class="font-expressive text-sm font-black leading-tight text-white">{{ $t('home.disasterGuides') }}</span>
-          <svg class="h-4 w-4 shrink-0 text-white/80 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
-        </div>
-      </router-link>
-
-      <!-- 4. Report Issue Tile (Citizen Intake - Photo + Dark Scrim) -->
-      <router-link
-        to="/app/report"
-        class="expressive-tile expressive-tile--report group relative flex min-h-40 flex-col justify-end overflow-hidden rounded-[2rem] shadow-m3-md transition-all duration-300 ease-out hover:scale-[1.02] hover:brightness-105"
-      >
-        <img src="/photos/report.jpg" alt="Report an issue" class="absolute inset-0 h-full w-full object-cover" />
-        <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent"></div>
-        <div class="relative z-10 flex items-center justify-between gap-2 p-5">
-          <span class="font-expressive text-sm font-black leading-tight text-white">{{ $t('home.reportIssue') }}</span>
-          <svg class="h-4 w-4 shrink-0 text-white/80 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
-        </div>
-      </router-link>
+      <ActionTile to="/app/sos" img-src="/photos/sos.jpg" alt="Emergency SOS" :label="$t('home.triggerSos')" variant="emergency" />
+      <ActionTile to="/app/map" img-src="/photos/map.jpg" alt="Evacuation routes" :label="$t('home.evacuationRoutes')" variant="map" />
+      <ActionTile to="/app/guides" img-src="/photos/guides.jpg" alt="Disaster guides" :label="$t('home.disasterGuides')" variant="guides" />
+      <ActionTile to="/app/report" img-src="/photos/report.jpg" alt="Report an issue" :label="$t('home.reportIssue')" variant="report" />
     </div>
   </div>
 </template>
@@ -184,16 +137,20 @@
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useWeatherStore } from '@/stores/weatherStore'
+import { useNow } from '@/composables/useNow'
+import ActionTile from '@/components/common/ActionTile.vue'
 
 const weather = useWeatherStore()
 const { t, locale } = useI18n()
+const { now } = useNow()
 
 const currentTemp = computed(() => weather.currentWeather.temp ? `${Math.round(weather.currentWeather.temp)}°C` : '28°C')
 const weatherCondition = computed(() => weather.currentWeather.condition || t('home.rain'))
 
 // ── Time-of-Day Greeting (5–11 morning, 12–16 afternoon, 17–21 evening, 22–4 night) ──
+// Uses the reactive `now` clock so the greeting/date stay accurate as time passes.
 const greeting = computed(() => {
-  const hour = new Date().getHours()
+  const hour = now.value.getHours()
   if (hour >= 5 && hour <= 11) return t('home.greetingMorning')
   if (hour >= 12 && hour <= 16) return t('home.greetingAfternoon')
   if (hour >= 17 && hour <= 21) return t('home.greetingEvening')
@@ -201,7 +158,7 @@ const greeting = computed(() => {
 })
 
 const todayDate = computed(() => {
-  return new Date().toLocaleDateString(locale.value, { weekday: 'long', month: 'long', day: 'numeric' })
+  return now.value.toLocaleDateString(locale.value, { weekday: 'long', month: 'long', day: 'numeric' })
 })
 
 // ── Plain-Language Citizen Safety Guidance ──
