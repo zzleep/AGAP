@@ -77,7 +77,10 @@
           </svg>
           <span>{{ showFloodZones ? 'Hide Flood' : 'Show Flood' }}</span>
         </button>
+        
       </div>
+
+      
 
       <!-- Bottom Status & Recenter Floating Glass Dock -->
       <div class="absolute bottom-24 left-3 right-3 bg-white/90 backdrop-blur-md p-3 rounded-2xl border border-black/10 text-xs flex justify-between items-center z-[60] shadow-m3-lg">
@@ -158,9 +161,9 @@ const autopilotDeps = { renderEvacRouteLine: null, getNearbyIncidentSummary: nul
 const autopilot = useAutopilot({ userLocation, nearestEvacCenter, deps: autopilotDeps })
 const { safetyScore, stuckAlert, startAutopilot, stopAutopilot, runAutopilotCycle } = autopilot
 const routeLine = useEvacRouteLine({ map, mapboxgl, mapboxToken, userLocation, nearestEvacCenter, lastAutopilotReason: autopilot.lastAutopilotReason, routeReason })
-const { nearestEvacRouteInfo, renderEvacRouteLine, dispose } = routeLine
-const incidents = useIncidents({ map, mapboxgl, userLocation, activeRouteCoordinates: routeLine.activeRouteCoordinates })
-const { nearbyIncidentCount, clearIncidentMarkers, getNearbyIncidentSummary } = incidents
+const { nearestEvacRouteInfo, renderEvacRouteLine, dispose, activeRouteCoordinates } = routeLine
+const incidents = useIncidents({ map, mapboxgl, userLocation, activeRouteCoordinates })
+const { nearbyIncidentCount, clearIncidentMarkers, getNearbyIncidentSummary, renderIncidentMarkers } = incidents
 autopilotDeps.renderEvacRouteLine = routeLine.renderEvacRouteLine
 autopilotDeps.getNearbyIncidentSummary = incidents.getNearbyIncidentSummary
 autopilotDeps.nearestEvacRouteInfo = routeLine.nearestEvacRouteInfo
@@ -253,6 +256,7 @@ onUnmounted(() => {
   cleanup()
   document.body.classList.remove('overflow-hidden')
 })
+
 
 watch(() => flow.mappedRiskLevel, () => {
   renderRoutes()

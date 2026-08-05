@@ -20,6 +20,7 @@ export function useAutopilot({ userLocation, nearestEvacCenter, deps }) {
   let lastAutopilotRunAt = 0
   let lastMovementSnapshot = null
   let lastStuckSignalAt = 0
+  let avoidUntilArrival = false
 
   function startAutopilot() {
     if (autopilotIntervalId) clearInterval(autopilotIntervalId)
@@ -51,6 +52,37 @@ export function useAutopilot({ userLocation, nearestEvacCenter, deps }) {
       lastAutopilotReason.value = 'weather'
     } else {
       lastAutopilotReason.value = ''
+    }
+
+    // If an anonymous report exists along the active route, request a safer reroute
+    // and continue to prefer safe reroutes until the user reaches the evac center.
+    if (reportSummary.anonOnRoute) {
+      avoidUntilArrival = true
+      lastAutopilotReason.value = 'anon_report_on_route'
+    }
+
+    if (avoidUntilArrival) {
+      // If we've arrived (within 50m), stop forcing avoidance
+      const arrived = getDistanceKm(
+        userLocation.value.latitude,
+        userLocation.value.longitude,
+        nearestEvacCenter.value.coords.latitude,
+        nearestEvacCenter.value.coords.longitude
+      ) <= 0.05
+
+      if (arrived) {
+        avoidUntilArrival = false
+      } else {
+        try {
+          await deps.renderEvacRouteLine({ avoidIncidents: true, incidents: reportSummary.nearbyReports })
+        } catch (err) {
+          // fallback to normal reroute on error
+          await deps.renderEvacRouteLine()
+        }
+
+        updateMovementSnapshot()
+        return
+      }
     }
 
     if (forceReroute || lastAutopilotReason.value) {

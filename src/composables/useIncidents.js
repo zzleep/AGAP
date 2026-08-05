@@ -59,7 +59,20 @@ export function useIncidents({ map, mapboxgl, userLocation, activeRouteCoordinat
       `
 
       if (map.value && map.value.isStyleLoaded()) {
-        const marker = new mapboxgl.value.Marker({ color: getIncidentMarkerColor(report.ai_priority) })
+        const color = getIncidentMarkerColor(report.ai_priority)
+        const el = document.createElement('div')
+        el.className = 'incident-marker'
+        el.style.width = '28px'
+        el.style.height = '28px'
+        el.innerHTML = `
+          <svg viewBox="0 0 24 24" width="28" height="28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path fill="${color}" d="M1 21h22L12 2 1 21z"/>
+            <rect x="11" y="9" width="2" height="6" fill="#fff" rx="0.4"/>
+            <rect x="11" y="17" width="2" height="2" fill="#fff" rx="0.4"/>
+          </svg>
+        `
+
+        const marker = new mapboxgl.value.Marker(el)
           .setLngLat([coords.longitude, coords.latitude])
           .setPopup(new mapboxgl.value.Popup({ offset: 14 }).setHTML(popupHtml))
           .addTo(map.value)
@@ -79,7 +92,7 @@ export function useIncidents({ map, mapboxgl, userLocation, activeRouteCoordinat
     try {
       const { data, error } = await supabase
         .from('community_reports')
-        .select('id, ai_priority, status, barangay, created_at, raw_description')
+        .select('id, ai_priority, status, barangay, created_at, raw_description, user_hash')
         .in('status', ['open', 'in_review'])
         .order('created_at', { ascending: false })
         .limit(120)
@@ -101,6 +114,7 @@ export function useIncidents({ map, mapboxgl, userLocation, activeRouteCoordinat
           ...report,
           latitude: coords.latitude,
           longitude: coords.longitude,
+          user_hash: report.user_hash,
           distanceKm,
           distanceToRouteKm: getDistanceToRouteKm(
             coords.latitude,
@@ -121,7 +135,9 @@ export function useIncidents({ map, mapboxgl, userLocation, activeRouteCoordinat
       renderIncidentMarkers(nearbyReports)
 
       const criticalLike = nearbyReports.filter(r => r.ai_priority === 'high' || r.ai_priority === 'critical').length
-      return { count: nearbyReports.length, criticalLike }
+      // Detect anonymous reports on the active route (user_hash missing/null)
+      const anonOnRoute = nearbyReports.some(r => !r.user_hash)
+      return { count: nearbyReports.length, criticalLike, nearbyReports, anonOnRoute }
     } catch (err) {
       console.warn('Autopilot incident scan fallback:', err)
       nearbyIncidentCount.value = 0

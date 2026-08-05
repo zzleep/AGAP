@@ -22,7 +22,18 @@ export function useEvacMarkers({ map, mapboxgl }) {
         </div>
       `
 
-      const marker = new mapboxgl.value.Marker({ color: '#902715' })
+      const el = document.createElement('div')
+      el.className = 'evac-center-marker'
+      el.style.width = '32px'
+      el.style.height = '32px'
+      el.innerHTML = `
+        <svg viewBox="0 0 24 24" width="32" height="32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path fill="#902715" d="M12 3l8 6v10a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1V9l8-6z"/>
+          <path fill="#fff" d="M9 12h6v2H9z"/>
+        </svg>
+      `
+
+      const marker = new mapboxgl.value.Marker(el)
         .setLngLat([center.coords.longitude, center.coords.latitude])
         .setPopup(new mapboxgl.value.Popup({ offset: 18 }).setHTML(popupHtml))
         .addTo(map.value)

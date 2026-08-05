@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { useFlowStore } from '@/stores/flowStore'
 import { NETWORK_CONFIG } from '@/lib/networkConfig'
+import { getDistanceToRouteKm } from '@/utils/geo'
 
 export function useEvacRouteLine({ map, mapboxgl, mapboxToken, userLocation, nearestEvacCenter, lastAutopilotReason, routeReason }) {
   const flow = useFlowStore()
@@ -11,7 +12,7 @@ export function useEvacRouteLine({ map, mapboxgl, mapboxToken, userLocation, nea
   const evacRouteFallbackLayerId = 'evac-user-route-fallback'
   let evacRouteAbortController = null
 
-  async function renderEvacRouteLine() {
+  async function renderEvacRouteLine(options = {}) {
     if (!userLocation.value || !nearestEvacCenter.value) return
 
     clearEvacRouteLine()
@@ -24,6 +25,58 @@ export function useEvacRouteLine({ map, mapboxgl, mapboxToken, userLocation, nea
 
     const origin = `${userLocation.value.longitude},${userLocation.value.latitude}`
     const destination = `${nearestEvacCenter.value.coords.longitude},${nearestEvacCenter.value.coords.latitude}`
+
+    if (options?.avoidIncidents && Array.isArray(options.incidents) && options.incidents.length > 0) {
+      const directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/walking/${origin};${destination}?geometries=geojson&overview=full&steps=false&alternatives=true&access_token=${encodeURIComponent(mapboxToken)}`
+      try {
+        const response = await fetch(directionsUrl, { signal: evacRouteAbortController.signal })
+        if (!response.ok) throw new Error(`Directions request failed (${response.status})`)
+
+        const payload = await response.json()
+        const routes = payload?.routes || []
+        if (routes.length > 0) {
+          const scored = routes.map(r => {
+            const coords = r.geometry?.coordinates || []
+            let minDist = Infinity
+            for (const inc of options.incidents) {
+              if (inc.latitude == null || inc.longitude == null) continue
+              const d = getDistanceToRouteKm(inc.latitude, inc.longitude, coords)
+              if (d < minDist) minDist = d
+            }
+            return { route: r, minDist }
+          })
+
+          scored.sort((a, b) => {
+            if (b.minDist === a.minDist) return (a.route.distance || 0) - (b.route.distance || 0)
+            return b.minDist - a.minDist
+          })
+
+          const chosen = scored[0].route
+          nearestEvacRouteInfo.value = {
+            distanceKm: chosen.distance / 1000,
+            durationMinutes: chosen.duration / 60
+          }
+
+          routeReason.value = 'Route updated to avoid nearby anonymous incident.'
+
+          addRouteLine({
+            type: 'Feature',
+            properties: {
+              name: nearestEvacCenter.value.name,
+              kind: 'nearest-evac-route'
+            },
+            geometry: chosen.geometry
+          })
+
+          return
+        }
+      } catch (err) {
+        console.warn('Safe-route selection via alternatives failed, falling back:', err)
+        // continue to fallback below
+      }
+    }
+
+    // Default: request single best route (Map Matching / Directions fallback)
     const directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/walking/${origin};${destination}?geometries=geojson&overview=full&steps=false&access_token=${encodeURIComponent(mapboxToken)}`
 
     try {

@@ -530,14 +530,14 @@ async function onPlausibilityChange(id, newPlausibility) {
 }
 
 function formatTimeAgo(dateStr) {
-  if (!dateStr) return 'Just now'
-  const diffMs = Date.now() - new Date(dateStr).getTime()
-  const diffMins = Math.floor(diffMs / 60000)
-  if (diffMins < 1) return 'Just now'
-  if (diffMins === 1) return '1 min ago'
-  if (diffMins < 60) return `${diffMins} mins ago`
-  const diffHours = Math.floor(diffMins / 60)
-  return `${diffHours} hrs ago`
+  if (!dateStr) return 'just now'
+  const diffSec = Math.floor((Date.now() - Date.parse(dateStr)) / 1000)
+  if (diffSec < 60) return 'just now'
+  const diffMin = Math.floor(diffSec / 60)
+  if (diffMin < 60) return `${diffMin}m ago`
+  const diffHr = Math.floor(diffMin / 60)
+  if (diffHr < 24) return `${diffHr}h ago`
+  return `${Math.floor(diffHr / 24)}d ago`
 }
 
 watch(() => reportStore.unreadHighPriorityCount, (newCount, oldCount) => {
