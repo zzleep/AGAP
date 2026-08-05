@@ -46,26 +46,38 @@
       <div
         v-for="cluster in sosStore.activeClusters"
         :key="cluster.barangay"
-        class="p-5 rounded-[2rem] bg-[#902715] text-white flex items-center justify-between shadow-[0_10px_28px_rgba(144,39,21,0.35)] border border-white/20 transition-all duration-300"
+        class="p-5 rounded-[2rem] bg-[#902715] text-white flex flex-col gap-4 shadow-[0_10px_28px_rgba(144,39,21,0.35)] border border-white/20 transition-all duration-300"
       >
-        <div class="flex items-center space-x-4">
-          <div class="w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center font-bold text-white shrink-0 shadow-inner">
-            <svg class="w-6 h-6 text-[#F7FB41] animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center space-x-4">
+            <div class="w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center font-bold text-white shrink-0 shadow-inner">
+              <svg class="w-6 h-6 text-[#F7FB41] animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-black text-sm text-white uppercase tracking-wider">
+                BARANGAY INCIDENT CLUSTER ALERT — {{ cluster.barangay }}
+              </h3>
+              <p class="text-xs text-white/90 mt-0.5 font-medium">
+                High density emergency activity detected: {{ cluster.count }} active SOS reports in the past 30 minutes. Priority dispatch recommended.
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 class="font-black text-sm text-white uppercase tracking-wider">
-              BARANGAY INCIDENT CLUSTER ALERT — {{ cluster.barangay }}
-            </h3>
-            <p class="text-xs text-white/90 mt-0.5 font-medium">
-              High density emergency activity detected: {{ cluster.count }} active SOS reports in the past 30 minutes. Priority dispatch recommended.
-            </p>
-          </div>
+          <span class="px-4 py-2 bg-[#F7FB41] text-[#0A0A0A] text-xs font-black rounded-full shrink-0 shadow-md">
+            {{ cluster.count }} ALERTS
+          </span>
         </div>
-        <span class="px-4 py-2 bg-[#F7FB41] text-[#0A0A0A] text-xs font-black rounded-full shrink-0 shadow-md">
-          {{ cluster.count }} ALERTS
-        </span>
+
+        <!-- Aegis Advisory — auto-triggered or operator-requested -->
+        <AegisAdvisoryCard
+          variant="banner"
+          :suggestion="suggestionForCluster(cluster)"
+          :loading="aegisStore.generating && !suggestionForCluster(cluster)"
+          :error="aegisErrorForCluster(cluster)"
+          @ask="askAegisForCluster(cluster)"
+          @outcome="(payload) => handleAegisOutcome(cluster, payload)"
+        />
       </div>
     </div>
 
@@ -573,12 +585,17 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSOSStore } from '@/stores/sosStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useAegisStore } from '@/stores/aegisStore'
+import { useFlowStore } from '@/stores/flowStore'
 import { BARANGAY_LIST } from '@/data/barangay_coords'
+import AegisAdvisoryCard from '@/components/admin/AegisAdvisoryCard.vue'
 
 const route = useRoute()
 const router = useRouter()
 const sosStore = useSOSStore()
 const authStore = useAuthStore()
+const aegisStore = useAegisStore()
+const flowStore = useFlowStore()
 
 const toastMessage = ref('')
 let staleTimer = null
@@ -609,6 +626,14 @@ const filters = ref({
 // Auto-reset to page 1 when filters or rows-per-page change
 watch(filters, () => { currentPage.value = 1 }, { deep: true })
 watch(rowsPerPage, () => { currentPage.value = 1 })
+
+// Surface rule-based auto-flags as a toast (devices moved to the flagged queue)
+watch(() => sosStore.lastAutoFlags, (flags) => {
+  if (!flags || flags.length === 0) return
+  const first = flags[0]
+  const extra = flags.length > 1 ? ` (+${flags.length - 1} more)` : ''
+  toastMessage.value = `Auto-flagged device: ${first.hash.substring(0, 8)} — ${first.label}. Moved to flagged queue.${extra}`
+})
 
 const filteredQueue = computed(() => {
   return sosStore.sortedQueue.filter(item => {
@@ -787,12 +812,53 @@ async function manualRefresh() {
   }
 }
 
+// ── Aegis Advisory Integration ──
+const AEGIS_OUTCOME_TOAST = {
+  approved: 'Advisory approved',
+  modified: 'Advisory modified',
+  rejected: 'Advisory rejected'
+}
+
+function suggestionForCluster(cluster) {
+  const bgy = (cluster.barangay || '').toLowerCase()
+  return aegisStore.pendingSuggestions.find(s => (s.target_barangay || '').toLowerCase() === bgy) || null
+}
+
+function aegisErrorForCluster(cluster) {
+  // Store-level error only surfaces while no suggestion exists for this
+  // cluster yet, so a displayed suggestion is never masked by stale errors.
+  return aegisStore.lastError && !suggestionForCluster(cluster) ? aegisStore.lastError : null
+}
+
+async function askAegisForCluster(cluster) {
+  await aegisStore.generateSuggestion({
+    sos_ids: (cluster.reports || []).map(r => r.id),
+    cluster_barangay: cluster.barangay,
+    cluster_count: cluster.count,
+    scenario_type: 'flood',
+    flood_zone_severity: flowStore.zoneSeverity ?? null
+  })
+}
+
+async function handleAegisOutcome(cluster, { outcome, modifiedAction }) {
+  const suggestion = suggestionForCluster(cluster)
+  if (!suggestion) return
+  try {
+    await aegisStore.setOutcome(suggestion.id, { outcome, modifiedAction })
+    toastMessage.value = AEGIS_OUTCOME_TOAST[outcome] || 'Advisory outcome recorded'
+  } catch (err) {
+    console.error('Aegis outcome failed:', err)
+    toastMessage.value = 'Failed to record advisory outcome.'
+  }
+}
+
 onMounted(async () => {
   document.addEventListener('click', handleDocumentClick)
   if (sosStore.fetchActiveReports) {
     await sosStore.fetchActiveReports()
   }
   sosStore.subscribeToRealtimeSOS()
+  aegisStore.init()
   await sosStore.checkStaleClaims()
 
   // If navigated from hotspot map with SOS ID(s), set the search filter

@@ -201,7 +201,47 @@ Confidence: HIGH = specific actionable data (confirmed cluster, known hazard, cl
 IMPORTANT: In the reasoning field, separate each step with actual newline character (\n).`
 }
 
-function buildPrompt(scenarioType: string, sosIds: string[], barangay: string, count: number, floodSeverity: string, weatherAlert: string): string {
+function buildReportPrompt(communityReport: Record<string, unknown>, barangay: string): string {
+  const description = (communityReport.description as string) || 'No description provided'
+  const category = (communityReport.category as string) || 'general'
+  const priority = (communityReport.priority as string) || 'unknown'
+  const plausibility = (communityReport.plausibility as string) || 'unverified'
+  const reasoning = (communityReport.reasoning as string) || 'No AI reasoning available'
+
+  return `You are Aegis, AI advisor for Santa Rosa CDRRMO. Provide advisory recommendations only — never decisions, only suggestions for human operators to approve or modify.
+
+Focus: community incident response, department referral, targeted dispatch based on AI triage.
+Context: AI-triaged community report with category, priority and plausibility classification.
+
+Example: "Dispatch barangay health workers to verify the mental health concern at Barangay Tagapo and refer the case to the City Social Welfare Office."
+
+Analyze the following situation:
+
+Community Report: ${description}
+AI Category: ${category}
+AI Priority: ${priority}
+AI Plausibility: ${plausibility}
+AI Reasoning: ${reasoning}
+Barangay: ${barangay || 'Unknown'}
+
+Respond with valid JSON only, no markdown, no extra text. Use this exact structure:
+{
+  "recommended_action": "specific action to take",
+  "target_barangay": "primary target barangay",
+  "reasoning": "Step 1: [observation]\\nStep 2: [analysis]\\nStep 3: [conclusion]\\nStep 4: [recommended action rationale]",
+  "confidence": "high|medium|low"
+}
+Confidence: HIGH = plausible, high/critical priority report with clear category and context. MEDIUM = data present but incomplete or priority uncertain. LOW = data minimal, vague, or plausibility unverified. Only default HIGH for high/critical priority with verified plausibility.
+IMPORTANT: In the reasoning field, separate each step with actual newline character (\n).`
+}
+
+function buildPrompt(scenarioType: string, sosIds: string[], barangay: string, count: number, floodSeverity: string, weatherAlert: string, communityReport?: Record<string, unknown>): string {
+  if (scenarioType === 'report') {
+    if (communityReport) {
+      return buildReportPrompt(communityReport, barangay)
+    }
+    console.warn(`Aegis: scenario_type "report" received without community_report, defaulting to flood`)
+  }
   const builders: Record<string, (sosIds: string[], barangay: string, count: number, floodSeverity: string, weatherAlert: string) => string> = {
     flood: buildFloodPrompt,
     earthquake: buildEarthquakePrompt,
@@ -226,7 +266,7 @@ Deno.serve(async (req) => {
   let clusterBarangay = ''
 
   try {
-    const { sos_ids, cluster_barangay, cluster_count, flood_zone_severity, weather_alert, scenario_type } = await req.json()
+    const { sos_ids, cluster_barangay, cluster_count, flood_zone_severity, weather_alert, scenario_type, community_report } = await req.json()
 
     scenarioType = scenario_type || 'flood'
     clusterBarangay = cluster_barangay || ''
@@ -235,7 +275,8 @@ Deno.serve(async (req) => {
       sos_cluster: { ids: sos_ids || [], barangay: clusterBarangay, count: cluster_count || 0 },
       flood_zone: { severity: flood_zone_severity || 'none' },
       weather: { alert: weather_alert || 'No active weather alert' },
-      scenario_type: scenarioType
+      scenario_type: scenarioType,
+      ...(community_report ? { community_report } : {})
     }
 
     if (!GEMINI_API_KEY) {
@@ -246,7 +287,7 @@ Deno.serve(async (req) => {
 
     const prompt = buildPrompt(
       scenarioType, sos_ids || [], clusterBarangay || 'Tagapo', cluster_count || 0,
-      flood_zone_severity || 'none', weather_alert
+      flood_zone_severity || 'none', weather_alert, community_report
     )
 
     // Try each model in order, stop at first success
