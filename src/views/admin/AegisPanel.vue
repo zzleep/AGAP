@@ -79,12 +79,7 @@
                 Fallback
               </span>
               <span
-                :class="[
-                  'px-3.5 py-1.5 text-[10px] uppercase font-black rounded-full shadow-sm',
-                  activeRecommendation.confidence === 'high' ? 'bg-[#556B2F] text-white' :
-                  activeRecommendation.confidence === 'medium' ? 'bg-[#F7FB41] text-[#0A0A0A] border border-[#8a7e00]' :
-                  'bg-[#D14D3E] text-white'
-                ]"
+                :class="['px-3.5 py-1.5 text-[10px] uppercase font-black rounded-full shadow-sm', confidenceChipClass(activeRecommendation.confidence)]"
               >
                 {{ activeRecommendation.confidence || 'unknown' }} Confidence
               </span>
@@ -276,7 +271,7 @@
           <h3 class="text-xs font-black uppercase tracking-wider text-[#1F3A4B]">Advisory History Log</h3>
         </div>
         <div class="flex items-center space-x-3">
-          <button @click="fetchHistory" class="text-xs text-[#902715] hover:underline font-black uppercase tracking-wider">
+          <button @click="aegisStore.fetchHistory" class="text-xs text-[#902715] hover:underline font-black uppercase tracking-wider">
             Refresh Log
           </button>
         </div>
@@ -299,7 +294,7 @@
             </div>
             <div class="flex items-center space-x-1.5 shrink-0">
               <span v-if="s.fallback" class="px-2 py-1 text-[9px] uppercase font-black rounded-full bg-[#D14D3E] text-white">Fallback</span>
-              <span :class="['px-2.5 py-1 text-[10px] font-black rounded-full uppercase shadow-sm', confidenceBadgeClass(s.confidence)]">
+              <span :class="['px-2.5 py-1 text-[10px] font-black rounded-full uppercase shadow-sm', confidenceChipClass(s.confidence)]">
                 {{ s.confidence || 'n/a' }}
               </span>
               <span v-if="s.scenario_type" class="px-2 py-0.5 text-[10px] uppercase font-bold rounded" :class="scenarioBadgeClass(s.scenario_type)">
@@ -433,7 +428,7 @@
           </div>
           <span class="flex items-center space-x-1.5 shrink-0 ml-2">
             <span
-              :class="['px-2.5 py-1 text-[10px] font-black rounded-full uppercase shadow-sm', confidenceBadgeClass(entry.confidence)]"
+              :class="['px-2.5 py-1 text-[10px] font-black rounded-full uppercase shadow-sm', confidenceChipClass(entry.confidence)]"
             >
               {{ entry.confidence || 'n/a' }}
             </span>
@@ -674,6 +669,7 @@ import { useReportStore } from '@/stores/reportStore'
 import { useFlowStore } from '@/stores/flowStore'
 import { useAegisStore } from '@/stores/aegisStore'
 import { supabase } from '@/lib/supabase'
+import { confidenceChipClass } from '@/utils/confidence'
 
 const sosStore = useSOSStore()
 const reportStore = useReportStore()
@@ -868,6 +864,11 @@ onMounted(async () => {
 
 onUnmounted(() => {
   // Keep SOS subscription alive for other admin pages — don't unsubscribe here
+  // Clear pending timers so they can't fire on a destroyed component
+  clearTimeout(outcomeClearTimer)
+  outcomeClearTimer = null
+  clearTimeout(rowMsgTimer)
+  rowMsgTimer = null
 })
 
 function openReportSelector() {
@@ -1091,16 +1092,6 @@ function resetPanel() {
   modifyDraft.value = ''
 }
 
-async function fetchHistory() {
-  await aegisStore.fetchHistory()
-}
-
-function confidenceBadgeClass(conf) {
-  if (conf === 'high') return 'bg-[#556B2F] text-white'
-  if (conf === 'medium') return 'bg-[#F7FB41] text-[#0A0A0A] border border-[#8a7e00]'
-  return 'bg-[#D14D3E] text-white'
-}
-
 function scenarioBadgeClass(type) {
   const map = {
     flood: 'bg-blue-900 text-blue-200',
@@ -1151,7 +1142,7 @@ async function bulkDeleteSelected() {
       .in('id', ids)
     if (error) throw error
     clearHistorySelection()
-    await fetchHistory()
+    await aegisStore.fetchHistory()
   } catch (err) {
     console.warn('Bulk delete failed:', err)
   } finally {

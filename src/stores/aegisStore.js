@@ -14,6 +14,13 @@ const AUTO_TRIGGER_DEBOUNCE_MS = 5000
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export const useAegisStore = defineStore('aegis', () => {
+  // Captured once at store creation — reused across auto-trigger watchers,
+  // computeds, and runner functions to avoid repeated instantiations.
+  const sosStore = useSOSStore()
+  const reportStore = useReportStore()
+  const connectivityStore = useConnectivityStore()
+  const flowStore = useFlowStore()
+
   const pendingSuggestions = ref([])
   const history = ref([])
   const initialized = ref(false)
@@ -213,9 +220,6 @@ export const useAegisStore = defineStore('aegis', () => {
   }
 
   async function runAutoTrigger() {
-    const sosStore = useSOSStore()
-    const connectivity = useConnectivityStore()
-    const flowStore = useFlowStore()
     const clusters = sosStore.activeClusters
     const now = Date.now()
 
@@ -229,7 +233,7 @@ export const useAegisStore = defineStore('aegis', () => {
       if (last && now - last < FIFTEEN_MINUTES) continue
 
       // Never auto-generate on slow connections (edge function calls are heavy)
-      if (connectivity.isSlowConnection) continue
+      if (connectivityStore.isSlowConnection) continue
 
       // Skip if an unresolved pending suggestion already exists for this barangay
       const hasRecentPending = pendingSuggestions.value.some(s =>
@@ -261,7 +265,7 @@ export const useAegisStore = defineStore('aegis', () => {
     if (autoWatchStop.value) return
     let debounceTimer = null
     autoWatchStop.value = watch(
-      () => useSOSStore().activeClusters,
+      () => sosStore.activeClusters,
       () => {
         if (debounceTimer) clearTimeout(debounceTimer)
         debounceTimer = setTimeout(() => {
@@ -276,7 +280,6 @@ export const useAegisStore = defineStore('aegis', () => {
   // Aegis advisory. Computed (not a raw array watch) so in-place report updates
   // from Realtime and status/priority edits still re-fire the trigger.
   const reportAutoTriggerCandidates = computed(() => {
-    const reportStore = useReportStore()
     return reportStore.reports.filter(r =>
       r.status === 'open' &&
       (r.ai_priority === 'high' || r.ai_priority === 'critical') &&
@@ -285,7 +288,6 @@ export const useAegisStore = defineStore('aegis', () => {
   })
 
   async function runReportAutoTrigger() {
-    const connectivity = useConnectivityStore()
     const now = Date.now()
 
     for (const report of reportAutoTriggerCandidates.value) {
@@ -296,7 +298,7 @@ export const useAegisStore = defineStore('aegis', () => {
       if (last && now - last < FIFTEEN_MINUTES) continue
 
       // Never auto-generate on slow connections (edge function calls are heavy)
-      if (connectivity.isSlowConnection) continue
+      if (connectivityStore.isSlowConnection) continue
 
       // Skip if a pending suggestion already exists for this report
       const hasPending = pendingSuggestions.value.some(s => (s.related_sos_ids || []).includes(report.id))

@@ -480,6 +480,7 @@
 
 <script setup>
 import { computed, ref, h } from 'vue'
+import { confidenceChipClass, confidenceDotClass, confidenceLabel } from '@/utils/confidence'
 
 /* ────────────────────────────────────────────────────────────────
    AegisAdvisoryCard — purely presentational Aegis recommendation
@@ -548,24 +549,15 @@ const isResolved = computed(
 )
 const isPending = computed(() => props.suggestion?.status === 'pending')
 
-const CONFIDENCE = {
-  high: { label: 'High confidence', chip: 'bg-[#556B2F] text-white', dot: 'bg-[#556B2F]' },
-  medium: {
-    label: 'Medium confidence',
-    chip: 'bg-[#F7FB41] text-[#0A0A0A] border border-[#8a7e00]',
-    dot: 'bg-[#F7FB41] border border-[#8a7e00]'
-  },
-  low: { label: 'Low confidence', chip: 'bg-[#D14D3E] text-white', dot: 'bg-[#D14D3E]' }
-}
-
-const confidence = computed(
-  () =>
-    CONFIDENCE[props.suggestion?.confidence] || {
-      label: 'Confidence unknown',
-      chip: isBanner.value ? 'bg-white/15 text-white/90' : 'bg-[#1F3A4B]/10 text-[#1F3A4B]',
-      dot: isBanner.value ? 'bg-white/60' : 'bg-[#1F3A4B]/40'
-    }
-)
+const confidence = computed(() => {
+  const conf = props.suggestion?.confidence
+  const variant = isBanner.value ? 'banner' : 'panel'
+  return {
+    label: confidenceLabel(conf),
+    chip: confidenceChipClass(conf, { variant }),
+    dot: confidenceDotClass(conf, { variant })
+  }
+})
 
 const OUTCOME_META = {
   approved: { label: 'Approved', chip: 'bg-[#556B2F] text-white', icon: 'M5 13l4 4L19 7' },

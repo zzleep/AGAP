@@ -19,7 +19,16 @@ CREATE INDEX IF NOT EXISTS idx_aegis_suggestions_status ON public.aegis_suggesti
 CREATE INDEX IF NOT EXISTS idx_aegis_suggestions_barangay ON public.aegis_suggestions(target_barangay);
 
 -- 4. DELETE RLS (bulk delete in admin panel)
-CREATE POLICY "Allow authenticated delete aegis_suggestions"
+-- Restrict deletes to superadmin operators only — the advisory log is an
+-- auditable record, so destructive actions should not be available to every
+-- authenticated user. Adjust the role check if a broader admin set is needed.
+CREATE POLICY "Allow superadmin delete aegis_suggestions"
   ON public.aegis_suggestions FOR DELETE
   TO authenticated
-  USING (true);
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.admin_users
+      WHERE id = auth.uid()
+        AND role = 'superadmin'
+    )
+  );
