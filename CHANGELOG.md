@@ -5,6 +5,31 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0](https://github.com/zzleep/AGAP/compare/v2.3.3...v2.4.0) (2026-08-05)
+
+### Features
+
+* **sos:** honest victim SOS flow with status ladder, live updates, and rescue confirmation ([67e85c2](https://github.com/zzleep/AGAP/commit/67e85c2fe3df8c38c96ec56794cad51fbe53142e))
+* **home:** photo action tiles, time-of-day greeting, and tighter spacing ([e744029](https://github.com/zzleep/AGAP/commit/e7440295db52c77e364ed313115ba0c04b9ae191))
+* revamp home action tiles and active SOS emergency interface ([62f6f3a](https://github.com/zzleep/AGAP/commit/62f6f3afe5eb5745420811ee3375e84743806a06))
+* **evacmap:** evac and incident markers as icons, community reports date/time format, and safe-route rerouting away from incidents ([8b45122](https://github.com/zzleep/AGAP/commit/8b45122e686e83f687899c8a2a108ee3e8c4fc5e))
+
+### Bug Fixes
+
+* **gps:** reconcile stale permission preference, degrade accuracy gracefully, never fabricate locations ([132aaaf](https://github.com/zzleep/AGAP/commit/132aaafb2e7ca64e44551e85bb7a8d74158eb8e9))
+* **evacmap:** address review — i18n pill text, SSR-safe flood zone toggle, cleanup resets expansion state ([e68d49b](https://github.com/zzleep/AGAP/commit/e68d49bb1f80533746f4b340e4ec6eb4147dd49a))
+* **sos:** deliver queued SOS on mount, quiet offline updates, gate panel while undelivered ([be604bf](https://github.com/zzleep/AGAP/commit/be604bfa56dee36510d6edd8d650e34c927d2db7))
+* **reports:** drop latitude/longitude from community_reports select ([f1246bf](https://github.com/zzleep/AGAP/commit/f1246bf68b49086878bf762f8677a3286dcf2ac5))
+
+### Refactoring
+
+* **evacmap:** modularize 1252-line view into composables, utils, and header card ([0f2fed8](https://github.com/zzleep/AGAP/commit/0f2fed87be1b63d8f7a886867c4328dd36ab4b57))
+* **home:** reactive clock, extract shared action tile ([37b4696](https://github.com/zzleep/AGAP/commit/37b46965da76cfc289ef85b04938249e64cac40a))
+
+### Other
+
+* **citizen:** guide content rewrites, evac-map labels, report form tweaks ([584dcc3](https://github.com/zzleep/AGAP/commit/584dcc35c0c3ff39f88745754725641159fb5b73))
+
 ## [2.3.3](https://github.com/zzleep/AGAP/compare/v2.3.2...v2.3.3) (2026-07-30)
 
 ### Fixed
