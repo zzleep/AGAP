@@ -351,8 +351,34 @@
                 </td>
 
                 <!-- Timestamp -->
-                <td class="py-3.5 px-5 whitespace-nowrap text-[#717171] font-semibold text-xs">
-                  {{ formatTimeAgo(item.created_at) }}
+                <td class="py-3.5 px-5 whitespace-nowrap">
+                  <div class="flex flex-col items-start">
+                    <span class="text-[#717171] font-semibold text-xs">
+                      {{ formatTimeAgo(item.created_at) }}
+                    </span>
+                    <span
+                      v-if="updateChipVariant(item) === 'moved-responding'"
+                      class="mt-1 inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-[#902715] px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-white"
+                    >
+                      <span class="relative flex h-1.5 w-1.5 shrink-0" aria-hidden="true">
+                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-60"></span>
+                        <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-white"></span>
+                      </span>
+                      LOCATION CHANGED · new pin · {{ formatRelative(item.updated_at) }}
+                    </span>
+                    <span
+                      v-else-if="updateChipVariant(item) === 'moved'"
+                      class="mt-1 inline-flex items-center gap-1 rounded-full bg-[#F7FB41] border border-[#8a7e00] px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#0A0A0A]"
+                    >
+                      Victim moved · new location · {{ formatRelative(item.updated_at) }}
+                    </span>
+                    <span
+                      v-else-if="updateChipVariant(item)"
+                      class="mt-1 inline-flex items-center gap-1 rounded-full bg-[#F7FB41] border border-[#8a7e00] px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#0A0A0A]"
+                    >
+                      Victim updated · {{ formatRelative(item.updated_at) }}
+                    </span>
+                  </div>
                 </td>
 
                 <!-- Dispatch Action Menu -->
@@ -827,5 +853,28 @@ function formatTimeAgo(dateStr) {
     hour12: true,
     timeZone: 'Asia/Manila'
   })
+}
+
+function victimUpdatedAt(item) {
+  return Boolean(item.updated_at && item.created_at && Date.parse(item.updated_at) - Date.parse(item.created_at) > 60000)
+}
+
+function updateChipVariant(item) {
+  if (!victimUpdatedAt(item)) return null
+  const note = (item.note || '').toLowerCase()
+  if (item.status === 'responding' && note === 'moved') return 'moved-responding'
+  if (note === 'moved') return 'moved'
+  return 'ping'
+}
+
+function formatRelative(dateStr) {
+  if (!dateStr) return 'just now'
+  const diffSec = Math.floor((Date.now() - Date.parse(dateStr)) / 1000)
+  if (diffSec < 60) return 'just now'
+  const diffMin = Math.floor(diffSec / 60)
+  if (diffMin < 60) return `${diffMin}m ago`
+  const diffHr = Math.floor(diffMin / 60)
+  if (diffHr < 24) return `${diffHr}h ago`
+  return `${Math.floor(diffHr / 24)}d ago`
 }
 </script>

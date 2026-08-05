@@ -7,6 +7,8 @@ import { findNearestBarangay } from '@/data/barangay_coords'
 import { fetchWithRetry } from '@/utils/fetchWithRetry'
 import { useConnectivityStore } from '@/stores/connectivityStore'
 
+const ACTIVE_SOS_PERSIST_KEY = 'agap_active_sos'
+
 export const useSOSStore = defineStore('sos', () => {
   const deliveryState = ref('idle') // 'idle' | 'sending' | 'queued' | 'sent' | 'error'
   const currentSOS = ref(null)
@@ -17,6 +19,19 @@ export const useSOSStore = defineStore('sos', () => {
   const isLoading = ref(false)
   const sosChannel = ref(null)
   const clusterClock = ref(Date.now())
+  const mySosStatus = ref(null) // Citizen self-service read-back of their own latest report
+
+  // PostgREST returns DECIMAL columns as strings — normalize to numbers when present
+  function normalizeReportRow(row) {
+    if (!row) return null
+    const lat = Number(row.latitude)
+    const lng = Number(row.longitude)
+    return {
+      ...row,
+      latitude: Number.isFinite(lat) ? lat : row.latitude,
+      longitude: Number.isFinite(lng) ? lng : row.longitude
+    }
+  }
 
   // Clusters expire with time even when no Realtime event arrives.
   // Keep this store-level clock alive for the lifetime of the app so Aegis
@@ -27,6 +42,48 @@ export const useSOSStore = defineStore('sos', () => {
       clusterClock.value = Date.now()
     }, 30 * 1000)
   }
+
+  // Restore the in-flight SOS from a previous session (page reload / PWA restart)
+  // so the victim can still view their request status and update it.
+  // Only 'queued' is restored: 'sent' is a transient confirmation (the status
+  // ladder is the persistent truth), and 'sending' must never be restored or the
+  // button would be stuck busy with no fetch in flight.
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    try {
+      const raw = localStorage.getItem(ACTIVE_SOS_PERSIST_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (parsed?.record?.id && parsed?.record?.latitude !== undefined) {
+          currentSOS.value = parsed.record
+          if (parsed.deliveryState === 'queued') {
+            deliveryState.value = 'queued'
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Restore active SOS failed:', err)
+    }
+  }
+
+  function persistActiveSOS() {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') return
+    try {
+      if (!currentSOS.value) {
+        localStorage.removeItem(ACTIVE_SOS_PERSIST_KEY)
+        return
+      }
+      localStorage.setItem(ACTIVE_SOS_PERSIST_KEY, JSON.stringify({
+        record: currentSOS.value,
+        deliveryState: deliveryState.value
+      }))
+    } catch (err) {
+      console.warn('Persist active SOS failed:', err)
+    }
+  }
+
+  // Keep the persisted snapshot in sync with every state change (including
+  // delivery transitions and location updates from updateMySOS).
+  watch([currentSOS, deliveryState], () => persistActiveSOS())
 
   const isPending = computed(() => deliveryState.value === 'sending')
   const hasActiveSOS = computed(() => currentSOS.value !== null)
@@ -258,6 +315,109 @@ export const useSOSStore = defineStore('sos', () => {
     }
   }
 
+  // Citizen self-service status read via the security-definer RPC
+  // get_my_sos_status (anon RLS blocks direct SELECT on sos_reports).
+  async function fetchMySOSStatus() {
+    const connectivity = useConnectivityStore()
+    if (!connectivity.isOnline) return mySosStatus.value
+    const hash = userHash.value || initUserHash()
+    try {
+      const data = await fetchWithRetry(() =>
+        supabase
+          .rpc('get_my_sos_status', { p_user_hash: hash })
+          .then(res => {
+            if (res.error) throw res.error
+            return res.data
+          })
+      )
+      // PostgREST returns an ARRAY of rows for RETURNS TABLE functions — take [0]
+      mySosStatus.value = normalizeReportRow(data && data.length > 0 ? data[0] : null)
+      return mySosStatus.value
+    } catch (err) {
+      console.warn('Fetch my SOS status error:', err)
+      return null
+    }
+  }
+
+  // Victim self-service informational update via update_my_sos RPC:
+  // still-here ping ({}), moved location ({latitude, longitude}), or note.
+  // PROTOCOL: victims cannot change request status — only operators dispose
+  // of requests (claim/resolve); this RPC has no status parameter by design.
+  async function updateMySOS({ latitude, longitude, note } = {}) {
+    const connectivity = useConnectivityStore()
+    if (!connectivity.isOnline) return { success: false, reason: 'offline' }
+    const hash = userHash.value || initUserHash()
+    try {
+      const data = await fetchWithRetry(() =>
+        supabase
+          .rpc('update_my_sos', {
+            p_user_hash: hash,
+            p_latitude: latitude ?? null,
+            p_longitude: longitude ?? null,
+            p_note: note ?? null
+          })
+          .then(res => {
+            if (res.error) throw res.error
+            return res.data
+          })
+      )
+      if (data && data.length > 0) {
+        mySosStatus.value = normalizeReportRow(data[0])
+        // Keep the local record's coordinates in sync so it reflects the latest position
+        if (currentSOS.value) {
+          if (Number.isFinite(mySosStatus.value.latitude)) currentSOS.value.latitude = mySosStatus.value.latitude
+          if (Number.isFinite(mySosStatus.value.longitude)) currentSOS.value.longitude = mySosStatus.value.longitude
+        }
+      }
+      return { success: true, data: data && data.length > 0 ? mySosStatus.value : null }
+    } catch (err) {
+      console.warn('Update my SOS error:', err)
+      return { success: false, reason: 'error', error: err }
+    }
+  }
+
+  // Victim positive rescue confirmation via confirm_my_rescue RPC.
+  // PROTOCOL: the victim may only move the request FORWARD to 'resolved'
+  // (positive confirmation). Cancellation and other dispositions belong
+  // exclusively to operators.
+  async function confirmMyRescue() {
+    const connectivity = useConnectivityStore()
+    if (!connectivity.isOnline) return { success: false, reason: 'offline' }
+    const hash = userHash.value || initUserHash()
+    try {
+      const data = await fetchWithRetry(() =>
+        supabase
+          .rpc('confirm_my_rescue', { p_user_hash: hash })
+          .then(res => {
+            if (res.error) throw res.error
+            return res.data
+          })
+      )
+      if (data && data.length > 0) {
+        mySosStatus.value = normalizeReportRow(data[0])
+        // Sync the fallback display source so the ladder completes immediately
+        if (currentSOS.value) {
+          currentSOS.value.status = data[0].status
+        }
+      }
+      return { success: true, data: data && data.length > 0 ? mySosStatus.value : null }
+    } catch (err) {
+      console.warn('Confirm rescue error:', err)
+      return { success: false, reason: 'error', error: err }
+    }
+  }
+
+  // Victim closes their completed request locally. The DB record stays resolved
+  // (operators keep the audit trail); only the local active state is cleared so
+  // the citizen can return to the idle SOS screen and start a new request if needed.
+  // The [currentSOS, deliveryState] watch fires persistActiveSOS(), which removes
+  // the localStorage key when currentSOS is null.
+  function dismissSOS() {
+    currentSOS.value = null
+    mySosStatus.value = null
+    deliveryState.value = 'idle'
+  }
+
   async function submitSOS(payload) {
     deliveryState.value = 'sending'
     try {
@@ -303,6 +463,9 @@ export const useSOSStore = defineStore('sos', () => {
       }
       currentSOS.value = localSOSRecord
       activeReports.value.unshift(localSOSRecord)
+      // A new request invalidates the previous self-service readback
+      mySosStatus.value = null
+      persistActiveSOS()
 
       const response = await fetch(url, {
         method: 'POST',
@@ -448,6 +611,12 @@ export const useSOSStore = defineStore('sos', () => {
     checkStaleClaims,
     flagDevice,
     unflagDevice,
-    fetchFlaggedReports
+    fetchFlaggedReports,
+    mySosStatus,
+    fetchMySOSStatus,
+    updateMySOS,
+    confirmMyRescue,
+    dismissSOS,
+    persistActiveSOS
   }
 })

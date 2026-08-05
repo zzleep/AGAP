@@ -37,7 +37,7 @@
     </header>
 
     <!-- Main Content Area -->
-    <main :class="['flex-1 max-w-md mx-auto w-full p-4', isSetupRoute ? 'pb-6' : 'pb-16']">
+    <main :class="['flex-1 max-w-md mx-auto w-full p-4', isSetupRoute ? 'pb-6' : 'pb-[calc(5.25rem+env(safe-area-inset-bottom,0px))]']">
       <router-view />
     </main>
 
@@ -174,6 +174,9 @@ function handleNetworkReconnect() {
 function handleVisibilityChange() {
   if (document.visibilityState === 'visible') {
     warmConnection()
+    // Retry delivering a queued SOS when the user returns to the tab —
+    // the online event may have fired while the tab was backgrounded.
+    flushQueuedSOS()
   }
   syncDegradedHeartbeat()
 }
@@ -185,6 +188,10 @@ watch(() => connectivity.mode, () => {
 onMounted(() => {
   localeStore.initLocale()
   warmConnection()
+  // Flush a queued SOS on mount: after a reload the page is often ALREADY
+  // online, so no 'online' event will fire to trigger handleNetworkReconnect.
+  // flushQueuedSOS no-ops unless deliveryState === 'queued' && currentSOS.
+  flushQueuedSOS()
   initGPS()
   startBackgroundRefresh()
   syncDegradedHeartbeat()

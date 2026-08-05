@@ -43,9 +43,12 @@
       <!-- Incident Photo Attachment Section -->
       <div class="space-y-3 p-4 rounded-3xl bg-[#F8F9FA] border border-[#E0E0E0]">
         <div class="flex items-center justify-between">
-          <label class="block text-xs font-extrabold uppercase tracking-wider text-[#1F3A4B]">
-            Attach Incident Photo <span class="text-[10px] text-[#717171] font-normal lowercase">(camera only)</span>
-          </label>
+          <div class="space-y-0.5">
+            <label class="block text-xs font-semibold text-[#1F3A4B]">
+              Attach Incident Photo
+            </label>
+            <span class="block text-[10px] text-[#717171] font-normal">(camera only)</span>
+          </div>
           <span v-if="form.image_url" class="px-2.5 py-0.5 rounded-full bg-[#183F07] text-[#F7FB41] text-[10px] font-black uppercase tracking-wider flex items-center shadow-m3-xs">
             <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
             Photo Attached

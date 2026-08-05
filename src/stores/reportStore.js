@@ -111,7 +111,7 @@ export const useReportStore = defineStore('report', () => {
       const data = await fetchWithRetry(() =>
         supabase
           .from('community_reports')
-          .select('id, raw_description, barangay, image_url, status, ai_category, ai_priority, ai_department, ai_plausibility, ai_reasoning, created_at, latitude, longitude')
+          .select('id, raw_description, barangay, image_url, status, ai_category, ai_priority, ai_department, ai_plausibility, ai_reasoning, created_at')
           .order('created_at', { ascending: false })
           .limit(200)
           .then(res => {
