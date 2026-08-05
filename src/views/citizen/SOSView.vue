@@ -643,8 +643,26 @@ async function runUpdate(kind) {
       updateLocating.value = false
     }
     if (!coords || coords.isFallback) {
+      // No fresh fix this attempt. Degrade gracefully instead of dropping the
+      // update: use the last real cached fix (max 10 min old) when available;
+      // otherwise still record the move with a note-only update (the RPC keeps
+      // the last known coordinates) so operators see the movement. Only nudge
+      // GPS when there is no usable location data at all.
+      const cached = cachedLocation.value
+      if (cached && !cached.isFallback && Number.isFinite(cached.latitude) && Number.isFinite(cached.longitude)) {
+        res = await sos.updateMySOS({ latitude: cached.latitude, longitude: cached.longitude, note: 'moved' })
+      } else {
+        res = await sos.updateMySOS({ note: 'moved' })
+        handleEnableGPS()
+      }
       updateBusy.value = null
-      handleEnableGPS()
+      if (res && res.success) {
+        updateFeedback.value = { ok: true, msg: t('sos.updateSuccess') }
+      } else if (res && res.reason === 'offline') {
+        updateFeedback.value = null
+      } else {
+        updateFeedback.value = { ok: false, msg: t('sos.updateFailed') }
+      }
       return
     }
     res = await sos.updateMySOS({ latitude: coords.latitude, longitude: coords.longitude, note: 'moved' })
