@@ -2,126 +2,146 @@
   <section class="sos-screen space-y-4" aria-labelledby="sos-heading">
     <!-- Header -->
     <div class="text-center">
-      <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-[#902715]">AGAP SOS</p>
-      <h2 id="sos-heading" class="font-expressive mt-2 text-3xl font-black tracking-tight text-[#0A0A0A]">{{ $t('sos.title') }}</h2>
-      <p class="mx-auto mt-2 max-w-[18rem] text-sm font-medium leading-relaxed text-[#717171]">{{ $t('sos.description') }}</p>
+      <p class="text-xs font-black uppercase tracking-[0.2em] text-[#902715]">AGAP SOS</p>
+      <h2 id="sos-heading" class="font-expressive mt-1.5 text-3xl font-black tracking-tight text-[#0A0A0A]">{{ headerTitle }}</h2>
+      <p class="mx-auto mt-1.5 max-w-[19rem] text-xs font-medium leading-relaxed text-[#717171]">{{ headerSubtitle }}</p>
     </div>
 
-    <!-- Delivery Message Banner (Dark Olive Background with White Text for High Readability) -->
-    <div v-if="deliveryMessage && displayStatus !== 'resolved'" class="sos-delivery-status" :class="deliveryTone" role="status" aria-live="polite">
+    <!-- Safety Guidance Pill (Solid Slate Blue Action Bar — Top Primary Placement) -->
+    <div v-if="displayStatus !== 'resolved'">
+      <router-link
+        to="/app/guides"
+        class="flex w-full items-center justify-between gap-3 rounded-2xl bg-[#1F3A4B] p-3.5 text-white shadow-m3-md transition-all hover:bg-[#182e3b] active:scale-[0.99] group cursor-pointer"
+      >
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center shrink-0 text-[#F7FB41]">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          </div>
+          <div class="min-w-0 text-left">
+            <h3 class="font-expressive text-xs font-black uppercase tracking-wider text-white truncate">{{ t('sos.guidanceTitle') }}</h3>
+            <p class="text-xs font-medium text-white/80 line-clamp-1 mt-0.5">{{ t('sos.guidanceBody') }}</p>
+          </div>
+        </div>
+        <svg class="h-5 w-5 shrink-0 text-[#F7FB41] transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+        </svg>
+      </router-link>
+    </div>
+
+    <!-- Delivery Message Banner (Solid High-Readability Surface) -->
+    <div v-if="deliveryMessage && displayStatus !== 'resolved'" class="sos-delivery-status rounded-2xl p-4 shadow-m3-sm" :class="deliveryTone" role="status" aria-live="polite">
       <span class="font-expressive text-base font-extrabold block text-white">{{ deliveryMessage }}</span>
       <span class="mt-1 block text-xs font-medium text-white/90 leading-relaxed">{{ deliveryDetail }}</span>
     </div>
 
-    <!-- GPS Disabled / Fallback Warning Pill -->
+    <!-- GPS Disabled / Location Required Banner (Solid Brandy Red Surface) -->
     <div
-      v-if="isLocationFallback"
-      class="p-4 rounded-3xl bg-amber-50 border border-amber-300 text-amber-900 text-xs space-y-2 max-w-sm mx-auto shadow-m3-sm"
+      v-if="isLocationFallback && !sos.hasActiveSOS"
+      class="p-4 rounded-2xl bg-[#902715] text-white space-y-2.5 max-w-sm mx-auto shadow-m3-md"
     >
-      <div class="flex items-center space-x-2 font-bold text-amber-950">
-        <svg class="w-5 h-5 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      <div class="flex items-center space-x-2 font-black text-[#F7FB41]">
+        <svg class="w-5 h-5 text-[#F7FB41] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
         </svg>
-        <span class="text-xs">Location Required for Emergency SOS</span>
+        <span class="text-xs uppercase tracking-wider">{{ $t('sos.locationRequiredTitle') }}</span>
       </div>
-      <p class="text-[11px] text-amber-900 leading-relaxed font-medium">
-        CDRRMO dispatchers need your live GPS position to send emergency responders to your location.
+      <p class="text-xs text-white/90 leading-relaxed font-medium">
+        {{ $t('sos.locationRequiredBody') }}
       </p>
       <button
         type="button"
         @click="handleEnableGPS"
         :disabled="isLocating"
-        class="w-full py-2.5 px-4 rounded-xl bg-[#902715] text-[#F7FB41] font-black text-xs uppercase tracking-wider hover:bg-[#781f11] active:scale-95 transition-all shadow-m3-xs flex items-center justify-center space-x-1.5 cursor-pointer"
+        class="w-full py-2.5 px-4 rounded-xl bg-[#F7FB41] text-[#902715] font-black text-xs uppercase tracking-wider hover:bg-[#e9ee3a] active:scale-95 transition-all shadow-m3-xs flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-75"
       >
-        <svg class="w-4 h-4 text-[#F7FB41]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+        <svg class="w-4 h-4 text-[#902715]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
         </svg>
-        <span>Enable Location Access</span>
+        <span>{{ $t('sos.enableLocation') }}</span>
       </button>
     </div>
 
-    <!-- Request Status Timeline Card -->
+    <!-- Active Emergency Request Status Surface (Unified Brandy Red Command Surface) -->
     <div
       v-if="sos.hasActiveSOS && displayStatus !== 'resolved'"
-      class="rounded-3xl border border-[#1F3A4B]/15 bg-white p-5 shadow-sm"
+      class="rounded-[2rem] bg-[#902715] text-white p-5 shadow-m3-lg space-y-4"
       role="status"
       aria-live="polite"
     >
-      <div class="-mx-5 -mt-5 mb-4 flex items-center justify-between gap-2 rounded-t-3xl bg-[#1F3A4B] px-5 pt-4 pb-3">
-        <h3 class="text-[10px] font-black uppercase tracking-wider text-[#F7FB41]">{{ t('sos.statusTitle') }}</h3>
-        <button
-          v-if="sosRequestId"
-          type="button"
-          class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 py-1 font-mono text-[10px] font-black tracking-wide text-white transition-all hover:bg-white/20 active:scale-95 cursor-pointer"
-          :aria-label="referenceCopied ? t('sos.referenceCopied') : t('sos.referenceLabel')"
-          :title="t('sos.referenceCopy')"
-          @click="copyReferenceId"
-        >
-          <span v-if="!referenceCopied">#{{ sosRequestIdShort }}</span>
-          <span v-else>{{ t('sos.referenceCopied') }}</span>
-          <svg v-if="!referenceCopied" class="h-3 w-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3" />
-          </svg>
-          <svg v-else class="h-3 w-3 shrink-0 text-[#F7FB41]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-          </svg>
-        </button>
+      <!-- Command Surface Header -->
+      <div class="flex items-center justify-between gap-2 border-b border-white/10 pb-3.5">
+        <div class="flex items-center gap-2">
+          <span class="relative flex h-3 w-3">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F7FB41] opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-[#F7FB41]"></span>
+          </span>
+          <h3 class="text-xs font-black uppercase tracking-wider text-[#F7FB41]">{{ t('sos.statusTitle') }}</h3>
+        </div>
       </div>
 
-      <!-- Truth panel: queued means NOT delivered — traditional channels front and center -->
-      <div v-if="sos.deliveryState === 'queued'" class="mt-4 rounded-xl border border-[#902715]/30 bg-[#902715] px-3 py-3">
-        <p class="text-[10px] font-black uppercase tracking-wider text-[#F7FB41]">{{ t('sos.truthTitle') }}</p>
-        <p class="mt-1 text-[11px] font-medium leading-relaxed text-white/90">{{ t('sos.truthBody') }}</p>
-        <div class="mt-2.5 flex gap-2">
+      <!-- Truth Panel: Queued Means NOT Delivered — Urgent Brandy Red Block -->
+      <div v-if="sos.deliveryState === 'queued'" class="rounded-2xl bg-[#902715] p-4 text-white space-y-3 shadow-m3-md">
+        <div class="flex items-center space-x-2 text-[#F7FB41]">
+          <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+          <p class="text-xs font-black uppercase tracking-wider">{{ t('sos.truthTitle') }}</p>
+        </div>
+        <p class="text-xs font-medium leading-relaxed text-white/95">{{ t('sos.truthBody') }}</p>
+        <div class="flex gap-2.5 pt-1">
           <a
             href="tel:911"
-            class="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2 text-[10px] font-black uppercase tracking-wider text-[#902715] shadow-m3-xs transition-all hover:bg-[#F5F5F5] active:scale-95"
+            class="flex h-12 flex-1 basis-0 min-w-0 items-center justify-center gap-2 rounded-full bg-white px-3.5 text-[#902715] shadow-m3-xs transition-all hover:bg-gray-100 active:scale-95"
           >
-            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            <svg class="shrink-0 text-[#902715]" style="width: 22px; height: 22px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
             </svg>
-            {{ t('sos.call911') }}
+            <span class="text-xs font-black uppercase tracking-wider">{{ t('sos.call911') }}</span>
           </a>
           <button
             type="button"
             @click="shareLocationText"
-            class="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#F7FB41] px-3 py-2 text-[10px] font-black uppercase tracking-wider text-[#0A0A0A] shadow-m3-xs transition-all hover:bg-[#e9ee3a] active:scale-95"
+            class="flex h-12 flex-1 basis-0 min-w-0 items-center justify-center gap-2 rounded-full bg-[#F7FB41] px-3.5 text-xs font-black uppercase tracking-wider text-[#0A0A0A] shadow-m3-xs transition-all hover:bg-[#e9ee3a] active:scale-95 cursor-pointer"
           >
-            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            <svg class="shrink-0 text-[#0A0A0A]" style="width: 22px; height: 22px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
-            <span v-if="!smsFallback">{{ t('sos.textLocation') }}</span>
-            <span v-else>{{ t('sos.smsFallbackCopied') }}</span>
+            <span v-if="!smsFallback" class="truncate">{{ t('sos.textLocation') }}</span>
+            <span v-else class="truncate">{{ t('sos.smsFallbackCopied') }}</span>
           </button>
         </div>
-        <p class="mt-3 text-[11px] font-bold text-white/90">{{ t('sos.truthRelay') }}</p>
-        <p class="mt-1 font-mono text-lg font-black tracking-widest text-[#F7FB41]">#{{ sosRequestIdShort || '----' }}</p>
-        <p class="text-[11px] font-mono text-white/70">{{ sosCoords.lat }}, {{ sosCoords.lng }}</p>
-        <div class="my-2.5 h-px bg-white/15" aria-hidden="true"></div>
-        <p class="text-[11px] font-medium leading-relaxed text-white/70">{{ t('sos.batteryTip') }}</p>
-        <p class="mt-2 rounded-lg bg-white/10 px-2.5 py-2 text-[11px] font-bold leading-relaxed text-[#F7FB41]">{{ t('sos.osSosTip') }}</p>
+        <div class="pt-2 border-t border-white/15 space-y-1">
+          <p class="text-xs font-bold text-white/90">{{ t('sos.truthRelay') }}</p>
+          <p class="font-mono text-xl font-black tracking-widest text-[#F7FB41]">#{{ sosRequestIdShort || '----' }}</p>
+          <p class="text-xs font-mono text-white/70">{{ sosCoords.lat }}, {{ sosCoords.lng }}</p>
+        </div>
+        <p class="text-xs font-medium leading-relaxed text-white/80 pt-1">{{ t('sos.batteryTip') }}</p>
+        <p class="rounded-xl bg-white/10 p-2.5 text-xs font-bold leading-relaxed text-[#F7FB41]">{{ t('sos.osSosTip') }}</p>
       </div>
 
-      <!-- Timeline steps -->
-      <ol v-else class="mt-4 list-none">
+      <!-- High-Contrast Vertical Timeline Steps -->
+      <ol v-else class="list-none space-y-3.5 pt-1">
         <li
           v-for="(step, i) in statusSteps"
           :key="step.key"
-          class="relative flex gap-3"
-          :class="i < statusSteps.length - 1 ? 'pb-5' : ''"
+          class="relative flex gap-3.5 items-start"
         >
+          <!-- Connecting Line -->
           <span
             v-if="i < statusSteps.length - 1"
-            class="absolute bottom-0 left-[7px] top-[20px] w-0.5 rounded-full"
-            :style="{ backgroundColor: statusSteps[i + 1].reached ? statusSteps[i + 1].color : '#E0E0E0' }"
+            class="absolute left-[9px] top-[24px] bottom-[-14px] w-0.5 rounded-full"
+            :style="{ backgroundColor: statusSteps[i + 1].reached ? statusSteps[i + 1].color : 'rgba(255,255,255,0.2)' }"
             aria-hidden="true"
           ></span>
-          <span class="relative mt-1 flex h-4 w-4 shrink-0 items-center justify-center">
-            <span class="h-3 w-3 rounded-full" :style="{ backgroundColor: step.reached ? step.color : '#E0E0E0' }"></span>
+          <!-- Step Dot Indicator -->
+          <span class="relative mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
+            <span class="h-3.5 w-3.5 rounded-full shadow-sm" :style="{ backgroundColor: step.reached ? step.color : 'rgba(255,255,255,0.3)' }"></span>
             <span
               v-if="step.isCurrent"
-              class="absolute inline-flex h-3 w-3 animate-ping rounded-full opacity-50"
+              class="absolute inline-flex h-5 w-5 animate-ping rounded-full opacity-60"
               :style="{ backgroundColor: step.color }"
               aria-hidden="true"
             ></span>
@@ -129,169 +149,101 @@
           <div class="min-w-0 flex-1">
             <p
               class="text-sm leading-snug"
-              :class="step.isCurrent ? 'font-black text-[#0A0A0A]' : step.reached ? 'font-bold text-[#1F3A4B]' : 'font-medium text-[#717171]'"
+              :class="step.isCurrent ? 'font-black text-white' : step.reached ? 'font-bold text-white/90' : 'font-medium text-white/50'"
             >
               {{ t(step.key) }}
             </p>
-            <p v-if="step.subKey && step.reached" class="mt-0.5 text-[11px] font-semibold leading-snug text-[#2563EB]">
+            <p v-if="step.subKey && step.reached" class="mt-0.5 text-xs font-bold leading-snug text-[#F7FB41]">
               {{ t(step.subKey) }}
             </p>
           </div>
         </li>
       </ol>
 
-      <!-- Active-state detail line -->
-      <p v-if="sos.deliveryState !== 'queued'" class="mt-4 rounded-xl bg-[#F5F5F5] px-3 py-2.5 text-[11px] font-medium leading-relaxed text-[#717171]">
+      <!-- Active-State Detail Line (Clean spacing, no container background) -->
+      <p v-if="sos.deliveryState !== 'queued'" class="px-1.5 py-1 text-xs font-semibold leading-relaxed text-white/95">
         {{ statusDetail }}
       </p>
 
-      <!-- Traditional channels: AGAP coordinates, it does not replace 911 -->
-      <div v-if="sos.deliveryState !== 'queued'" class="mt-4 rounded-xl bg-[#EEF4FB] px-3 py-2.5">
-        <p class="text-[10px] font-black uppercase tracking-wider text-[#1F3A4B]">{{ t('sos.channelsTitle') }}</p>
-        <p class="mt-1 text-[11px] font-medium leading-relaxed text-[#717171]">{{ t('sos.channelsBody') }}</p>
-        <div class="mt-2.5 flex gap-2">
+      <!-- Traditional Communication Channels -->
+      <div v-if="sos.deliveryState !== 'queued'" class="rounded-2xl bg-black/20 p-4 border border-white/10 space-y-2.5">
+        <div>
+          <p class="text-xs font-black uppercase tracking-wider text-[#F7FB41]">{{ t('sos.channelsTitle') }}</p>
+          <p class="mt-0.5 text-xs font-medium leading-relaxed text-white/90">{{ t('sos.channelsBody') }}</p>
+        </div>
+        <div class="flex gap-2.5 pt-0.5">
           <a
             href="tel:911"
-            class="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#902715] px-3 py-2 text-[10px] font-black uppercase tracking-wider text-white shadow-m3-xs transition-all hover:bg-[#781f11] active:scale-95"
+            class="flex h-12 flex-1 basis-0 min-w-0 items-center justify-center gap-2 rounded-full bg-[#F7FB41] px-3.5 text-[#902715] shadow-m3-sm transition-all hover:bg-[#e9ee3a] active:scale-95"
           >
-            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            <svg class="shrink-0 text-[#902715]" style="width: 22px; height: 22px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
             </svg>
-            {{ t('sos.call911') }}
+            <span class="text-xs font-black uppercase tracking-wider">{{ t('sos.call911') }}</span>
           </a>
           <button
             type="button"
             @click="shareLocationText"
-            class="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#1F3A4B] px-3 py-2 text-[10px] font-black uppercase tracking-wider text-white shadow-m3-xs transition-all hover:bg-[#162d3b] active:scale-95"
+            class="flex h-12 flex-1 basis-0 min-w-0 items-center justify-center gap-2 rounded-full bg-white/20 border border-white/25 px-3.5 text-xs font-black uppercase tracking-wider text-white shadow-m3-xs transition-all hover:bg-white/30 active:scale-95 cursor-pointer"
           >
-            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            <svg class="shrink-0 text-white" style="width: 22px; height: 22px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
-            <span v-if="!smsFallback">{{ t('sos.textLocation') }}</span>
-            <span v-else>{{ t('sos.smsFallbackCopied') }}</span>
+            <span v-if="!smsFallback" class="truncate">{{ t('sos.textLocation') }}</span>
+            <span v-else class="truncate">{{ t('sos.smsFallbackCopied') }}</span>
           </button>
         </div>
       </div>
-    </div>
 
-    <!-- Rescue Complete Card (terminal state, shown only when the request is resolved) -->
-    <div
-      v-else-if="sos.hasActiveSOS"
-      class="rounded-3xl border border-[#1F3A4B]/15 bg-white p-5 shadow-sm"
-      role="status"
-      aria-live="polite"
-    >
-      <div class="flex items-center justify-between gap-2">
-        <div class="flex min-w-0 items-center gap-2.5">
-          <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#556B2F]/10 text-[#556B2F]">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-          </span>
-          <h3 class="text-[10px] font-black uppercase tracking-wider text-[#1F3A4B]">{{ t('sos.completeTitle') }}</h3>
-        </div>
-        <button
-          v-if="sosRequestId"
-          type="button"
-          class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#1F3A4B]/15 bg-[#F5F5F5] px-2.5 py-1 font-mono text-[10px] font-black tracking-wide text-[#1F3A4B] transition-all hover:bg-[#EEF4FB] active:scale-95 cursor-pointer"
-          :aria-label="referenceCopied ? t('sos.referenceCopied') : t('sos.referenceLabel')"
-          :title="t('sos.referenceCopy')"
-          @click="copyReferenceId"
-        >
-          <span v-if="!referenceCopied">#{{ sosRequestIdShort }}</span>
-          <span v-else>{{ t('sos.referenceCopied') }}</span>
-          <svg v-if="!referenceCopied" class="h-3 w-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3" />
-          </svg>
-          <svg v-else class="h-3 w-3 shrink-0 text-[#556B2F]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-          </svg>
-        </button>
-      </div>
+      <!-- Victim Update Status Controls (Direct High-Contrast Action Surface) -->
+      <div v-if="sos.deliveryState !== 'queued'" class="pt-3 border-t border-white/15 space-y-2.5">
+        <h3 class="text-xs font-black uppercase tracking-wider text-[#F7FB41]">{{ t('sos.updateTitle') }}</h3>
+        <p class="text-xs font-medium text-white/90 leading-relaxed">{{ t('sos.updateSubtitle') }}</p>
 
-      <p class="mt-4 rounded-xl bg-[#F5F5F5] px-3 py-2.5 text-[11px] font-medium leading-relaxed text-[#717171]">
-        {{ t('sos.completeBody') }}
-      </p>
-      <button
-        type="button"
-        @click="sos.dismissSOS()"
-        class="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#556B2F] px-3 py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-m3-xs transition-all hover:bg-[#425324] active:scale-95"
-      >
-        {{ t('sos.completeDismiss') }}
-      </button>
-    </div>
-
-    <!-- Victim Update Status Panel -->
-    <div
-      v-if="sos.hasActiveSOS && displayStatus !== 'resolved' && sos.deliveryState !== 'queued'"
-      class="rounded-3xl border border-[#1F3A4B]/15 bg-white p-5 shadow-sm"
-    >
-      <button
-        type="button"
-        @click="updatePanelOpen = !updatePanelOpen"
-        class="flex w-full cursor-pointer items-center justify-between gap-2 text-left"
-        :aria-expanded="updatePanelOpen"
-      >
-        <span class="flex min-w-0 items-center gap-2.5">
-          <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#556B2F]/10 text-[#556B2F]">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-            </svg>
-          </span>
-          <h3 class="text-[10px] font-black uppercase tracking-wider text-[#1F3A4B]">{{ t('sos.updateTitle') }}</h3>
-        </span>
-        <svg class="h-4 w-4 shrink-0 text-[#1F3A4B] transition-transform duration-200" :class="{ 'rotate-180': updatePanelOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-
-      <div v-if="updatePanelOpen">
-        <p class="mt-1 text-[11px] font-medium leading-relaxed text-[#717171]">{{ t('sos.updateSubtitle') }}</p>
-
-        <div class="mt-3 space-y-2">
-          <!-- I'm still here -->
+        <div class="space-y-2 pt-0.5">
+          <!-- 1. I'm still here (Solid Earthy Slate Blue Surface) -->
           <button
             type="button"
             :disabled="updateBusy !== null"
             @click="startUpdate('still-here')"
-            class="flex w-full items-center gap-3 rounded-2xl border border-[#1F3A4B]/10 bg-[#F5F5F5] px-3.5 py-3 text-left transition-all hover:bg-[#EEF4FB] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+            class="flex w-full items-center gap-3 rounded-2xl bg-[#1F3A4B] px-4 py-3 text-left transition-all hover:bg-[#182e3b] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer shadow-m3-xs"
           >
-            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#556B2F]/10 text-[#556B2F]">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/15 text-[#F7FB41]">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </span>
             <span class="min-w-0 flex-1">
-              <span class="block text-xs font-bold text-[#1F3A4B]">{{ t('sos.updateStillHere') }}</span>
-              <span class="block text-[10px] font-medium leading-snug text-[#717171]">{{ t('sos.updateStillHereDetail') }}</span>
+              <span class="block text-xs font-black text-white">{{ t('sos.updateStillHere') }}</span>
+              <span class="block text-[11px] font-medium leading-snug text-white/80">{{ t('sos.updateStillHereDetail') }}</span>
             </span>
-            <span v-if="updateBusy === 'still-here'" class="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-[#1F3A4B]/20 border-t-[#1F3A4B]" aria-hidden="true"></span>
+            <span v-if="updateBusy === 'still-here'" class="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden="true"></span>
           </button>
 
-          <!-- I moved — update my location -->
+          <!-- 2. I moved — update my location (Solid Rosy Copper Surface) -->
           <button
             type="button"
             :disabled="updateBusy !== null"
             @click="startUpdate('moved')"
-            class="flex w-full items-center gap-3 rounded-2xl border border-[#1F3A4B]/10 bg-[#F5F5F5] px-3.5 py-3 text-left transition-all hover:bg-[#EEF4FB] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+            class="flex w-full items-center gap-3 rounded-2xl bg-[#D14D3E] px-4 py-3 text-left transition-all hover:bg-[#b83f32] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer shadow-m3-xs"
           >
-            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#1F3A4B]/10 text-[#1F3A4B]">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </span>
             <span class="min-w-0 flex-1">
-              <span class="block text-xs font-bold text-[#1F3A4B]">{{ updateLocating ? t('sos.updateLocating') : t('sos.updateMoved') }}</span>
-              <span class="block text-[10px] font-medium leading-snug text-[#717171]">{{ t('sos.updateMovedDetail') }}</span>
+              <span class="block text-xs font-black text-white">{{ updateLocating ? t('sos.updateLocating') : t('sos.updateMoved') }}</span>
+              <span class="block text-[11px] font-medium leading-snug text-white/80">{{ t('sos.updateMovedDetail') }}</span>
             </span>
-            <span v-if="updateBusy === 'moved'" class="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-[#1F3A4B]/20 border-t-[#1F3A4B]" aria-hidden="true"></span>
+            <span v-if="updateBusy === 'moved'" class="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden="true"></span>
           </button>
 
-          <!-- I've been rescued (two-step confirm) -->
-          <div v-if="showRescueConfirm" class="rounded-2xl border border-[#556B2F]/20 bg-[#f1f7ea] p-3.5">
-            <p class="text-xs font-black text-[#556B2F]">{{ t('sos.rescueConfirmTitle') }}</p>
-            <p class="mt-1 text-[11px] font-medium leading-relaxed text-[#717171]">{{ t('sos.rescueConfirmBody') }}</p>
+          <!-- 3. I've been rescued (Solid Dark Olive Surface) -->
+          <div v-if="showRescueConfirm" class="rounded-2xl bg-black/20 p-4 space-y-2 border border-white/20">
+            <p class="text-xs font-black text-[#F7FB41]">{{ t('sos.rescueConfirmTitle') }}</p>
+            <p class="text-xs font-medium text-white/90 leading-relaxed">{{ t('sos.rescueConfirmBody') }}</p>
             <div class="mt-3 flex gap-2">
               <button
                 type="button"
@@ -306,7 +258,7 @@
                 type="button"
                 :disabled="updateBusy !== null"
                 @click="collapseRescueConfirm"
-                class="flex-1 cursor-pointer rounded-xl bg-[#F5F5F5] px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-[#1F3A4B] transition-all hover:bg-[#e8e8e8] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                class="flex-1 cursor-pointer rounded-xl bg-white/20 px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-white/30 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {{ t('sos.rescueConfirmKeep') }}
               </button>
@@ -317,37 +269,66 @@
             type="button"
             :disabled="updateBusy !== null"
             @click="showRescueConfirm = true"
-            class="flex w-full items-center gap-3 rounded-2xl border border-[#1F3A4B]/10 bg-[#F5F5F5] px-3.5 py-3 text-left transition-all hover:bg-[#EEF4FB] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+            class="flex w-full items-center gap-3 rounded-2xl bg-[#556B2F] px-4 py-3 text-left transition-all hover:bg-[#425324] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer shadow-m3-xs"
           >
-            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#556B2F]/10 text-[#556B2F]">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/20 text-[#F7FB41]">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </span>
             <span class="min-w-0 flex-1">
-              <span class="block text-xs font-bold text-[#1F3A4B]">{{ t('sos.rescueRow') }}</span>
-              <span class="block text-[10px] font-medium leading-snug text-[#717171]">{{ t('sos.rescueRowDetail') }}</span>
+              <span class="block text-xs font-black text-white">{{ t('sos.rescueRow') }}</span>
+              <span class="block text-[11px] font-medium leading-snug text-white/80">{{ t('sos.rescueRowDetail') }}</span>
             </span>
-            <svg class="h-4 w-4 shrink-0 text-[#717171]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
           </button>
+        </div>
+
+        <!-- Update Feedback Line -->
+        <p
+          v-if="updateFeedback"
+          class="mt-2 text-xs font-bold"
+          :class="updateFeedback.ok ? 'text-[#F7FB41]' : 'text-[#FF8A8A]'"
+          role="status"
+          aria-live="polite"
+        >
+          {{ updateFeedback.msg }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Rescue Complete Card (Solid Dark Olive Victory Surface) -->
+    <div
+      v-else-if="sos.hasActiveSOS"
+      class="rounded-[2rem] bg-[#556B2F] text-white p-5 shadow-m3-lg space-y-4"
+      role="status"
+      aria-live="polite"
+    >
+      <div class="flex items-center justify-between gap-2 border-b border-white/15 pb-3">
+        <div class="flex items-center gap-2.5">
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white shadow-sm">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+            </svg>
+          </span>
+          <h3 class="text-xs font-black uppercase tracking-wider text-white">{{ t('sos.completeTitle') }}</h3>
         </div>
       </div>
 
-      <!-- Update feedback line -->
-      <p
-        v-if="updateFeedback"
-        class="mt-3 text-[11px] font-bold"
-        :class="updateFeedback.ok ? 'text-[#556B2F]' : 'text-[#902715]'"
-        role="status"
-        aria-live="polite"
-      >
-        {{ updateFeedback.msg }}
+      <p class="text-xs font-medium leading-relaxed text-white/95">
+        {{ t('sos.completeBody') }}
       </p>
+      <button
+        type="button"
+        @click="sos.dismissSOS()"
+        class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-xs font-black uppercase tracking-wider text-[#556B2F] shadow-m3-sm transition-all hover:bg-gray-100 active:scale-95"
+      >
+        {{ t('sos.completeDismiss') }}
+      </button>
     </div>
 
-    <!-- Clean Modern M3 Expressive Tactile SOS Button -->
+
+
+    <!-- Clean Modern M3 Expressive Tactile SOS Button (Hero Action Control) -->
     <div v-if="!sos.hasActiveSOS" class="flex flex-1 items-center justify-center py-5">
       <button
         type="button"
@@ -383,33 +364,18 @@
       </button>
     </div>
 
-    <!-- Expectations Notice -->
-    <div v-if="!sos.hasActiveSOS" class="rounded-2xl border border-[#1F3A4B]/10 bg-[#EEF4FB] p-4" role="note">
-      <div class="flex items-start gap-2.5">
-        <svg class="mt-0.5 h-4 w-4 shrink-0 text-[#1F3A4B]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    <!-- Expectations Notice (Clean Whitespace Division — No Pale Box Container) -->
+    <div v-if="!sos.hasActiveSOS" class="px-2 text-center space-y-1" role="note">
+      <div class="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-[#1F3A4B]">
+        <svg class="h-4 w-4 text-[#1F3A4B] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <div>
-          <h3 class="text-xs font-black uppercase tracking-wide text-[#1F3A4B]">{{ t('sos.expectationTitle') }}</h3>
-          <p class="mt-1 text-[11px] font-medium leading-relaxed text-[#717171]">{{ t('sos.expectationBody') }}</p>
-        </div>
+        <span>{{ t('sos.expectationTitle') }}</span>
       </div>
+      <p class="max-w-xs mx-auto text-xs font-medium leading-relaxed text-[#717171]">{{ t('sos.expectationBody') }}</p>
     </div>
 
-    <!-- Safety Guidance Card -->
-    <div v-if="displayStatus !== 'resolved'" class="rounded-3xl border border-[#1F3A4B]/15 bg-white p-5 shadow-sm">
-      <h3 class="text-[10px] font-black uppercase tracking-wider text-[#1F3A4B]">{{ t('sos.guidanceTitle') }}</h3>
-      <p class="mt-1 text-[11px] font-medium leading-relaxed text-[#717171]">{{ t('sos.guidanceBody') }}</p>
-      <router-link
-        to="/app/guides"
-        class="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-[#1F3A4B] px-4 py-2.5 text-xs font-black uppercase tracking-wider text-[#F7FB41] shadow-m3-xs transition-all hover:bg-[#152a37] active:scale-95"
-      >
-        <svg class="h-4 w-4 shrink-0 text-[#F7FB41]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-        </svg>
-        {{ t('sos.guidanceOpen') }}
-      </router-link>
-    </div>
+
 
     <!-- GPS Settings Guide Modal -->
     <GpsGuideModal
@@ -430,15 +396,19 @@
         aria-describedby="sos-gate-body"
         @click.self="cancelGate"
       >
-        <div class="w-full max-w-md rounded-3xl border border-[#1F3A4B]/15 bg-white p-6 shadow-2xl">
+        <div class="w-full max-w-md rounded-3xl border border-[#1F3A4B]/15 bg-white p-6 shadow-2xl space-y-4">
           <div class="flex items-start gap-3">
-            <svg class="h-6 w-6 shrink-0 text-[#902715]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <h3 id="sos-gate-title" class="font-expressive text-xl font-black tracking-tight text-[#0A0A0A]">{{ t('sos.gateTitle') }}</h3>
+            <div class="w-10 h-10 rounded-2xl bg-[#902715]/10 text-[#902715] flex items-center justify-center shrink-0">
+              <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <h3 id="sos-gate-title" class="font-expressive text-lg font-black tracking-tight text-[#0A0A0A]">{{ t('sos.gateTitle') }}</h3>
+              <p id="sos-gate-body" class="mt-1 text-xs font-medium leading-relaxed text-[#717171]">{{ t('sos.gateBody') }}</p>
+            </div>
           </div>
-          <p id="sos-gate-body" class="mt-3 text-sm font-medium leading-relaxed text-[#717171]">{{ t('sos.gateBody') }}</p>
-          <div class="mt-5 space-y-2.5">
+          <div class="space-y-2 pt-1">
             <button
               ref="sosGateConfirmRef"
               type="button"
@@ -450,7 +420,7 @@
             <button
               type="button"
               @click="cancelGate"
-              class="w-full cursor-pointer rounded-xl bg-[#F5F5F5] px-4 py-3 text-xs font-bold uppercase tracking-wider text-[#1F3A4B] transition-all hover:bg-[#e8e8e8] active:scale-95"
+              class="w-full cursor-pointer rounded-xl bg-[#F5F5F5] px-4 py-3 text-xs font-bold uppercase tracking-wider text-[#1F3A4B] transition-all hover:bg-gray-200 active:scale-95"
             >
               {{ t('sos.gateCancel') }}
             </button>
@@ -516,8 +486,6 @@ async function handleEnableGPS() {
 
 onMounted(() => {
   warmConnection()
-  // Re-attach immediately after a reload/restart: the store restores the in-flight
-  // SOS from localStorage, so fetch server status now instead of waiting for the first poll.
   if (sos.hasActiveSOS) {
     sos.fetchMySOSStatus()
   }
@@ -525,44 +493,68 @@ onMounted(() => {
   window.addEventListener('keydown', onGateKeydown)
 })
 
-watch(sos.deliveryState, (state) => {
+onBeforeUnmount(() => {
+  clearHold()
+  if (statusPollTimer) clearInterval(statusPollTimer)
+  if (referenceCopyTimer) clearTimeout(referenceCopyTimer)
+  if (smsFallbackTimer) clearTimeout(smsFallbackTimer)
+  window.removeEventListener('keydown', onGateKeydown)
+})
+
+watch(() => sos.deliveryState, (state) => {
   if (state === 'sent' && sos.hasActiveSOS) {
     sos.fetchMySOSStatus()
   }
 })
 
 const isBusy = computed(() => isLocating.value || sos.isPending || isDispatching.value)
+
+const headerTitle = computed(() => {
+  if (displayStatus.value === 'resolved') return t('sos.resolvedTitle')
+  if (sos.hasActiveSOS) return t('sos.activeTitle')
+  return t('sos.title')
+})
+
+const headerSubtitle = computed(() => {
+  if (displayStatus.value === 'resolved') return t('sos.resolvedDescription')
+  if (sos.hasActiveSOS) return t('sos.activeDescription')
+  return t('sos.description')
+})
+
 const holdLabel = computed(() => {
-  if (isLocationFallback.value) return 'Location Required'
+  if (isLocationFallback.value) return 'Location Access Required'
   if (isLocating.value) return t('sos.findingLocation')
   if (sos.isPending || isDispatching.value) return t('sos.sendingRequest')
   return isHolding.value ? t('sos.keepHolding') : t('sos.holdToSend')
 })
+
 const holdTimeLabel = computed(() => {
   if (isLocationFallback.value) return 'Tap to Enable GPS'
   return isHolding.value ? `${Math.ceil((100 - holdProgress.value) / 50) || 1}s` : 'Press & Hold 2s'
 })
+
 const deliveryMessage = computed(() => {
   if (sos.deliveryState === 'sent') return t('sos.sentMessage')
   if (sos.deliveryState === 'queued') return t('sos.queuedMessage')
   return ''
 })
-const deliveryDetail = computed(() => sos.deliveryState === 'sent' ? t('sos.sentDetail') : t('sos.queuedDetail'))
-const deliveryTone = computed(() => sos.deliveryState === 'sent'
-  ? 'bg-[#556B2F] border-[#425324] text-white shadow-m3-md'
-  : 'bg-[#902715] border-[#781f11] text-white shadow-m3-md')
 
-// Request status timeline: prefer live server status, fall back to the local record
+const deliveryDetail = computed(() => sos.deliveryState === 'sent' ? t('sos.sentDetail') : t('sos.queuedDetail'))
+
+const deliveryTone = computed(() => sos.deliveryState === 'sent'
+  ? 'bg-[#556B2F] text-white shadow-m3-md'
+  : 'bg-[#902715] text-white shadow-m3-md')
+
 const displayStatus = computed(() => sos.mySosStatus?.status || sos.currentSOS?.status || 'pending')
 
 const statusSteps = computed(() => {
   const current = displayStatus.value === 'pending' ? 2 : displayStatus.value === 'responding' ? 3 : 4
   const pulsing = displayStatus.value !== 'resolved'
   return [
-    { key: 'sos.statusRequestReceived', color: '#F7C530', reached: current >= 1, isCurrent: current === 1 && pulsing },
-    { key: 'sos.statusAssessing', color: '#F7C530', reached: current >= 2, isCurrent: current === 2 && pulsing },
-    { key: 'sos.statusTeamAssigned', color: '#2563EB', reached: current >= 3, isCurrent: current === 3 && pulsing, subKey: 'sos.statusEnRoute' },
-    { key: 'sos.statusCompleted', color: '#556B2F', reached: current >= 4, isCurrent: current === 4 && pulsing }
+    { key: 'sos.statusRequestReceived', color: '#F7FB41', reached: current >= 1, isCurrent: current === 1 && pulsing },
+    { key: 'sos.statusAssessing', color: '#F7FB41', reached: current >= 2, isCurrent: current === 2 && pulsing },
+    { key: 'sos.statusTeamAssigned', color: '#60A5FA', reached: current >= 3, isCurrent: current === 3 && pulsing, subKey: 'sos.statusEnRoute' },
+    { key: 'sos.statusCompleted', color: '#F7FB41', reached: current >= 4, isCurrent: current === 4 && pulsing }
   ]
 })
 
@@ -578,7 +570,6 @@ const statusDetail = computed(() => {
   return t('sos.statusPendingDetail')
 })
 
-// Reference ID chip: quoteable request number for phone handoffs to dispatchers
 const sosRequestId = computed(() => sos.mySosStatus?.id || sos.currentSOS?.id || null)
 const sosRequestIdShort = computed(() => (sosRequestId.value ? sosRequestId.value.slice(0, 8) : ''))
 
@@ -590,7 +581,7 @@ async function copyReferenceId() {
       await navigator.clipboard.writeText(fullId)
     }
   } catch (err) {
-    // Clipboard can reject in insecure contexts; the chip itself still shows the ID.
+    // Clipboard fallback: reference ID remains visible on the chip
   }
   referenceCopied.value = true
   clearTimeout(referenceCopyTimer)
@@ -599,7 +590,6 @@ async function copyReferenceId() {
   }, 2000)
 }
 
-// Truth-panel coordinates: prefer the live record, fall back to the server copy
 const sosCoords = computed(() => {
   const rec = sos.currentSOS || sos.mySosStatus
   return {
@@ -608,7 +598,6 @@ const sosCoords = computed(() => {
   }
 })
 
-// Traditional-channel fallback: share sheet → SMS deep link + clipboard copy
 async function shareLocationText() {
   const rec = sos.currentSOS || sos.mySosStatus
   const lat = rec?.latitude ?? 0
@@ -621,11 +610,8 @@ async function shareLocationText() {
       return
     }
   } catch (err) {
-    if (err && err.name === 'AbortError') return // user dismissed the share sheet
+    if (err && err.name === 'AbortError') return
   }
-  // Fallback path: copy the text first (so it can be pasted anywhere, even if the
-  // sms: navigation does nothing), then attempt the SMS deep link — this works
-  // when data is dead but SMS is alive.
   try {
     await navigator.clipboard.writeText(text)
     smsFallback.value = true
@@ -634,7 +620,7 @@ async function shareLocationText() {
       smsFallback.value = false
     }, 4000)
   } catch (err) {
-    // Clipboard unavailable — the sms: deep link below is still attempted.
+    // Clipboard unavailable
   }
   window.location.href = `sms:?&body=${encodeURIComponent(text)}`
 }
@@ -656,8 +642,6 @@ async function runUpdate(kind) {
     } finally {
       updateLocating.value = false
     }
-    // Never fabricate a position: without a real fix (live or recent cached),
-    // the update is refused and the user is taken through GPS re-enable.
     if (!coords || coords.isFallback) {
       updateBusy.value = null
       handleEnableGPS()
@@ -673,8 +657,6 @@ async function runUpdate(kind) {
   if (res && res.success) {
     updateFeedback.value = { ok: true, msg: t('sos.updateSuccess') }
   } else if (res && res.reason === 'offline') {
-    // Offline is expected and already surfaced by the connectivity banner —
-    // don't alarm the victim with an error for a state they can see.
     updateFeedback.value = null
   } else {
     updateFeedback.value = { ok: false, msg: t('sos.updateFailed') }
@@ -703,12 +685,10 @@ function startHold(event) {
   if (isBusy.value || isHolding.value) return
   if (event?.button !== undefined && event.button !== 0) return
 
-  // Start SW reload protection window immediately at t=0.0s of user hold intent
   if (typeof window !== 'undefined') {
     window._agapIsSendingSOS = true
   }
 
-  // Asynchronously trigger pre-warm right at t=0.0s of hold start
   warmConnection(true)
 
   event?.preventDefault?.()
@@ -745,7 +725,6 @@ function clearHold() {
   isHolding.value = false
   holdProgress.value = 0
 
-  // If hold was cancelled prior to dispatch and no confirmation banner is active, release protection
   if (!isDispatching.value && !deliveryMessage.value && typeof window !== 'undefined') {
     window._agapIsSendingSOS = false
     if (window._agapPendingReload && typeof window.agapSafeReload === 'function') {
@@ -762,13 +741,10 @@ async function finishHold() {
   isHolding.value = false
   holdProgress.value = 100
 
-  // First-use acknowledgment gate: one explicit comprehension checkpoint per device.
   if (sosGateAcked()) {
     await performDispatch()
   } else {
     showSosGate.value = true
-    // Reset hold state through the existing cancel path so the SW reload-protection
-    // flag is released exactly as a cancelled hold would; no dispatch has started.
     clearHold()
   }
 }
@@ -778,8 +754,6 @@ async function performDispatch() {
 
   try {
     let coords = await refreshLocation(true)
-    // Refuse to dispatch with a fabricated or missing position: a fallback or
-    // null coords must never reach responders. Open the GPS guide instead.
     if (!coords || coords.isFallback) {
       clearHold()
       showGpsGuideModal.value = true
@@ -789,8 +763,6 @@ async function performDispatch() {
   } finally {
     isDispatching.value = false
     holdProgress.value = 0
-    // Re-activate protection so the confirmation banner is not interrupted by a reload.
-    // dispatchSOS clears the flag in its own finally, so we re-set it here.
     if (deliveryMessage.value && typeof window !== 'undefined') {
       window._agapIsSendingSOS = true
     }
@@ -798,51 +770,23 @@ async function performDispatch() {
 }
 
 function sosGateAcked() {
-  return typeof localStorage !== 'undefined' && localStorage.getItem('agap_sos_ack') === '1'
+  return localStorage.getItem('agap_sos_gate_acked') === 'true'
 }
 
 function confirmGate() {
-  if (typeof localStorage !== 'undefined') {
-    localStorage.setItem('agap_sos_ack', '1')
-  }
+  localStorage.setItem('agap_sos_gate_acked', 'true')
   showSosGate.value = false
   performDispatch()
 }
 
 function cancelGate() {
   showSosGate.value = false
-  clearHold()
 }
 
-function onGateKeydown(event) {
-  if (event.key === 'Escape' && showSosGate.value) {
+function onGateKeydown(e) {
+  if (!showSosGate.value) return
+  if (e.key === 'Escape') {
     cancelGate()
   }
 }
-
-watch(showSosGate, (visible) => {
-  if (visible) {
-    nextTick(() => sosGateConfirmRef.value?.focus())
-  }
-})
-
-onBeforeUnmount(() => {
-  if (statusPollTimer) clearInterval(statusPollTimer)
-  statusPollTimer = null
-  if (referenceCopyTimer) clearTimeout(referenceCopyTimer)
-  referenceCopyTimer = null
-  if (smsFallbackTimer) clearTimeout(smsFallbackTimer)
-  smsFallbackTimer = null
-  window.removeEventListener('keydown', onGateKeydown)
-  clearHold()
-  // Only release SOS protection on unmount if no dispatch is in progress
-  // and no confirmation banner is active, to avoid mid-dispatch reloads.
-  if (typeof window !== 'undefined' && !isDispatching.value && !deliveryMessage.value) {
-    window._agapIsSendingSOS = false
-    if (window._agapPendingReload && typeof window.agapSafeReload === 'function') {
-      window.agapSafeReload('sos-view-unmounted')
-    }
-  }
-})
 </script>
-

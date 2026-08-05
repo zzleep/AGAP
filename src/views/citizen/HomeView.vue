@@ -125,10 +125,10 @@
 
     <!-- 2x2 Expressive Action Grid with Earthy Slate Blue Integration -->
     <div class="grid grid-cols-2 gap-3.5">
-      <ActionTile to="/app/sos" img-src="/photos/sos.jpg" alt="Emergency SOS" :label="$t('home.triggerSos')" variant="emergency" />
-      <ActionTile to="/app/map" img-src="/photos/map.jpg" alt="Evacuation routes" :label="$t('home.evacuationRoutes')" variant="map" />
-      <ActionTile to="/app/guides" img-src="/photos/guides.jpg" alt="Disaster guides" :label="$t('home.disasterGuides')" variant="guides" />
-      <ActionTile to="/app/report" img-src="/photos/report.jpg" alt="Report an issue" :label="$t('home.reportIssue')" variant="report" />
+      <ActionTile to="/app/sos" :label="$t('home.triggerSos')" variant="emergency" />
+      <ActionTile to="/app/map" :label="$t('home.evacuationRoutes')" variant="map" />
+      <ActionTile to="/app/guides" :label="$t('home.disasterGuides')" variant="guides" />
+      <ActionTile to="/app/report" :label="$t('home.reportIssue')" variant="report" />
     </div>
   </div>
 </template>
