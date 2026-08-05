@@ -7,26 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.4.0](https://github.com/zzleep/AGAP/compare/v2.3.3...v2.4.0) (2026-08-05)
 
-
-### Features
-
-* feat:  ([8b45122](https://github.com/zzleep/AGAP/commit/8b45122e686e83f687899c8a2a108ee3e8c4fc5e))
-* **citizen:** photo home tiles, time-of-day greeting, guide & evac-map polish ([17f69cb](https://github.com/zzleep/AGAP/commit/17f69cb2f37a8f4294411e0d4e4653168d91a865))
-* **home:** photo action tiles, time-of-day greeting, tighter spacing ([e744029](https://github.com/zzleep/AGAP/commit/e7440295db52c77e364ed313115ba0c04b9ae191))
-* revamp home action tiles and active SOS ([62f6f3a](https://github.com/zzleep/AGAP/commit/62f6f3afe5eb5745420811ee3375e84743806a06))
-* **sos:** honest victim SOS flow with status ladder, updates, and rescue confirm ([67e85c2](https://github.com/zzleep/AGAP/commit/67e85c2fe3df8c38c96ec56794cad51fbe53142e))
-
-
-### Bug Fixes
-
-* **evacmap:** address review — i18n pill text, SSR-safe flood zone toggle, cleanup resets expansion state ([e68d49b](https://github.com/zzleep/AGAP/commit/e68d49bb1f80533746f4b340e4ec6eb4147dd49a))
-* **gps/sos:** honest location, graceful accuracy degradation, stale-flag reconciliation; refactor EvacMap ([d9a3931](https://github.com/zzleep/AGAP/commit/d9a3931ccc7f2306c70138c1bea0a37569b78e04))
-* **gps:** reconcile stale permission pref, degrade accuracy gracefully, never fabricate locations ([132aaaf](https://github.com/zzleep/AGAP/commit/132aaafb2e7ca64e44551e85bb7a8d74158eb8e9))
-* **reports:** drop latitude/longitude from community_reports select ([f1246bf](https://github.com/zzleep/AGAP/commit/f1246bf68b49086878bf762f8677a3286dcf2ac5))
-* **sos:** deliver queued SOS on mount, quiet offline updates, gate panel while undelivered ([be604bf](https://github.com/zzleep/AGAP/commit/be604bfa56dee36510d6edd8d650e34c927d2db7))
-
-## [2.4.0](https://github.com/zzleep/AGAP/compare/v2.3.3...v2.4.0) (2026-08-05)
-
 ### Features
 
 * **sos:** honest victim SOS flow with status ladder, live updates, and rescue confirmation ([67e85c2](https://github.com/zzleep/AGAP/commit/67e85c2fe3df8c38c96ec56794cad51fbe53142e))
