@@ -38,6 +38,18 @@ export const useReportStore = defineStore('report', () => {
     return UI_TO_DB_PLAUSIBILITY[value] || value
   }
 
+  function initReportUserHash() {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') return null
+
+    let hash = localStorage.getItem('agap_user_hash')
+    if (!hash) {
+      hash = 'usr_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now()
+      localStorage.setItem('agap_user_hash', hash)
+    }
+
+    return hash
+  }
+
   const filteredReports = computed(() => {
     return reports.value.filter(r => {
       if (filters.value.category !== 'all' && r.ai_category !== filters.value.category) return false
@@ -124,7 +136,7 @@ export const useReportStore = defineStore('report', () => {
       const data = await fetchWithRetry(() =>
         supabase
           .from('community_reports')
-          .select('id, raw_description, barangay, image_url, status, ai_category, ai_priority, ai_department, ai_plausibility, ai_reasoning, created_at')
+          .select('id, raw_description, barangay, image_url, user_hash, status, ai_category, ai_priority, ai_department, ai_plausibility, ai_reasoning, created_at')
           .order('created_at', { ascending: false })
           .limit(200)
           .then(res => {
@@ -154,6 +166,12 @@ export const useReportStore = defineStore('report', () => {
         }
         if (payload.image_url) {
           insertPayload.image_url = payload.image_url
+        }
+        // Same device hash as the SOS flow so community reports can be matched
+        // to a reporter identity; null/absent means the report is anonymous.
+        const userHash = initReportUserHash()
+        if (userHash) {
+          insertPayload.user_hash = userHash
         }
 
         let { data, error } = await supabase
