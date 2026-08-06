@@ -29,6 +29,22 @@
       </div>
     </div>
 
+    <!-- Toast Notification -->
+    <div
+      v-if="toastMessage"
+      class="p-4 rounded-2xl bg-[#EEF4FB] text-[#1F3A4B] border border-[#1F3A4B]/20 text-xs font-black flex items-center justify-between shadow-md"
+    >
+      <div class="flex items-center space-x-3">
+        <svg class="w-5 h-5 text-[#902715] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>{{ toastMessage }}</span>
+      </div>
+      <button @click="toastMessage = ''" class="text-[#902715] underline hover:opacity-75 text-xs font-black px-2 py-0.5">
+        Dismiss
+      </button>
+    </div>
+
     <!-- High Priority Unread Alert Banner -->
     <div v-if="reportStore.unreadHighPriorityCount > 0" class="p-6 rounded-3xl bg-[#902715] text-white flex items-center justify-between shadow-[0_10px_28px_rgba(144,39,21,0.3)] border border-white/20 transition-all">
       <div class="flex items-center space-x-4">
@@ -193,9 +209,8 @@
             </td>
           </tr>
 
+          <template v-for="item in reportStore.filteredReports" :key="item.id">
           <tr
-            v-for="item in reportStore.filteredReports"
-            :key="item.id"
             :class="[
               'transition-colors hover:bg-[#1F3A4B]/10',
               (item.ai_priority === 'high' || item.ai_priority === 'critical') && item.status === 'open'
@@ -284,14 +299,37 @@
             </td>
 
             <td class="p-4 pr-6 text-right whitespace-nowrap">
-              <button
-                @click="selectedReport = item"
-                class="px-4 py-2 rounded-full bg-[#1F3A4B] hover:bg-[#902715] text-white font-black text-[11px] transition-all shadow-md active:scale-95"
-              >
-                Inspect AI
-              </button>
+              <div class="flex items-center justify-end space-x-2">
+                <button
+                  @click="toggleAskAegis(item)"
+                  class="px-4 py-2 rounded-full bg-[#556B2F] hover:bg-[#435525] text-white font-black text-[11px] transition-all shadow-md active:scale-95"
+                >
+                  {{ suggestionForReport(item) ? 'Advisory' : 'Ask Aegis' }}
+                </button>
+                <button
+                  @click="selectedReport = item"
+                  class="px-4 py-2 rounded-full bg-[#1F3A4B] hover:bg-[#902715] text-white font-black text-[11px] transition-all shadow-md active:scale-95"
+                >
+                  Inspect AI
+                </button>
+              </div>
             </td>
           </tr>
+
+          <!-- Per-row Aegis Advisory -->
+          <tr v-if="showAdvisoryFor(item)" class="bg-[#EEF4FB]/50 border-l-4 border-l-[#1F3A4B]/30">
+            <td colspan="9" class="p-4 pl-6 pr-6">
+              <AegisAdvisoryCard
+                variant="card"
+                :suggestion="suggestionForReport(item)"
+                :loading="aegisStore.generating && !suggestionForReport(item)"
+                :error="(aegisStore.lastError && !suggestionForReport(item)) ? aegisStore.lastError : null"
+                @ask="askAegisForReport(item)"
+                @outcome="onAdvisoryOutcome(suggestionForReport(item), $event)"
+              />
+            </td>
+          </tr>
+          </template>
         </tbody>
       </table>
     </div>
@@ -442,13 +480,79 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useReportStore } from '@/stores/reportStore'
+import { useAegisStore } from '@/stores/aegisStore'
+import AegisAdvisoryCard from '@/components/admin/AegisAdvisoryCard.vue'
 
 const route = useRoute()
 const reportStore = useReportStore()
+const aegisStore = useAegisStore()
 
 const isMuted = ref(localStorage.getItem('agap_chime_muted') === 'true')
 const selectedReport = ref(null)
 const enlargedPhoto = ref(null)
+const expandedReports = ref(new Set())
+const toastMessage = ref('')
+let toastTimer = null
+
+function showToast(message) {
+  toastMessage.value = message
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => {
+    toastMessage.value = ''
+  }, 4000)
+}
+
+function suggestionForReport(item) {
+  return aegisStore.pendingSuggestions.find(s => (s.related_sos_ids || []).includes(item.id)) || null
+}
+
+function showAdvisoryFor(item) {
+  return !!suggestionForReport(item) || expandedReports.value.has(item.id)
+}
+
+function toggleAskAegis(item) {
+  const next = new Set(expandedReports.value)
+  if (next.has(item.id)) {
+    next.delete(item.id)
+  } else {
+    next.add(item.id)
+  }
+  expandedReports.value = next
+}
+
+async function askAegisForReport(item) {
+  const next = new Set(expandedReports.value)
+  next.add(item.id)
+  expandedReports.value = next
+  await aegisStore.generateSuggestion({
+    sos_ids: [item.id],
+    cluster_barangay: item.barangay ?? null,
+    cluster_count: null,
+    scenario_type: 'report',
+    community_report: {
+      id: item.id,
+      description: item.raw_description ?? null,
+      category: item.ai_category ?? null,
+      priority: item.ai_priority ?? null,
+      plausibility: item.ai_plausibility ?? null,
+      reasoning: item.ai_reasoning ?? null
+    }
+  })
+}
+
+async function onAdvisoryOutcome(suggestion, payload) {
+  if (!suggestion) return
+  try {
+    await aegisStore.setOutcome(suggestion.id, {
+      outcome: payload.outcome,
+      modifiedAction: payload.modifiedAction || null
+    })
+    showToast(`Aegis advisory logged as ${payload.outcome}`)
+  } catch (err) {
+    console.warn('Failed to record Aegis advisory outcome:', err)
+    showToast(`Failed to record advisory outcome: ${err.message || 'unknown error'}`)
+  }
+}
 
 const santaRosaBarangays = [
   'Aplaya', 'Balibago', 'Caingins', 'Dila', 'Dita', 'Don Jose',
@@ -547,6 +651,7 @@ watch(() => reportStore.unreadHighPriorityCount, (newCount, oldCount) => {
 })
 
 onMounted(async () => {
+  aegisStore.init()
   // Read URL query params for hotspot map navigation
   const barangayParam = route.query.barangay
   const reportIdParam = route.query.report_id

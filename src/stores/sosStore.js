@@ -9,6 +9,25 @@ import { useConnectivityStore } from '@/stores/connectivityStore'
 
 const ACTIVE_SOS_PERSIST_KEY = 'agap_active_sos'
 
+// ── AUTO-FLAG RULES ──
+// Conservative client-side spam/prank detection (admin side). Each check runs
+// over the in-memory activeReports and flags a device hash at most once:
+//   R1 repeat-burst    — >= 3 reports from the same device hash created within
+//                        the last 30 minutes  -> 'auto:repeat_burst'
+//   R2 static-position — >= 2 reports from the same device hash whose latitude
+//                        AND longitude are EXACTLY identical (String() compare
+//                        on the raw values; PostgREST returns DECIMAL as string)
+//                        within the last 60 minutes -> 'auto:static_position'
+// R1 is evaluated first; one rule wins per device per check. Devices already in
+// flaggedDeviceHashes and reports without a device hash are never re-flagged.
+// The check skips slow connections to match the Aegis auto-trigger pattern.
+const AUTO_FLAG_REPEAT_BURST = { key: 'auto:repeat_burst', label: 'repeat burst', minReports: 3, windowMs: 30 * 60 * 1000 }
+const AUTO_FLAG_STATIC_POSITION = { key: 'auto:static_position', label: 'static position', minReports: 2, windowMs: 60 * 60 * 1000 }
+const AUTO_FLAG_REALTIME_DEBOUNCE_MS = 3000
+// Module-level debounce timer so realtime INSERT/UPDATE bursts collapse into a
+// single check (persists across store re-creation / keep-alive).
+let autoFlagDebounceTimer = null
+
 export const useSOSStore = defineStore('sos', () => {
   const deliveryState = ref('idle') // 'idle' | 'sending' | 'queued' | 'sent' | 'error'
   const currentSOS = ref(null)
@@ -16,6 +35,7 @@ export const useSOSStore = defineStore('sos', () => {
   const cachedBarangay = ref(null)
   const activeReports = ref([])
   const flaggedDeviceHashes = ref(new Set())
+  const lastAutoFlags = ref([]) // { hash, rule, label }[] from the most recent auto-flag run
   const isLoading = ref(false)
   const sosChannel = ref(null)
   const clusterClock = ref(Date.now())
@@ -165,6 +185,10 @@ export const useSOSStore = defineStore('sos', () => {
         } else if (payload.eventType === 'DELETE') {
           activeReports.value = activeReports.value.filter(r => r.id !== payload.old.id)
         }
+        // Debounced auto-flag check after INSERT/UPDATE payloads land
+        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+          scheduleAutoFlagCheck()
+        }
       })
       .subscribe()
   }
@@ -232,6 +256,8 @@ export const useSOSStore = defineStore('sos', () => {
           })
       )
       activeReports.value = data
+      // Auto-flag check on fresh data (fire-and-forget; never throws)
+      runAutoFlagCheck()
     } catch (err) {
       console.warn('Fetch active reports fallback:', err)
     } finally {
@@ -293,22 +319,139 @@ export const useSOSStore = defineStore('sos', () => {
     }
   }
 
+  // ── Auto-flag check ──
+  // Evaluates R1 (repeat-burst) first, then R2 (static-position) per device
+  // hash; the first matching rule wins. Never re-flags hashes already in
+  // flaggedDeviceHashes, never flags reports without a device hash, and skips
+  // slow connections. Returns the list of newly auto-flagged { hash, rule,
+  // label } entries so callers can surface a toast.
+  async function runAutoFlagCheck() {
+    const flaggedThisRun = []
+    try {
+      const connectivity = useConnectivityStore()
+      if (connectivity.isSlowConnection) return flaggedThisRun
+
+      const now = Date.now()
+      const byHash = {}
+      for (const report of activeReports.value) {
+        if (!report || !report.sos_device_hash) continue
+        if (flaggedDeviceHashes.value.has(report.sos_device_hash)) continue
+        if (!byHash[report.sos_device_hash]) byHash[report.sos_device_hash] = []
+        byHash[report.sos_device_hash].push(report)
+      }
+
+      for (const [hash, reports] of Object.entries(byHash)) {
+        const inWindow = (r, windowMs) => {
+          const createdMs = Date.parse(r.created_at || '')
+          if (!Number.isFinite(createdMs)) return false
+          const ago = now - createdMs
+          return ago >= 0 && ago <= windowMs
+        }
+
+        let rule = null
+
+        // R1: repeat burst — 3+ reports within the last 30 minutes
+        const burstReports = reports.filter(r => inWindow(r, AUTO_FLAG_REPEAT_BURST.windowMs))
+        if (burstReports.length >= AUTO_FLAG_REPEAT_BURST.minReports) {
+          rule = AUTO_FLAG_REPEAT_BURST
+        } else {
+          // R2: static position — 2+ reports with exactly identical lat/lng
+          // within the last 60 minutes (String() compare on raw values)
+          const staticReports = reports.filter(r => inWindow(r, AUTO_FLAG_STATIC_POSITION.windowMs))
+          const byCoords = new Map()
+          for (const r of staticReports) {
+            if (r.latitude === null || r.latitude === undefined || r.latitude === ''
+              || r.longitude === null || r.longitude === undefined || r.longitude === '') {
+              continue
+            }
+            const key = `${String(r.latitude)}|${String(r.longitude)}`
+            const list = byCoords.get(key) || []
+            list.push(r)
+            byCoords.set(key, list)
+          }
+          for (const [, list] of byCoords) {
+            if (list.length >= AUTO_FLAG_STATIC_POSITION.minReports) {
+              rule = AUTO_FLAG_STATIC_POSITION
+              break
+            }
+          }
+        }
+
+        if (!rule) continue
+
+        const result = await flagDevice({
+          device_hash: hash,
+          flagged_by: 'auto',
+          reason: rule.key,
+          active: true
+        })
+
+        if (result.success) {
+          flaggedThisRun.push({ hash, rule: rule.key, label: rule.label })
+        } else {
+          console.warn('Auto-flag failed for device', hash, result)
+        }
+      }
+    } catch (err) {
+      console.warn('Auto-flag check error:', err)
+    }
+
+    if (flaggedThisRun.length > 0) {
+      lastAutoFlags.value = flaggedThisRun.map(f => ({ hash: f.hash, rule: f.rule, label: f.label }))
+    }
+    return flaggedThisRun
+  }
+
+  // Debounced realtime trigger — a burst of INSERT/UPDATE events collapses to
+  // one check (3s). The timer id lives at module scope so it survives store
+  // re-creation and is shared across store instances.
+  function scheduleAutoFlagCheck() {
+    if (autoFlagDebounceTimer) clearTimeout(autoFlagDebounceTimer)
+    autoFlagDebounceTimer = setTimeout(() => {
+      autoFlagDebounceTimer = null
+      runAutoFlagCheck()
+    }, AUTO_FLAG_REALTIME_DEBOUNCE_MS)
+  }
+
   async function fetchFlaggedReports() {
     await fetchFlaggedDevices()
     const hashes = Array.from(flaggedDeviceHashes.value).filter(Boolean)
     if (hashes.length === 0) return []
 
     try {
-      const { data, error } = await supabase
-        .from('sos_reports')
-        .select('*')
-        .in('sos_device_hash', hashes)
-        .order('created_at', { ascending: false })
+      // Fetch the current flag rows in parallel with the reports so each report
+      // can carry its flagged_by / reason metadata (drives the Auto-flagged
+      // chip in FlaggedSOSView). sos_reports rows alone have no flag info.
+      const [reportsRes, devicesRes] = await Promise.all([
+        supabase
+          .from('sos_reports')
+          .select('*')
+          .in('sos_device_hash', hashes)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('flagged_devices')
+          .select('device_hash, flagged_by, reason, active')
+          .in('device_hash', hashes)
+          .order('flagged_at', { ascending: false })
+      ])
 
-      if (!error && data) {
-        return data
+      if (reportsRes.error) throw reportsRes.error
+
+      let metaByHash = null
+      if (!devicesRes.error && devicesRes.data) {
+        metaByHash = {}
+        for (const fd of devicesRes.data) {
+          // Prefer the newest active flag row per hash
+          if (fd.active && !metaByHash[fd.device_hash]) {
+            metaByHash[fd.device_hash] = { flagged_by: fd.flagged_by || null, reason: fd.reason || null }
+          }
+        }
       }
-      return []
+
+      if (!reportsRes.data) return []
+      return metaByHash
+        ? reportsRes.data.map(r => ({ ...r, _flag_meta: metaByHash[r.sos_device_hash] || null }))
+        : reportsRes.data
     } catch (err) {
       console.warn('Fetch flagged reports exception:', err)
       return []
@@ -595,6 +738,7 @@ export const useSOSStore = defineStore('sos', () => {
     cachedBarangay,
     activeReports,
     flaggedDeviceHashes,
+    lastAutoFlags,
     isLoading,
     isPending,
     hasActiveSOS,
@@ -611,6 +755,7 @@ export const useSOSStore = defineStore('sos', () => {
     checkStaleClaims,
     flagDevice,
     unflagDevice,
+    runAutoFlagCheck,
     fetchFlaggedReports,
     mySosStatus,
     fetchMySOSStatus,

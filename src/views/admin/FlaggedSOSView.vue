@@ -170,6 +170,12 @@
                     <p v-if="item.sos_device_hash" class="text-[10px] text-[#717171] font-normal truncate max-w-[120px]">
                       Hash: {{ item.sos_device_hash.substring(0, 10) }}...
                     </p>
+                    <p
+                      v-if="autoFlagInfo(item)"
+                      class="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#F7FB41] border border-[#8a7e00] text-[9px] font-black uppercase tracking-wider text-[#0A0A0A]"
+                    >
+                      Auto-flagged · {{ autoFlagInfo(item).label }}
+                    </p>
                   </div>
                 </td>
 
@@ -240,6 +246,18 @@
                     <span>{{ unflaggingMap[item.sos_device_hash] ? 'Un-flagging...' : 'Un-flag Device' }}</span>
                   </button>
                 </td>
+
+                <!-- Aegis Advisory — per-flagged-report recommendation -->
+                <td colspan="8" class="px-5 pt-0 pb-4">
+                  <AegisAdvisoryCard
+                    variant="card"
+                    :suggestion="suggestionForReport(item)"
+                    :loading="aegisStore.generating && !suggestionForReport(item)"
+                    :error="aegisErrorForReport(item)"
+                    @ask="askAegisForReport(item)"
+                    @outcome="(payload) => handleAegisOutcome(item, payload)"
+                  />
+                </td>
               </tr>
             </tbody>
           </table>
@@ -294,9 +312,12 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useSOSStore } from '@/stores/sosStore'
+import { useAegisStore } from '@/stores/aegisStore'
 import { BARANGAY_LIST } from '@/data/barangay_coords'
+import AegisAdvisoryCard from '@/components/admin/AegisAdvisoryCard.vue'
 
 const sosStore = useSOSStore()
+const aegisStore = useAegisStore()
 
 const flaggedReports = ref([])
 const isLoading = ref(false)
@@ -368,6 +389,19 @@ function formatCallbackNumber(num) {
   return str
 }
 
+// Flag metadata attached by sosStore.fetchFlaggedReports (_flag_meta). Renders
+// the 'Auto-flagged' chip when the device was flagged by rules (flagged_by ===
+// 'auto' or reason starts with 'auto:'), stripping the 'auto:' prefix and
+// underscores for display ('auto:repeat_burst' -> 'repeat burst').
+function autoFlagInfo(item) {
+  const meta = item?._flag_meta
+  if (!meta) return null
+  const isAuto = meta.flagged_by === 'auto' || (meta.reason && String(meta.reason).startsWith('auto:'))
+  if (!isAuto) return null
+  const reason = meta.reason ? String(meta.reason).replace(/^auto:/, '').replace(/_/g, ' ') : ''
+  return { label: reason || 'auto-flagged' }
+}
+
 async function copyToClipboard(text) {
   if (!text) return
   try {
@@ -426,7 +460,47 @@ function formatTimeAgo(dateStr) {
   })
 }
 
+// ── Aegis Advisory Integration ──
+const AEGIS_OUTCOME_TOAST = {
+  approved: 'Advisory approved',
+  modified: 'Advisory modified',
+  rejected: 'Advisory rejected'
+}
+
+function suggestionForReport(report) {
+  return aegisStore.suggestionsForSos(report.id)[0] ?? null
+}
+
+function aegisErrorForReport(report) {
+  // Store-level error only surfaces while no suggestion exists for this
+  // report yet, so a displayed suggestion is never masked by stale errors.
+  return aegisStore.lastError && !suggestionForReport(report) ? aegisStore.lastError : null
+}
+
+async function askAegisForReport(report) {
+  await aegisStore.generateSuggestion({
+    sos_ids: [report.id],
+    cluster_barangay: report.barangay ?? null,
+    cluster_count: null,
+    scenario_type: 'flood',
+    flood_zone_severity: null
+  })
+}
+
+async function handleAegisOutcome(report, { outcome, modifiedAction }) {
+  const suggestion = suggestionForReport(report)
+  if (!suggestion) return
+  try {
+    await aegisStore.setOutcome(suggestion.id, { outcome, modifiedAction })
+    toastMessage.value = AEGIS_OUTCOME_TOAST[outcome] || 'Advisory outcome recorded'
+  } catch (err) {
+    console.error('Aegis outcome failed:', err)
+    toastMessage.value = 'Failed to record advisory outcome.'
+  }
+}
+
 onMounted(() => {
+  aegisStore.init()
   fetchFlagged()
 })
 </script>
