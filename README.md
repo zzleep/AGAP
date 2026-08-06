@@ -111,7 +111,7 @@ Unlike traditional AI systems, AGAP provides transparent reasoning behind every 
 - Tailwind CSS 3
 - Pinia (state management)
 - Vue Router 4
-- Leaflet.js + OpenStreetMap tiles
+- Leaflet.js + Mapbox + OpenStreetMap tiles
 - Workbox (BackgroundSync, CacheFirst tiles)
 - idb (IndexedDB wrapper)
 
