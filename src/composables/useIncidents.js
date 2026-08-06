@@ -4,6 +4,59 @@ import { BARANGAY_COORDS } from '@/data/barangay_coords'
 import { getDistanceKm, getDistanceToRouteKm, normalizeBarangayName } from '@/utils/geo'
 import { getIncidentMarkerColor } from '@/utils/risk'
 
+function escapeHtml(value) {
+  if (value == null) return ''
+  const str = String(value)
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function escapeCssColor(value) {
+  if (typeof value !== 'string') return '#000000'
+  if (/^#[0-9a-fA-F]{3,8}$/.test(value)) return value
+  return '#000000'
+}
+
+function buildIncidentMarkerSvg(markerColor) {
+  const safeColor = escapeCssColor(markerColor)
+  const svgNs = 'http://www.w3.org/2000/svg'
+  const svg = document.createElementNS(svgNs, 'svg')
+  svg.setAttribute('viewBox', '0 0 24 24')
+  svg.setAttribute('width', '28')
+  svg.setAttribute('height', '28')
+  svg.setAttribute('xmlns', svgNs)
+  svg.setAttribute('aria-hidden', 'true')
+
+  const path = document.createElementNS(svgNs, 'path')
+  path.setAttribute('fill', safeColor)
+  path.setAttribute('d', 'M1 21h22L12 2 1 21z')
+  svg.appendChild(path)
+
+  const r1 = document.createElementNS(svgNs, 'rect')
+  r1.setAttribute('x', '11')
+  r1.setAttribute('y', '9')
+  r1.setAttribute('width', '2')
+  r1.setAttribute('height', '6')
+  r1.setAttribute('fill', '#fff')
+  r1.setAttribute('rx', '0.4')
+  svg.appendChild(r1)
+
+  const r2 = document.createElementNS(svgNs, 'rect')
+  r2.setAttribute('x', '11')
+  r2.setAttribute('y', '17')
+  r2.setAttribute('width', '2')
+  r2.setAttribute('height', '2')
+  r2.setAttribute('fill', '#fff')
+  r2.setAttribute('rx', '0.4')
+  svg.appendChild(r2)
+
+  return svg
+}
+
 export function useIncidents({ map, mapboxgl, userLocation, activeRouteCoordinates }) {
   const nearbyIncidentCount = ref(0)
   const incidentMarkers = []
@@ -41,6 +94,31 @@ export function useIncidents({ map, mapboxgl, userLocation, activeRouteCoordinat
     return null
   }
 
+  function enrichIncidentRecord(record, type) {
+    const coords = resolveIncidentCoordinates(record)
+    if (!coords) return null
+
+    const distanceKm = getDistanceKm(
+      userLocation.value.latitude,
+      userLocation.value.longitude,
+      coords.latitude,
+      coords.longitude
+    )
+
+    return {
+      ...record,
+      _type: type,
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+      distanceKm,
+      distanceToRouteKm: getDistanceToRouteKm(
+        coords.latitude,
+        coords.longitude,
+        activeRouteCoordinates.value
+      )
+    }
+  }
+
   function renderIncidentMarkers(reports) {
     clearIncidentMarkers()
 
@@ -59,13 +137,24 @@ export function useIncidents({ map, mapboxgl, userLocation, activeRouteCoordinat
         ? (report.mode ? `Alert type: ${report.mode}` : 'Citizen emergency alert')
         : (report.raw_description || 'No description provided.')
 
+      const safeTitle = escapeHtml(popupTitle)
+      const safeTitleColor = escapeCssColor(titleColor)
+      const safeBarangay = escapeHtml(report.barangay || 'Unknown')
+      const safePriority = escapeHtml(priorityText)
+      const safeStatus = escapeHtml(statusText)
+      const safeDesc = escapeHtml(descText)
+
+      const prioritySection = priorityText
+        ? `<p class="text-[11px] text-slate-700"><strong>Priority:</strong> ${safePriority}</p>`
+        : ''
+
       const popupHtml = `
         <div class="p-1 text-slate-900 min-w-[200px]">
-          <h4 class="font-bold text-xs" style="color:${titleColor}">${popupTitle}</h4>
-          <p class="text-[11px] text-slate-700 mt-0.5"><strong>Barangay:</strong> ${report.barangay || 'Unknown'}</p>
-          ${priorityText ? `<p class="text-[11px] text-slate-700"><strong>Priority:</strong> ${priorityText}</p>` : ''}
-          <p class="text-[11px] text-slate-700"><strong>Status:</strong> ${statusText}</p>
-          <p class="text-[11px] text-slate-700 mt-1">${descText}</p>
+          <h4 class="font-bold text-xs" style="color:${safeTitleColor}">${safeTitle}</h4>
+          <p class="text-[11px] text-slate-700 mt-0.5"><strong>Barangay:</strong> ${safeBarangay}</p>
+          ${prioritySection}
+          <p class="text-[11px] text-slate-700"><strong>Status:</strong> ${safeStatus}</p>
+          <p class="text-[11px] text-slate-700 mt-1">${safeDesc}</p>
         </div>
       `
 
@@ -75,13 +164,7 @@ export function useIncidents({ map, mapboxgl, userLocation, activeRouteCoordinat
         el.className = 'incident-marker'
         el.style.width = '28px'
         el.style.height = '28px'
-        el.innerHTML = `
-          <svg viewBox="0 0 24 24" width="28" height="28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path fill="${markerColor}" d="M1 21h22L12 2 1 21z"/>
-            <rect x="11" y="9" width="2" height="6" fill="#fff" rx="0.4"/>
-            <rect x="11" y="17" width="2" height="2" fill="#fff" rx="0.4"/>
-          </svg>
-        `
+        el.appendChild(buildIncidentMarkerSvg(markerColor))
 
         const marker = new mapboxgl.value.Marker(el)
           .setLngLat([coords.longitude, coords.latitude])
@@ -118,57 +201,19 @@ export function useIncidents({ map, mapboxgl, userLocation, activeRouteCoordinat
       ])
 
       if (reportsResult.error) throw reportsResult.error
+      if (sosResult.error) throw sosResult.error
 
-      const communityReports = (reportsResult.data || []).map(report => {
-        const coords = resolveIncidentCoordinates(report)
-        if (!coords) return null
+      const communityReports = (reportsResult.data || [])
+        .map(report => {
+          const enriched = enrichIncidentRecord(report, 'report')
+          if (enriched) enriched.user_hash = report.user_hash
+          return enriched
+        })
+        .filter(Boolean)
 
-        const distanceKm = getDistanceKm(
-          userLocation.value.latitude,
-          userLocation.value.longitude,
-          coords.latitude,
-          coords.longitude
-        )
-
-        return {
-          ...report,
-          _type: 'report',
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-          user_hash: report.user_hash,
-          distanceKm,
-          distanceToRouteKm: getDistanceToRouteKm(
-            coords.latitude,
-            coords.longitude,
-            activeRouteCoordinates.value
-          )
-        }
-      }).filter(Boolean)
-
-      const sosReports = (sosResult.data || []).map(sos => {
-        const coords = resolveIncidentCoordinates(sos)
-        if (!coords) return null
-
-        const distanceKm = getDistanceKm(
-          userLocation.value.latitude,
-          userLocation.value.longitude,
-          coords.latitude,
-          coords.longitude
-        )
-
-        return {
-          ...sos,
-          _type: 'sos',
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-          distanceKm,
-          distanceToRouteKm: getDistanceToRouteKm(
-            coords.latitude,
-            coords.longitude,
-            activeRouteCoordinates.value
-          )
-        }
-      }).filter(Boolean)
+      const sosReports = (sosResult.data || [])
+        .map(sos => enrichIncidentRecord(sos, 'sos'))
+        .filter(Boolean)
 
       const allReports = [...communityReports, ...sosReports]
 
