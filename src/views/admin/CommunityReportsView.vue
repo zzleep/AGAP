@@ -555,7 +555,7 @@ async function onAdvisoryOutcome(suggestion, payload) {
 }
 
 const santaRosaBarangays = [
-  'Aplaya', 'Balibago', 'Caingins', 'Dila', 'Dita', 'Don Jose',
+  'Aplaya', 'Balibago', 'Caingin', 'Dila', 'Dita', 'Don Jose',
   'Ibaba', 'Kanluran (Poblacion Ward 1)', 'Labas', 'Macabling',
   'Malitlit', 'Malusak (Poblacion Ward 2)', 'Market Area (Poblacion Ward 8)',
   'Pooc', 'Pulong Santa Cruz', 'Santo Domingo', 'Sinalhan', 'Tagapo'

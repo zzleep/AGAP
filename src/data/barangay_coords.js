@@ -1,7 +1,7 @@
 export const BARANGAY_COORDS = {
   'Aplaya': { lat: 14.3151, lng: 121.1219 },
   'Balibago': { lat: 14.2946, lng: 121.1054 },
-  'Caingins': { lat: 14.2985, lng: 121.1270 },
+  'Caingin': { lat: 14.2985, lng: 121.1270 },
   'Dila': { lat: 14.2902, lng: 121.1095 },
   'Dita': { lat: 14.2818, lng: 121.1115 },
   'Don Jose': { lat: 14.2564, lng: 121.0664 },
