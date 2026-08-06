@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { getCallbackNumber, getSOSDeviceHash } from '../composables/useGPS.js'
 import { findNearestBarangay } from '@/data/barangay_coords'
 import { fetchWithRetry } from '@/utils/fetchWithRetry'
+import { getOrCreateAgapUserHash } from '@/utils/userHash'
 import { useConnectivityStore } from '@/stores/connectivityStore'
 
 const ACTIVE_SOS_PERSIST_KEY = 'agap_active_sos'
@@ -210,11 +211,7 @@ export const useSOSStore = defineStore('sos', () => {
   })
 
   function initUserHash() {
-    let hash = localStorage.getItem('agap_user_hash')
-    if (!hash) {
-      hash = 'usr_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now()
-      localStorage.setItem('agap_user_hash', hash)
-    }
+    const hash = getOrCreateAgapUserHash()
     userHash.value = hash
     return hash
   }

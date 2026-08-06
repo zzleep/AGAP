@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { fetchWithRetry } from '@/utils/fetchWithRetry'
+import { getOrCreateAgapUserHash } from '@/utils/userHash'
 import { useConnectivityStore } from '@/stores/connectivityStore'
 
 export const useReportStore = defineStore('report', () => {
@@ -36,18 +37,6 @@ export const useReportStore = defineStore('report', () => {
 
   function toDbPlausibility(value) {
     return UI_TO_DB_PLAUSIBILITY[value] || value
-  }
-
-  function initReportUserHash() {
-    if (typeof window === 'undefined' || typeof localStorage === 'undefined') return null
-
-    let hash = localStorage.getItem('agap_user_hash')
-    if (!hash) {
-      hash = 'usr_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now()
-      localStorage.setItem('agap_user_hash', hash)
-    }
-
-    return hash
   }
 
   const filteredReports = computed(() => {
@@ -169,7 +158,7 @@ export const useReportStore = defineStore('report', () => {
         }
         // Same device hash as the SOS flow so community reports can be matched
         // to a reporter identity; null/absent means the report is anonymous.
-        const userHash = initReportUserHash()
+        const userHash = getOrCreateAgapUserHash()
         if (userHash) {
           insertPayload.user_hash = userHash
         }
