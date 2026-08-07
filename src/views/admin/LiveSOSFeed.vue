@@ -154,14 +154,16 @@
         <div class="flex items-end gap-2">
           <button
             @click="toggleAssignedAreaOnly"
+            :disabled="!hasAssignedArea"
+            :title="hasAssignedArea ? '' : 'Your operator account has no assigned area — ask a superadmin to set one.'"
             :class="[
-              'flex-1 py-2 px-3 rounded-2xl text-xs font-black transition-all shadow-m3-xs whitespace-nowrap',
-              filters.assignedAreaOnly
+              'flex-1 py-2 px-3 rounded-2xl text-xs font-black transition-all shadow-m3-xs whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed',
+              filters.assignedAreaOnly && hasAssignedArea
                 ? 'bg-[#902715] text-[#F7FB41] border border-[#902715]'
                 : 'bg-[#EEF4FB] text-[#1F3A4B] border border-[#1F3A4B]/20 hover:bg-[#1F3A4B]/10'
             ]"
           >
-            {{ filters.assignedAreaOnly ? 'Area Match Only' : 'Filter My Area' }}
+            {{ hasAssignedArea ? (filters.assignedAreaOnly ? 'Area Match Only' : 'Filter My Area') : 'Area Match Only' }}
           </button>
           <button
             @click="resetFilters"
@@ -226,7 +228,7 @@
                 tabindex="-1"
                 :class="[
                   'transition-colors hover:bg-[#EEF4FB]',
-                  item.barangay === authStore.assignedArea ? 'bg-[#FFFBEB] font-semibold' : 'bg-white'
+                  sameBarangay(item.barangay, authStore.assignedArea) ? 'bg-[#FFFBEB] font-semibold' : 'bg-white'
                 ]"
               >
                 <!-- Status Indicator -->
@@ -249,7 +251,7 @@
                 <td class="py-3.5 px-5 whitespace-nowrap font-mono font-bold text-[#1F3A4B]">
                   <div class="flex items-center space-x-2">
                     <span class="text-xs">#{{ item.id.substring(0, 8) }}</span>
-                    <span v-if="item.barangay === authStore.assignedArea" class="px-2 py-0.5 text-[9px] font-black uppercase rounded bg-[#F7FB41] text-[#0A0A0A] border border-[#8a7e00]">
+                    <span v-if="sameBarangay(item.barangay, authStore.assignedArea)" class="px-2 py-0.5 text-[9px] font-black uppercase rounded bg-[#F7FB41] text-[#0A0A0A] border border-[#8a7e00]">
                       Match
                     </span>
                   </div>
@@ -587,7 +589,7 @@ import { useSOSStore } from '@/stores/sosStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useAegisStore } from '@/stores/aegisStore'
 import { useFlowStore } from '@/stores/flowStore'
-import { BARANGAY_LIST } from '@/data/barangay_coords'
+import { BARANGAY_LIST, sameBarangay } from '@/data/barangay_coords'
 import AegisAdvisoryCard from '@/components/admin/AegisAdvisoryCard.vue'
 
 const route = useRoute()
@@ -627,6 +629,11 @@ const filters = ref({
 watch(filters, () => { currentPage.value = 1 }, { deep: true })
 watch(rowsPerPage, () => { currentPage.value = 1 })
 
+// Whether the operator account has a specific assigned area (not 'all').
+// When false, the Area Match Only toggle is disabled since there is nothing
+// to match against.
+const hasAssignedArea = computed(() => Boolean(authStore.assignedArea && authStore.assignedArea !== 'all'))
+
 // Surface rule-based auto-flags as a toast (devices moved to the flagged queue)
 watch(() => sosStore.lastAutoFlags, (flags) => {
   if (!flags || flags.length === 0) return
@@ -665,7 +672,7 @@ const filteredQueue = computed(() => {
 
     // 5. Assigned Area Filter
     if (filters.value.assignedAreaOnly && authStore.assignedArea && authStore.assignedArea !== 'all') {
-      if (item.barangay !== authStore.assignedArea) return false
+      if (!sameBarangay(item.barangay, authStore.assignedArea)) return false
     }
 
     return true
