@@ -124,7 +124,7 @@ export const useSOSStore = defineStore('sos', () => {
         if (a.status !== 'pending' && b.status === 'pending') return 1
 
         // 2. Assigned area match priority
-        if (area && area !== 'all') {
+        if (authStore.hasAssignedArea) {
           const aMatch = sameBarangay(a.barangay, area) ? 1 : 0
           const bMatch = sameBarangay(b.barangay, area) ? 1 : 0
           if (aMatch !== bMatch) return bMatch - aMatch

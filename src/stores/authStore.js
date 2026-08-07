@@ -12,6 +12,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => user.value !== null && profile.value !== null)
   const assignedArea = computed(() => profile.value?.assigned_area || 'all')
+  const hasAssignedArea = computed(() => assignedArea.value !== 'all')
   const userRole = computed(() => profile.value?.role || 'operator')
 
   async function fetchProfile(userId) {
@@ -152,6 +153,7 @@ export const useAuthStore = defineStore('auth', () => {
     authError,
     isAuthenticated,
     assignedArea,
+    hasAssignedArea,
     userRole,
     initializeAuth,
     fetchProfile,

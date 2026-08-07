@@ -40,6 +40,5 @@ export function normalizeBarangay(name) {
 }
 
 export function sameBarangay(a, b) {
-  if (!a || !b) return false
   return normalizeBarangay(a) === normalizeBarangay(b)
 }
