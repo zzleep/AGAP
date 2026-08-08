@@ -285,7 +285,11 @@ const THEMES = {
 const activeTheme = computed(() => THEMES[weatherThemeKey.value] || THEMES.clear_day)
 
 onMounted(() => {
-  weather.fetchWeather()
+  const weatherReady = weather.fetchWeather()
   advisory.fetchAdvisory()
+  // A cold-cache advisory fallback runs before live rainfall arrives and shows
+  // no advisory (see useAdvisory deriveFallbackList). Once live weather lands,
+  // re-check the advisory so a feed outage still yields a rainfall-derived level.
+  weatherReady.then(() => advisory.fetchAdvisory())
 })
 </script>

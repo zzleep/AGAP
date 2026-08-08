@@ -9,8 +9,12 @@ const CACHE_KEY = 'agap_advisory_cache'
 // stale entries from an older schema are treated as cache misses instead of
 // being shown with missing fields (e.g. a missing localSeverity falling back
 // to the Luzon-wide severity, or unformatted message text).
-const CACHE_SCHEMA_VERSION = 6
+const CACHE_SCHEMA_VERSION = 7
 const CACHE_TTL_MS = 15 * 60 * 1000 // 15 minutes TTL
+// Rainfall is only meaningful for derivation while fresh — before the first
+// successful weather fetch, rainfallRate is a placeholder (12.5) that would
+// fabricate a false warning if used for a derived advisory.
+const WEATHER_FRESH_MS = 15 * 60 * 1000
 
 export function useAdvisory() {
   // All relevant advisories for the area, sorted by severity (top first).
@@ -50,6 +54,9 @@ export function useAdvisory() {
 
   const deriveFallbackList = () => {
     const weatherStore = useWeatherStore()
+    // No real rainfall yet (cold cache / failed weather fetch): deriving from
+    // the placeholder rate would invent a warning, so show no advisory instead.
+    if (!weatherStore.lastFetched || Date.now() - weatherStore.lastFetched > WEATHER_FRESH_MS) return []
     const rate = Number(weatherStore.rainfallRate)
     const derived = deriveAdvisoryFromRainfall(Number.isFinite(rate) ? rate : 0)
     return derived ? [derived] : []

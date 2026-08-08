@@ -354,9 +354,9 @@ export function parseAdvisoryFeed(raw) {
     }
   }
 
-  // Most severe first; tie-break with newest issuedAt
+  // What the user's area actually faces first; tie-break with newest issuedAt
   entries.sort((a, b) => {
-    const diff = SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity]
+    const diff = SEVERITY_RANK[b.localSeverity] - SEVERITY_RANK[a.localSeverity]
     return diff !== 0 ? diff : b.issuedAt - a.issuedAt
   })
   return entries

@@ -21,6 +21,15 @@ export const useAegisStore = defineStore('aegis', () => {
   const reportStore = useReportStore()
   const connectivityStore = useConnectivityStore()
   const flowStore = useFlowStore()
+  const advisoryStore = useAdvisoryStore()
+
+  // Admin flows never fetch the advisory store themselves — ensure weather
+  // context is real before composing a trigger (cache hit makes this cheap;
+  // fetchAdvisory is catch-safe so failures degrade to "No active alert").
+  const ensureAdvisoryLoaded = async () => {
+    if (advisoryStore.lastFetched && Date.now() - advisoryStore.lastFetched < FIFTEEN_MINUTES) return
+    await advisoryStore.fetchAdvisory()
+  }
 
   const pendingSuggestions = ref([])
   const history = ref([])
@@ -224,6 +233,8 @@ export const useAegisStore = defineStore('aegis', () => {
     const clusters = sosStore.activeClusters
     const now = Date.now()
 
+    await ensureAdvisoryLoaded()
+
     for (const cluster of clusters) {
       const { barangay } = cluster
       if (!barangay || barangay === 'Unknown') continue
@@ -256,7 +267,7 @@ export const useAegisStore = defineStore('aegis', () => {
         cluster_barangay: barangay,
         cluster_count: cluster.count,
         flood_zone_severity: flowStore.zoneSeverity ?? null,
-        weather_alert: useAdvisoryStore().advisorySummary ?? 'No active alert',
+        weather_alert: advisoryStore.advisorySummary ?? 'No active alert',
         scenario_type: 'flood'
       })
     }
@@ -291,6 +302,8 @@ export const useAegisStore = defineStore('aegis', () => {
   const runReportAutoTrigger = async () => {
     const now = Date.now()
 
+    await ensureAdvisoryLoaded()
+
     for (const report of reportAutoTriggerCandidates.value) {
       const key = `report:${report.id}`
 
@@ -316,7 +329,7 @@ export const useAegisStore = defineStore('aegis', () => {
         sos_ids: [report.id],
         cluster_barangay: report.barangay ?? null,
         cluster_count: null,
-        weather_alert: useAdvisoryStore().advisorySummary ?? 'No active alert',
+        weather_alert: advisoryStore.advisorySummary ?? 'No active alert',
         scenario_type: 'report',
         community_report: {
           id: report.id,

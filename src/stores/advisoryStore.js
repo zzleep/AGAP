@@ -6,7 +6,9 @@ export const useAdvisoryStore = defineStore('advisory', () => {
   // All relevant advisories for the area, sorted by severity (top first).
   const advisories = ref([])
   const isLoading = ref(false)
-  const lastFetched = ref(Date.now())
+  // 0 = never fetched — callers can distinguish "no data yet" from
+  // "fetched and found no active advisory".
+  const lastFetched = ref(0)
 
   // The single most severe advisory — what the home card leads with.
   const currentAdvisory = computed(() => advisories.value[0] || null)
