@@ -39,29 +39,51 @@ export const useAdvisoryStore = defineStore('advisory', () => {
   // order — a request that STARTED earlier may FINISH later and carry an older
   // feed snapshot. Only the latest issued request may commit state.
   let fetchSeq = 0
+  // Requests currently in flight — a degraded result must not fill the store
+  // while an earlier request is still running, because that one may yet
+  // deliver an official response.
+  let pendingFetches = 0
 
   const fetchAdvisory = async () => {
-    // Stale results (a newer request superseded this one) must not commit:
-    // an older official snapshot landing late would revert the card and the
-    // Aegis weather context to a superseded state.
+    // Overlapping HomeView requests can resolve out of order. The rules keep
+    // the store on the best data:
+    //  1. AUTHORITATIVE (cache/live) always beats DEGRADED (derived) — an
+    //     official response from an earlier request must not be discarded
+    //     just because a later request only got fallback data.
+    //  2. Within the same class, only the LATEST request may commit — an
+    //     older official snapshot landing late must not revert a newer one.
+    //  3. Degraded results never render while any earlier request is still
+    //     in flight (it may deliver official data) or while the store is
+    //     already showing fresh official data.
     const seq = ++fetchSeq
+    pendingFetches++
     isLoading.value = true
     try {
       const result = await getAdvisoryData()
-      if (seq !== fetchSeq) return
       const source = result?.source ?? 'derived'
       const authoritative = source === 'cache' || source === 'live'
-      // A degraded result that lands after an authoritative one must not
-      // clobber it — Aegis and the card would keep reading the degraded
-      // state even though the store is fresh.
-      const storeIsFresh = lastFetched.value !== 0 && Date.now() - lastFetched.value < AUTHORITATIVE_FRESH_MS
-      if (!authoritative && storeIsFresh) return
+      const isLatest = seq === fetchSeq
+      // Fresh authoritative data already in the store (see lastFetched) —
+      // nothing below may overwrite it.
+      const storeIsAuthoritative =
+        lastFetched.value !== 0 && Date.now() - lastFetched.value < AUTHORITATIVE_FRESH_MS
+
+      if (!authoritative) {
+        if (storeIsAuthoritative || !isLatest || pendingFetches > 1) return
+        advisories.value = result?.entries || []
+        return
+      }
+
+      // Authoritative: yield to a NEWER authoritative result, but still win
+      // over a degraded/empty store (official data arriving late must land).
+      if (!isLatest && storeIsAuthoritative) return
       advisories.value = result?.entries || []
       // Only authoritative results prove the official state (see lastFetched).
-      if (authoritative) lastFetched.value = Date.now()
+      lastFetched.value = Date.now()
     } catch (err) {
       console.warn('advisoryStore fetch error:', err)
     } finally {
+      pendingFetches--
       // The flag belongs to the latest request only — an older request
       // finishing later must not clear it while the newer one still runs.
       if (seq === fetchSeq) isLoading.value = false
