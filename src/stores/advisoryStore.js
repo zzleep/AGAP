@@ -17,7 +17,9 @@ export const useAdvisoryStore = defineStore('advisory', () => {
     // Only surface official PAGASA advisories in auto-trigger inputs — a derived
     // rainfall fallback would double-count the rainfall signal already present.
     if (currentAdvisory.value && !currentAdvisory.value.isDerived) {
-      return `${currentAdvisory.value.severity.toUpperCase()} - ${currentAdvisory.value.headline} (PAGASA)`
+      // Report the LOCAL level (what the configured area faces) — the regional
+      // severity can be higher elsewhere in Luzon and would overstate the alert.
+      return `${currentAdvisory.value.localSeverity.toUpperCase()} - ${currentAdvisory.value.headline} (PAGASA)`
     }
     return null
   })
