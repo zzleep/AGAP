@@ -2,12 +2,17 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useAdvisory } from '@/composables/useAdvisory'
 
+// How long an authoritative result keeps the store's data "current". Mirrors
+// the composable's cache TTL; beyond this, a degraded fallback may fill in.
+const AUTHORITATIVE_FRESH_MS = 15 * 60 * 1000
+
 export const useAdvisoryStore = defineStore('advisory', () => {
   // All relevant advisories for the area, sorted by severity (top first).
   const advisories = ref([])
   const isLoading = ref(false)
   // 0 = never fetched — callers can distinguish "no data yet" from
-  // "fetched and found no active advisory".
+  // "fetched and found no active advisory". Advanced ONLY on authoritative
+  // results (cache hit or live feed), so a degraded fetch never looks fresh.
   const lastFetched = ref(0)
 
   // The single most severe advisory — what the home card leads with.
@@ -33,15 +38,17 @@ export const useAdvisoryStore = defineStore('advisory', () => {
     isLoading.value = true
     try {
       const result = await getAdvisoryData()
+      const source = result?.source ?? 'derived'
+      const authoritative = source === 'cache' || source === 'live'
+      // Overlapping requests (HomeView fetches on mount AND again after
+      // weather resolves) resolve out of order: a degraded result that lands
+      // AFTER an official one must not clobber it — Aegis and the card would
+      // keep reading the degraded state even though the store is fresh.
+      const storeIsFresh = lastFetched.value !== 0 && Date.now() - lastFetched.value < AUTHORITATIVE_FRESH_MS
+      if (!authoritative && storeIsFresh) return
       advisories.value = result?.entries || []
-      // Only authoritative results prove the official state: a cache hit or a
-      // live feed response. A degraded result (feed unreachable, no fallback
-      // available) must NOT advance lastFetched — otherwise Aegis would skip
-      // retrying for 15 minutes and persist "No active alert" while an
-      // official advisory is actually active.
-      if (result?.source === 'cache' || result?.source === 'live') {
-        lastFetched.value = Date.now()
-      }
+      // Only authoritative results prove the official state (see lastFetched).
+      if (authoritative) lastFetched.value = Date.now()
     } catch (err) {
       console.warn('advisoryStore fetch error:', err)
     } finally {
