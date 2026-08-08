@@ -756,7 +756,8 @@ function toggleGpsDropdown(id) {
     // Wait for dropdown to render, then recalculate with actual dimensions
     import('vue').then(({ nextTick }) => {
       nextTick(() => {
-        if (gpsDropdownRef.value) {
+        // Verify the dropdown ID hasn't changed before updating position
+        if (gpsDropdownRef.value && activeGpsDropdownId.value === id) {
           const dropdownHeight = gpsDropdownRef.value.offsetHeight
           
           // Adjust if dropdown would go off-screen to the right
