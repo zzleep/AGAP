@@ -20,10 +20,26 @@ const MAX_ENTRIES = 200
 const DAY_MS = 24 * 60 * 60 * 1000
 const SEVERITY_RANK = { watch: 0, yellow: 1, orange: 2, red: 3 }
 
-/** Parse "YYYY-MM-DD HH:mm:ss" as Asia/Manila (UTC+8, no DST) -> epoch ms, or null when invalid. */
+/**
+ * Parse PAGASA timestamps ("YYYY-MM-DD HH:mm:ss", Asia/Manila — UTC+8, no DST)
+ * to epoch ms, or null when invalid. Built manually instead of Date.parse:
+ * the "+08:00" suffix trick is engine-dependent — iOS Safari rejects
+ * non-ISO "YYYY-MM-DD HH:mm:ss +08:00" strings (returns NaN), which silently
+ * dropped issued/valid times on iPhones (no countdown chip, fabricated
+ * issuedAt). Explicit ISO offsets ("…T17:00:00+08:00", "Z") go through
+ * standard parsing, which Safari handles fine.
+ */
 function parseManilaDate(value) {
   if (typeof value !== 'string' || value.trim() === '') return null
-  const ts = Date.parse(value + ' +08:00')
+  const s = value.trim()
+  if (/[zZ]$/.test(s) || /[+-]\d{2}:?\d{2}$/.test(s)) {
+    const iso = Date.parse(s)
+    return Number.isNaN(iso) ? null : iso
+  }
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?$/)
+  if (!m) return null
+  const [, y, mo, d, h, mi, sec = '0'] = m
+  const ts = Date.UTC(Number(y), Number(mo) - 1, Number(d), Number(h) - 8, Number(mi), Number(sec))
   return Number.isNaN(ts) ? null : ts
 }
 
