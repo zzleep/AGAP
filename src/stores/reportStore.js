@@ -25,6 +25,19 @@ export const useReportStore = defineStore('report', () => {
     return 'unverified'
   }
 
+  // The DB column CHECK constraint only allows the raw vocabulary
+  // ('plausible' | 'uncertain' | 'implausible'), but the UI edits in the
+  // normalized vocabulary. Translate before writing so writes are not rejected.
+  const UI_TO_DB_PLAUSIBILITY = {
+    verified: 'plausible',
+    unverified: 'uncertain',
+    suspected_spam: 'implausible'
+  }
+
+  function toDbPlausibility(value) {
+    return UI_TO_DB_PLAUSIBILITY[value] || value
+  }
+
   const filteredReports = computed(() => {
     return reports.value.filter(r => {
       if (filters.value.category !== 'all' && r.ai_category !== filters.value.category) return false
@@ -111,7 +124,7 @@ export const useReportStore = defineStore('report', () => {
       const data = await fetchWithRetry(() =>
         supabase
           .from('community_reports')
-          .select('id, raw_description, barangay, image_url, status, ai_category, ai_priority, ai_department, ai_plausibility, ai_reasoning, created_at')
+          .select('id, raw_description, barangay, image_url, user_hash, status, ai_category, ai_priority, ai_department, ai_plausibility, ai_reasoning, created_at')
           .order('created_at', { ascending: false })
           .limit(200)
           .then(res => {
@@ -142,6 +155,8 @@ export const useReportStore = defineStore('report', () => {
         if (payload.image_url) {
           insertPayload.image_url = payload.image_url
         }
+        // Community reports are anonymous — no user_hash is included.
+        // This prevents correlation with the device's SOS submissions.
 
         let { data, error } = await supabase
           .from('community_reports')
@@ -282,11 +297,12 @@ export const useReportStore = defineStore('report', () => {
   async function updatePlausibility(id, newPlausibility) {
     const report = reports.value.find(r => r.id === id)
     const oldPlausibility = report ? report.ai_plausibility : null
+    const dbPlausibility = toDbPlausibility(newPlausibility)
 
     try {
       const { error } = await supabase
         .from('community_reports')
-        .update({ ai_plausibility: newPlausibility })
+        .update({ ai_plausibility: dbPlausibility })
         .eq('id', id)
 
       if (error) {
@@ -298,7 +314,7 @@ export const useReportStore = defineStore('report', () => {
       }
 
       if (report) {
-        report.ai_plausibility = newPlausibility
+        report.ai_plausibility = dbPlausibility
       }
       return { success: true }
     } catch (err) {

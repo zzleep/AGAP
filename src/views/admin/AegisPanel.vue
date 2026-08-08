@@ -60,6 +60,10 @@
       {{ outcomeError }} The advisory remains uncommitted; restore connectivity and retry.
     </div>
 
+    <div v-if="aegisStore.lastError" class="p-4 rounded-2xl bg-[#FDE8E5] border border-[#D14D3E]/30 text-xs text-[#D14D3E] font-black">
+      {{ aegisStore.lastError }}
+    </div>
+
     <!-- Active Recommendation Panel -->
     <div v-if="activeRecommendation && !isLoading" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div class="lg:col-span-2 space-y-5">
@@ -67,20 +71,23 @@
         <div class="p-7 rounded-[2.25rem_1.25rem_2.25rem_1.25rem] bg-white border border-[#1F3A4B]/15 space-y-5 shadow-md admin-card">
           <div class="flex items-center justify-between">
             <span class="text-xs uppercase font-black tracking-wider text-[#1F3A4B]">Active AI Recommendation</span>
-            <span
-              :class="[
-                'px-3.5 py-1.5 text-[10px] uppercase font-black rounded-full shadow-sm',
-                activeRecommendation.confidence === 'high' ? 'bg-[#556B2F] text-white' :
-                activeRecommendation.confidence === 'medium' ? 'bg-[#F7FB41] text-[#0A0A0A] border border-[#8a7e00]' :
-                'bg-[#1F3A4B] text-white'
-              ]"
-            >
-              {{ activeRecommendation.confidence || 'unknown' }} Confidence
-            </span>
-            <span v-if="activeRecommendation.scenario_type" class="px-2 py-0.5 text-[10px] uppercase font-bold rounded"
-              :class="scenarioBadgeClass(activeRecommendation.scenario_type)">
-              {{ scenarioIcon(activeRecommendation.scenario_type) }} {{ activeRecommendation.scenario_type }}
-            </span>
+            <div class="flex items-center space-x-2">
+              <span
+                v-if="activeRecommendation.fallback"
+                class="px-3.5 py-1.5 text-[10px] uppercase font-black rounded-full bg-[#D14D3E] text-white shadow-sm"
+              >
+                Fallback
+              </span>
+              <span
+                :class="['px-3.5 py-1.5 text-[10px] uppercase font-black rounded-full shadow-sm', confidenceChipClass(activeRecommendation.confidence)]"
+              >
+                {{ activeRecommendation.confidence || 'unknown' }} Confidence
+              </span>
+              <span v-if="activeRecommendation.scenario_type" class="px-2 py-0.5 text-[10px] uppercase font-bold rounded"
+                :class="scenarioBadgeClass(activeRecommendation.scenario_type)">
+                {{ scenarioIcon(activeRecommendation.scenario_type) }} {{ activeRecommendation.scenario_type }}
+              </span>
+            </div>
           </div>
 
           <!-- Fallback Advisory Warning -->
@@ -163,6 +170,32 @@
             </button>
           </div>
 
+          <!-- Modify Action Editor -->
+          <div v-if="showModifyEditor" class="p-4 rounded-2xl bg-[#1F3A4B]/5 border border-[#1F3A4B]/20 space-y-2">
+            <label class="text-[10px] uppercase font-black text-[#1F3A4B] tracking-wider block">Modified Action</label>
+            <textarea
+              v-model="modifyDraft"
+              rows="3"
+              class="w-full p-3 rounded-xl bg-white border border-[#1F3A4B]/20 text-xs font-bold text-[#1F3A4B] focus:outline-none focus:ring-2 focus:ring-[#1F3A4B]/30"
+            ></textarea>
+            <div class="flex items-center space-x-2">
+              <button
+                @click="submitModifiedFromEditor"
+                :disabled="outcomeSubmitting"
+                class="px-4 py-2 rounded-full bg-[#1F3A4B] hover:bg-[#152733] text-white text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50"
+              >
+                Submit Modified Action
+              </button>
+              <button
+                @click="cancelModifyEditor"
+                :disabled="outcomeSubmitting"
+                class="px-4 py-2 rounded-full bg-white border border-[#1F3A4B]/20 text-[#1F3A4B] text-[10px] font-black transition-all hover:bg-[#1F3A4B]/5"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+
           <!-- Outcome confirmation -->
           <div v-if="selectedOutcome" class="p-4 rounded-2xl bg-[#556B2F] text-white text-xs font-black shadow-sm">
             ✓ Logged as <span class="font-black uppercase text-[#F7FB41]">{{ selectedOutcome }}</span> to aegis_suggestions table.
@@ -238,9 +271,86 @@
           <h3 class="text-xs font-black uppercase tracking-wider text-[#1F3A4B]">Advisory History Log</h3>
         </div>
         <div class="flex items-center space-x-3">
-          <button @click="fetchHistory" class="text-xs text-[#902715] hover:underline font-black uppercase tracking-wider">
+          <button @click="aegisStore.fetchHistory" class="text-xs text-[#902715] hover:underline font-black uppercase tracking-wider">
             Refresh Log
           </button>
+        </div>
+      </div>
+      <!-- Pending (Awaiting Review) Section -->
+      <div v-if="pendingSuggestions.length > 0" class="mb-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs font-black uppercase tracking-wider text-[#902715]">Awaiting Review ({{ pendingSuggestions.length }})</h4>
+          <span v-if="rowOutcomeMsg" class="text-[10px] font-black text-[#556B2F] uppercase tracking-wider">{{ rowOutcomeMsg }}</span>
+        </div>
+        <div
+          v-for="s in pendingSuggestions"
+          :key="s.id"
+          class="p-4 rounded-2xl bg-white border-2 border-[#8a7e00]/40 border-l-4 border-l-[#F7FB41] shadow-sm space-y-3"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex-1 min-w-0">
+              <p class="font-black text-[#1F3A4B] text-xs leading-snug">{{ s.recommended_action }}</p>
+              <p class="text-[10px] text-[#717171] font-bold mt-0.5">Barangay {{ s.target_barangay }} · {{ formatTimeAgo(s.created_at) }}</p>
+            </div>
+            <div class="flex items-center space-x-1.5 shrink-0">
+              <span v-if="s.fallback" class="px-2 py-1 text-[9px] uppercase font-black rounded-full bg-[#D14D3E] text-white">Fallback</span>
+              <span :class="['px-2.5 py-1 text-[10px] font-black rounded-full uppercase shadow-sm', confidenceChipClass(s.confidence)]">
+                {{ s.confidence || 'n/a' }}
+              </span>
+              <span v-if="s.scenario_type" class="px-2 py-0.5 text-[10px] uppercase font-bold rounded" :class="scenarioBadgeClass(s.scenario_type)">
+                {{ scenarioIcon(s.scenario_type) }} {{ s.scenario_type }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Inline Modify Editor -->
+          <div v-if="rowModifyId === s.id" class="p-3 rounded-xl bg-[#1F3A4B]/5 border border-[#1F3A4B]/15 space-y-2">
+            <label class="text-[10px] uppercase font-black text-[#1F3A4B] tracking-wider block">Modified Action</label>
+            <textarea
+              v-model="rowModifyDraft"
+              rows="2"
+              class="w-full p-2.5 rounded-lg bg-white border border-[#1F3A4B]/20 text-xs font-bold text-[#1F3A4B] focus:outline-none focus:ring-2 focus:ring-[#1F3A4B]/30"
+            ></textarea>
+            <div class="flex items-center space-x-2">
+              <button
+                @click="submitPendingOutcome(s, 'modified')"
+                :disabled="rowOutcomeBusy === s.id"
+                class="px-3 py-1.5 rounded-full bg-[#1F3A4B] text-white text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50"
+              >
+                Submit
+              </button>
+              <button
+                @click="cancelRowModify"
+                class="px-3 py-1.5 rounded-full bg-white border border-[#1F3A4B]/20 text-[#1F3A4B] text-[10px] font-black transition-all hover:bg-[#1F3A4B]/5"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-2 pt-2.5 border-t border-[#1F3A4B]/10">
+            <button
+              @click="submitPendingOutcome(s, 'approved')"
+              :disabled="rowOutcomeBusy === s.id"
+              class="px-3.5 py-1.5 rounded-full bg-[#556B2F] hover:bg-[#435525] text-white text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 shadow-sm disabled:opacity-50"
+            >
+              Approve
+            </button>
+            <button
+              @click="startRowModify(s)"
+              :disabled="rowOutcomeBusy === s.id"
+              class="px-3.5 py-1.5 rounded-full bg-[#1F3A4B] hover:bg-[#152733] text-white text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 shadow-sm disabled:opacity-50"
+            >
+              Modify
+            </button>
+            <button
+              @click="submitPendingOutcome(s, 'rejected')"
+              :disabled="rowOutcomeBusy === s.id"
+              class="px-3.5 py-1.5 rounded-full bg-[#902715] hover:bg-[#a82e1a] text-white text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 shadow-sm disabled:opacity-50"
+            >
+              Reject
+            </button>
+          </div>
         </div>
       </div>
       <!-- Bulk Action Bar -->
@@ -314,17 +424,24 @@
           </div>
           <div class="flex-1 min-w-0">
             <p class="font-black text-[#1F3A4B] text-xs leading-snug">{{ entry.recommended_action }}</p>
-            <p class="text-[10px] text-[#717171] font-bold mt-0.5">Barangay {{ entry.target_barangay }} · {{ formatTimeAgo(entry.created_at) }}</p>
+            <p class="text-[10px] text-[#717171] font-bold mt-0.5">Barangay {{ entry.target_barangay }} · {{ formatTimeAgo(entry.created_at) }} · {{ entry.status || 'reviewed' }}</p>
           </div>
-          <span
-            :class="[
-              'px-3.5 py-1.5 text-[10px] font-black rounded-full uppercase shadow-sm shrink-0 ml-2',
-              entry.outcome === 'approved' ? 'bg-[#556B2F] text-white' :
-              entry.outcome === 'modified' ? 'bg-[#1F3A4B] text-white' :
-              'bg-[#902715] text-white'
-            ]"
-          >
-            {{ entry.outcome }}
+          <span class="flex items-center space-x-1.5 shrink-0 ml-2">
+            <span
+              :class="['px-2.5 py-1 text-[10px] font-black rounded-full uppercase shadow-sm', confidenceChipClass(entry.confidence)]"
+            >
+              {{ entry.confidence || 'n/a' }}
+            </span>
+            <span
+              :class="[
+                'px-3.5 py-1.5 text-[10px] font-black rounded-full uppercase shadow-sm',
+                entry.outcome === 'approved' ? 'bg-[#556B2F] text-white' :
+                entry.outcome === 'modified' ? 'bg-[#1F3A4B] text-white' :
+                'bg-[#902715] text-white'
+              ]"
+            >
+              {{ entry.outcome }}
+            </span>
           </span>
         </div>
       </div>
@@ -549,24 +666,34 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useSOSStore } from '@/stores/sosStore'
 import { useReportStore } from '@/stores/reportStore'
-import { useAuthStore } from '@/stores/authStore'
 import { useFlowStore } from '@/stores/flowStore'
+import { useAegisStore } from '@/stores/aegisStore'
 import { supabase } from '@/lib/supabase'
+import { confidenceChipClass } from '@/utils/confidence'
 
 const sosStore = useSOSStore()
 const reportStore = useReportStore()
-const authStore = useAuthStore()
 const flowStore = useFlowStore()
+const aegisStore = useAegisStore()
 
-const isLoading = ref(false)
+const isLoading = computed(() => aegisStore.generating)
 const activeRecommendation = ref(null)
 const selectedOutcome = ref(null)
 const outcomeSubmitting = ref(false)
 const outcomeError = ref('')
-const historyLog = ref([])
+const historyLog = computed(() => aegisStore.history)
+const pendingSuggestions = computed(() => aegisStore.pendingSuggestions)
 const showScenarioSelector = ref(false)
 const showReportSelector = ref(false)
 const bulkMode = ref(false)
+const showModifyEditor = ref(false)
+const modifyDraft = ref('')
+const rowModifyId = ref(null)
+const rowModifyDraft = ref('')
+const rowOutcomeBusy = ref(null)
+const rowOutcomeMsg = ref('')
+let outcomeClearTimer = null
+let rowMsgTimer = null
 
 function toggleBulkMode() {
   bulkMode.value = !bulkMode.value
@@ -722,7 +849,7 @@ const scenarios = {
 }
 
 onMounted(async () => {
-  fetchHistory()
+  aegisStore.init()
   // Ensure SOS data is loaded if navigated here directly
   if (sosStore.activeReports.length === 0) {
     await sosStore.fetchActiveReports()
@@ -737,6 +864,11 @@ onMounted(async () => {
 
 onUnmounted(() => {
   // Keep SOS subscription alive for other admin pages — don't unsubscribe here
+  // Clear pending timers so they can't fire on a destroyed component
+  clearTimeout(outcomeClearTimer)
+  outcomeClearTimer = null
+  clearTimeout(rowMsgTimer)
+  rowMsgTimer = null
 })
 
 function openReportSelector() {
@@ -836,89 +968,118 @@ async function simulateScenario(key) {
 }
 
 async function invokeAegis(sosIds, barangay, count, floodSeverity, weatherAlert, scenarioType = 'flood') {
-  isLoading.value = true
+  activeRecommendation.value = null
   selectedOutcome.value = null
   outcomeError.value = ''
-  activeRecommendation.value = null
+  showModifyEditor.value = false
+  modifyDraft.value = ''
 
-  try {
-    const { data, error } = await supabase.functions.invoke('aegis-advisor', {
-      body: {
-        sos_ids: sosIds,
-        cluster_barangay: barangay,
-        cluster_count: count,
-        flood_zone_severity: floodSeverity,
-        weather_alert: weatherAlert,
-        scenario_type: scenarioType
-      }
-    })
-
-    if (error) {
-      console.warn('Aegis Edge Function error:', error)
-      activeRecommendation.value = {
-        recommended_action: `Deploy nearest available rescue team to Barangay ${barangay}`,
-        target_barangay: barangay,
-        reasoning: 'Step 1: Edge Function unavailable — defaulting to standard dispatch.\nStep 2: SOS cluster density suggests immediate response.\nStep 3: Manual operator assessment required.\nStep 4: Pre-position resources based on local knowledge.',
-        confidence: 'low',
-        fallback: true,
-        scenario_type: scenarioType,
-        raw_inputs: {
-          sos_cluster: { ids: sosIds, barangay, count },
-          flood_zone: { severity: floodSeverity || 'none' },
-          weather: { alert: weatherAlert || 'No active alert' },
-          scenario_type: scenarioType
-        }
-      }
-    } else {
-      activeRecommendation.value = data
-    }
-  } catch (err) {
-    console.error('Aegis invocation error:', err)
-      activeRecommendation.value = {
-        recommended_action: 'Manual assessment required — AI service unavailable',
-        target_barangay: barangay,
-        reasoning: 'AI service error. Please assess the situation manually.',
-        confidence: 'low',
-        fallback: true,
-        scenario_type: scenarioType,
-        raw_inputs: { error: err.message, scenario_type: scenarioType }
-      }
-  } finally {
-    isLoading.value = false
+  const row = await aegisStore.generateSuggestion({
+    sos_ids: sosIds,
+    cluster_barangay: barangay,
+    cluster_count: count,
+    flood_zone_severity: floodSeverity,
+    weather_alert: weatherAlert,
+    scenario_type: scenarioType
+  })
+  if (row) {
+    activeRecommendation.value = row
   }
 }
 
 async function submitOutcome(outcome) {
   if (!activeRecommendation.value || outcomeSubmitting.value) return
+
+  // First click on 'modified' reveals the inline editor — do not submit yet
+  if (outcome === 'modified' && !showModifyEditor.value) {
+    showModifyEditor.value = true
+    modifyDraft.value = activeRecommendation.value.recommended_action || ''
+    return
+  }
+
+  if (outcome === 'modified' && (!modifyDraft.value || !modifyDraft.value.trim())) {
+    outcomeError.value = 'Please provide a modified action before submitting.'
+    return
+  }
+
   outcomeSubmitting.value = true
   outcomeError.value = ''
 
   try {
-    const operatorId = authStore.profile?.id || authStore.user?.id || null
+    const id = activeRecommendation.value.id
+    if (!id) throw new Error('Active advisory has no persisted id to update.')
 
-    const { error } = await supabase.from('aegis_suggestions').insert([{
-      related_sos_ids: activeRecommendation.value.raw_inputs?.sos_cluster?.ids || [],
-      recommended_action: activeRecommendation.value.recommended_action,
-      target_barangay: activeRecommendation.value.target_barangay,
-      reasoning: activeRecommendation.value.reasoning,
-      raw_inputs: activeRecommendation.value.raw_inputs,
-      outcome: outcome,
-      operator_id: operatorId,
-      resolved_at: new Date().toISOString()
-    }])
+    await aegisStore.setOutcome(id, {
+      outcome,
+      modifiedAction: outcome === 'modified' ? modifyDraft.value.trim() : null
+    })
 
-    if (error) {
-      outcomeError.value = error.message || 'Unable to log operator outcome.'
-      return
-    }
-
-    await fetchHistory()
-    // Auto-dismiss — the recommendation is done, show the history log with bulk actions
-    resetPanel()
+    // Confirmation banner — auto-dismiss after ~4s
+    selectedOutcome.value = outcome
+    showModifyEditor.value = false
+    modifyDraft.value = ''
+    clearTimeout(outcomeClearTimer)
+    outcomeClearTimer = setTimeout(() => {
+      resetPanel()
+    }, 4000)
   } catch (err) {
     console.warn('Failed to log Aegis outcome:', err)
     outcomeError.value = err.message || 'Unable to log operator outcome.'
+  } finally {
     outcomeSubmitting.value = false
+  }
+}
+
+function cancelModifyEditor() {
+  showModifyEditor.value = false
+  modifyDraft.value = ''
+}
+
+async function submitModifiedFromEditor() {
+  if (!modifyDraft.value || !modifyDraft.value.trim()) {
+    outcomeError.value = 'Please provide a modified action before submitting.'
+    return
+  }
+  await submitOutcome('modified')
+}
+
+function startRowModify(s) {
+  if (rowModifyId.value === s.id) return
+  rowModifyId.value = s.id
+  rowModifyDraft.value = s.recommended_action || ''
+}
+
+function cancelRowModify() {
+  rowModifyId.value = null
+  rowModifyDraft.value = ''
+}
+
+async function submitPendingOutcome(s, outcome) {
+  if (rowOutcomeBusy.value) return
+  let modifiedAction = null
+  if (outcome === 'modified') {
+    if (!rowModifyDraft.value || !rowModifyDraft.value.trim()) {
+      outcomeError.value = 'Please provide a modified action before submitting.'
+      return
+    }
+    modifiedAction = rowModifyDraft.value.trim()
+  }
+  rowOutcomeBusy.value = s.id
+  outcomeError.value = ''
+  try {
+    await aegisStore.setOutcome(s.id, { outcome, modifiedAction })
+    rowModifyId.value = null
+    rowModifyDraft.value = ''
+    rowOutcomeMsg.value = `Logged as ${outcome}`
+    clearTimeout(rowMsgTimer)
+    rowMsgTimer = setTimeout(() => {
+      rowOutcomeMsg.value = ''
+    }, 4000)
+  } catch (err) {
+    console.warn('Failed to log Aegis outcome:', err)
+    outcomeError.value = err.message || 'Unable to log operator outcome.'
+  } finally {
+    rowOutcomeBusy.value = null
   }
 }
 
@@ -927,22 +1088,8 @@ function resetPanel() {
   selectedOutcome.value = null
   outcomeError.value = ''
   outcomeSubmitting.value = false
-}
-
-async function fetchHistory() {
-  try {
-    const { data, error } = await supabase
-      .from('aegis_suggestions')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(20)
-
-    if (!error && data) {
-      historyLog.value = data
-    }
-  } catch (err) {
-    console.warn('Failed to fetch Aegis history:', err)
-  }
+  showModifyEditor.value = false
+  modifyDraft.value = ''
 }
 
 function scenarioBadgeClass(type) {
@@ -995,7 +1142,7 @@ async function bulkDeleteSelected() {
       .in('id', ids)
     if (error) throw error
     clearHistorySelection()
-    await fetchHistory()
+    await aegisStore.fetchHistory()
   } catch (err) {
     console.warn('Bulk delete failed:', err)
   } finally {

@@ -83,7 +83,11 @@
       
 
       <!-- Bottom Status & Recenter Floating Glass Dock -->
-      <div class="absolute bottom-24 left-3 right-3 bg-white/90 backdrop-blur-md p-3 rounded-2xl border border-black/10 text-xs flex justify-between items-center z-[60] shadow-m3-lg">
+      <!-- TEAM_001: Position card relative to map canvas (z-20 so it stays beneath z-50 bottom navbar on scroll, bottom-3 when normal, bottom-6/safe-area when expanded) -->
+      <div
+        class="absolute left-3 right-3 bg-white/90 backdrop-blur-md p-3 rounded-2xl border border-black/10 text-xs flex justify-between items-center z-20 shadow-m3-lg transition-all"
+        :class="isExpanded ? 'bottom-[calc(1rem+env(safe-area-inset-bottom,0px))]' : 'bottom-3'"
+      >
         <div class="space-y-0.5">
           <span class="text-[#717171] block text-[9px] font-extrabold uppercase tracking-wider">{{ $t('evacMap.activeRiskFilter') }}</span>
           <span
