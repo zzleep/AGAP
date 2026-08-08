@@ -3,7 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import { getCallbackNumber, getSOSDeviceHash } from '../composables/useGPS.js'
-import { findNearestBarangay } from '@/data/barangay_coords'
+import { findNearestBarangay, sameBarangay } from '@/data/barangay_coords'
 import { fetchWithRetry } from '@/utils/fetchWithRetry'
 import { getOrCreateAgapUserHash } from '@/utils/userHash'
 import { useConnectivityStore } from '@/stores/connectivityStore'
@@ -124,9 +124,9 @@ export const useSOSStore = defineStore('sos', () => {
         if (a.status !== 'pending' && b.status === 'pending') return 1
 
         // 2. Assigned area match priority
-        if (area && area !== 'all') {
-          const aMatch = a.barangay === area ? 1 : 0
-          const bMatch = b.barangay === area ? 1 : 0
+        if (authStore.hasAssignedArea) {
+          const aMatch = sameBarangay(a.barangay, area) ? 1 : 0
+          const bMatch = sameBarangay(b.barangay, area) ? 1 : 0
           if (aMatch !== bMatch) return bMatch - aMatch
         }
 

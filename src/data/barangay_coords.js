@@ -33,3 +33,12 @@ export function findNearestBarangay(lat, lng) {
   }
   return nearest
 }
+
+export function normalizeBarangay(name) {
+  if (!name) return ''
+  return String(name).trim().toLowerCase().replace(/\s*\(poblacion ward \d+\)$/i, '')
+}
+
+export function sameBarangay(a, b) {
+  return normalizeBarangay(a) === normalizeBarangay(b)
+}
