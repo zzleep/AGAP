@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { supabase } from '@/lib/supabase'
+import { useAdvisoryStore } from '@/stores/advisoryStore'
 import { useSOSStore } from '@/stores/sosStore'
 import { useFlowStore } from '@/stores/flowStore'
 import { useConnectivityStore } from '@/stores/connectivityStore'
@@ -20,6 +21,15 @@ export const useAegisStore = defineStore('aegis', () => {
   const reportStore = useReportStore()
   const connectivityStore = useConnectivityStore()
   const flowStore = useFlowStore()
+  const advisoryStore = useAdvisoryStore()
+
+  // Admin flows never fetch the advisory store themselves — ensure weather
+  // context is real before composing a trigger (cache hit makes this cheap;
+  // fetchAdvisory is catch-safe so failures degrade to "No active alert").
+  const ensureAdvisoryLoaded = async () => {
+    if (advisoryStore.lastFetched && Date.now() - advisoryStore.lastFetched < FIFTEEN_MINUTES) return
+    await advisoryStore.fetchAdvisory()
+  }
 
   const pendingSuggestions = ref([])
   const history = ref([])
@@ -36,7 +46,7 @@ export const useAegisStore = defineStore('aegis', () => {
 
   const pendingCount = computed(() => pendingSuggestions.value.length)
 
-  function subscribeRealtime() {
+  const subscribeRealtime = () => {
     if (channel.value) return
     channel.value = supabase
       .channel('public:aegis_suggestions')
@@ -47,7 +57,7 @@ export const useAegisStore = defineStore('aegis', () => {
       .subscribe()
   }
 
-  async function fetchPending() {
+  const fetchPending = async () => {
     try {
       const { data, error } = await supabase
         .from('aegis_suggestions')
@@ -62,7 +72,7 @@ export const useAegisStore = defineStore('aegis', () => {
     }
   }
 
-  async function fetchHistory() {
+  const fetchHistory = async () => {
     loadingHistory.value = true
     try {
       const { data, error } = await supabase
@@ -83,7 +93,7 @@ export const useAegisStore = defineStore('aegis', () => {
 
   // Client-side fallback advisory — mirrors the previous AegisPanel fallback so
   // an unreachable Edge Function still produces a persisted pending row.
-  function buildFallbackAdvisory({ sos_ids, cluster_barangay, cluster_count, flood_zone_severity, weather_alert, scenario_type, community_report }) {
+  const buildFallbackAdvisory = ({ sos_ids, cluster_barangay, cluster_count, flood_zone_severity, weather_alert, scenario_type, community_report }) => {
     const barangay = cluster_barangay || 'Unknown'
     return {
       recommended_action: `Deploy nearest available rescue team to Barangay ${barangay}`,
@@ -104,7 +114,7 @@ export const useAegisStore = defineStore('aegis', () => {
 
   // Generate (and persist) a suggestion. Suggests are ALWAYS written first as a
   // 'pending' row — an operator outcome is a separate setOutcome() update later.
-  async function generateSuggestion({
+  const generateSuggestion = async ({
     sos_ids = [],
     cluster_barangay = null,
     cluster_count = null,
@@ -112,7 +122,7 @@ export const useAegisStore = defineStore('aegis', () => {
     weather_alert = null,
     scenario_type = 'flood',
     community_report = null
-  } = {}) {
+  } = {}) => {
     generating.value = true
     lastError.value = null
     try {
@@ -192,7 +202,7 @@ export const useAegisStore = defineStore('aegis', () => {
   }
 
   // Operator outcome: flips the pending row to 'reviewed' and records the decision.
-  async function setOutcome(id, { outcome, modifiedAction = null } = {}) {
+  const setOutcome = async (id, { outcome, modifiedAction = null } = {}) => {
     const update = {
       outcome,
       status: 'reviewed',
@@ -215,16 +225,18 @@ export const useAegisStore = defineStore('aegis', () => {
     return { success: true }
   }
 
-  function suggestionsForSos(sosId) {
+  const suggestionsForSos = (sosId) => {
     return pendingSuggestions.value.filter(s => (s.related_sos_ids || []).includes(sosId))
   }
 
-  async function runAutoTrigger() {
+  const runAutoTrigger = async () => {
     const clusters = sosStore.activeClusters
     const now = Date.now()
 
+    await ensureAdvisoryLoaded()
+
     for (const cluster of clusters) {
-      const barangay = cluster.barangay
+      const { barangay } = cluster
       if (!barangay || barangay === 'Unknown') continue
       const key = barangay
 
@@ -255,13 +267,13 @@ export const useAegisStore = defineStore('aegis', () => {
         cluster_barangay: barangay,
         cluster_count: cluster.count,
         flood_zone_severity: flowStore.zoneSeverity ?? null,
-        weather_alert: null,
+        weather_alert: advisoryStore.advisorySummary ?? 'No active alert',
         scenario_type: 'flood'
       })
     }
   }
 
-  function startAutoTrigger() {
+  const startAutoTrigger = () => {
     if (autoWatchStop.value) return
     let debounceTimer = null
     autoWatchStop.value = watch(
@@ -287,8 +299,10 @@ export const useAegisStore = defineStore('aegis', () => {
     )
   })
 
-  async function runReportAutoTrigger() {
+  const runReportAutoTrigger = async () => {
     const now = Date.now()
+
+    await ensureAdvisoryLoaded()
 
     for (const report of reportAutoTriggerCandidates.value) {
       const key = `report:${report.id}`
@@ -315,6 +329,7 @@ export const useAegisStore = defineStore('aegis', () => {
         sos_ids: [report.id],
         cluster_barangay: report.barangay ?? null,
         cluster_count: null,
+        weather_alert: advisoryStore.advisorySummary ?? 'No active alert',
         scenario_type: 'report',
         community_report: {
           id: report.id,
@@ -328,7 +343,7 @@ export const useAegisStore = defineStore('aegis', () => {
     }
   }
 
-  function startReportAutoTrigger() {
+  const startReportAutoTrigger = () => {
     if (reportAutoWatchStop.value) return
     let debounceTimer = null
     reportAutoWatchStop.value = watch(
@@ -343,7 +358,7 @@ export const useAegisStore = defineStore('aegis', () => {
     )
   }
 
-  async function init() {
+  const init = async () => {
     if (initialized.value) return
     initialized.value = true
     subscribeRealtime()
@@ -352,7 +367,7 @@ export const useAegisStore = defineStore('aegis', () => {
     startReportAutoTrigger()
   }
 
-  function dispose() {
+  const dispose = () => {
     if (channel.value) {
       supabase.removeChannel(channel.value)
       channel.value = null

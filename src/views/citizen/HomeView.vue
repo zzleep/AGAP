@@ -117,6 +117,9 @@
       </p>
     </section>
 
+    <!-- Official PAGASA Weather Advisory Strip (SMS-style alerts) -->
+    <AdvisoryCard :advisories="advisory.advisories" :loading="advisory.isLoading" />
+
     <!-- Stay Ready Header Block (Compact Tight Spacing) -->
     <div class="pt-0.5">
       <h2 class="font-expressive text-xl font-black tracking-tight text-[#0A0A0A]">{{ $t('home.stayReady') }}</h2>
@@ -137,10 +140,13 @@
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useWeatherStore } from '@/stores/weatherStore'
+import { useAdvisoryStore } from '@/stores/advisoryStore'
 import { useNow } from '@/composables/useNow'
 import ActionTile from '@/components/common/ActionTile.vue'
+import AdvisoryCard from '@/components/citizen/AdvisoryCard.vue'
 
 const weather = useWeatherStore()
+const advisory = useAdvisoryStore()
 const { t, locale } = useI18n()
 const { now } = useNow()
 
@@ -279,6 +285,11 @@ const THEMES = {
 const activeTheme = computed(() => THEMES[weatherThemeKey.value] || THEMES.clear_day)
 
 onMounted(() => {
-  weather.fetchWeather()
+  const weatherReady = weather.fetchWeather()
+  advisory.fetchAdvisory()
+  // A cold-cache advisory fallback runs before live rainfall arrives and shows
+  // no advisory (see useAdvisory deriveFallbackList). Once live weather lands,
+  // re-check the advisory so a feed outage still yields a rainfall-derived level.
+  weatherReady.then(() => advisory.fetchAdvisory())
 })
 </script>

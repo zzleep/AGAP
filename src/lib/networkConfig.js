@@ -11,6 +11,9 @@ export const NETWORK_CONFIG = {
   /** Timeout for external weather API fetch (OpenWeatherMap) */
   owmFetchTimeout: 10_000,
 
+  /** Timeout for PAGASA PANaHON cap-alerts feed fetch */
+  pagasaFetchTimeout: 15_000,
+
   /** Timeout for Mapbox Directions API fetch */
   mapboxDirectionsTimeout: 10_000,
 

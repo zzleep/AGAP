@@ -14,7 +14,9 @@ export const useWeatherStore = defineStore('weather', () => {
     location: 'Santa Rosa City, Laguna'
   })
   const rainfallRate = ref(12.5)
-  const lastFetched = ref(Date.now())
+  // 0 = never fetched — consumers must not treat the placeholder rainfallRate
+  // as live data before the first successful fetch (see useAdvisory fallback).
+  const lastFetched = ref(0)
   const isLoading = ref(false)
 
   const riskCategory = computed(() => {
