@@ -8,7 +8,10 @@
 DROP POLICY IF EXISTS "Allow authenticated delete aegis_suggestions"
   ON public.aegis_suggestions;
 
--- 2. Create the restricted policy (idempotent — safe if already created)
+-- 2. Recreate the restricted policy idempotently
+DROP POLICY IF EXISTS "Allow superadmin delete aegis_suggestions"
+  ON public.aegis_suggestions;
+
 CREATE POLICY "Allow superadmin delete aegis_suggestions"
   ON public.aegis_suggestions FOR DELETE
   TO authenticated

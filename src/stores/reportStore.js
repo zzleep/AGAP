@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { fetchWithRetry } from '@/utils/fetchWithRetry'
-import { getOrCreateAgapUserHash } from '@/utils/userHash'
 import { useConnectivityStore } from '@/stores/connectivityStore'
 
 export const useReportStore = defineStore('report', () => {
@@ -156,12 +155,8 @@ export const useReportStore = defineStore('report', () => {
         if (payload.image_url) {
           insertPayload.image_url = payload.image_url
         }
-        // Same device hash as the SOS flow so community reports can be matched
-        // to a reporter identity; null/absent means the report is anonymous.
-        const userHash = getOrCreateAgapUserHash()
-        if (userHash) {
-          insertPayload.user_hash = userHash
-        }
+        // Community reports are anonymous — no user_hash is included.
+        // This prevents correlation with the device's SOS submissions.
 
         let { data, error } = await supabase
           .from('community_reports')
