@@ -88,8 +88,21 @@ function collectLocalCoverage(provinces, normalized) {
   for (const p of provinces) {
     const name = normalizeName(p.municipality)
     if (!NEARBY_MUNICIPALITIES.includes(name)) continue
-    // Per-municipality severity when given, otherwise inherit the entry's severity
-    const severity = SEVERITY_RANK[p.type] !== undefined ? p.type : normalized.severity
+    // Municipality names repeat across provinces (Santa Rosa exists in both
+    // Laguna and Nueva Ecija) — only a home-province row can be OUR town.
+    // Rows without province info are kept so name matching still works.
+    if (p.province && normalizeName(p.province) !== HOME_PROVINCE) continue
+    // A known level drives the local badge. "affecting" (below-warning rain)
+    // and other non-level types must NOT inherit the entry-wide severity —
+    // that would inflate the badge to the regional maximum (e.g. a red HRW
+    // would paint a merely-"affecting" same-name town in another province red).
+    let severity
+    if (typeof p.type === 'string' && p.type !== '') {
+      severity = SEVERITY_RANK[p.type] !== undefined ? p.type : 'watch'
+    } else {
+      // No per-municipality type (older payloads) — inherit the entry severity
+      severity = normalized.severity
+    }
     const existing = byName.get(name)
     if (!existing || SEVERITY_RANK[severity] > SEVERITY_RANK[existing.severity]) {
       byName.set(name, { name: p.municipality.trim(), severity })
@@ -318,8 +331,11 @@ function normalizeName(value) {
 function isRelevant(normalized, provinces, areaDesc) {
   const hasProvinceData = provinces.length > 0
   const hasMunicipalityData = provinces.some(p => normalizeName(p.municipality) !== '')
+  // Same-name municipalities exist in other provinces (Santa Rosa is also a
+  // town in Nueva Ecija) — a foreign-province row must not count as OUR area.
   const municipalityMatch = provinces.some(p =>
-    NEARBY_MUNICIPALITIES.includes(normalizeName(p.municipality))
+    (!p.province || normalizeName(p.province) === HOME_PROVINCE)
+      && NEARBY_MUNICIPALITIES.includes(normalizeName(p.municipality))
   )
 
   if (hasMunicipalityData) return municipalityMatch
