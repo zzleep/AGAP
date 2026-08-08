@@ -97,60 +97,68 @@
                 <template v-if="isTierExpanded(view.i)">
                   <div v-if="hasTierAreas(view.block)" :id="`advisory-tier-${view.i}`" class="px-3.5 pb-3 -mt-1">
                     <ul class="space-y-1.5">
-                      <li v-for="(area, ai) in view.block.areas" :key="ai">
-                        <!-- Province with municipalities: collapsible row -->
-                        <button
-                          v-if="tierAreaMunicipalities(area).length"
-                          type="button"
-                          @click="toggleTierRow(view.i, ai)"
-                          :aria-expanded="isTierRowExpanded(view.i, ai)"
-                          :aria-controls="`advisory-tier-row-${view.i}-${ai}`"
-                          class="w-full flex items-center gap-2 rounded-xl border border-[#0A0A0A]/5 bg-white px-3 py-2 text-left hover:bg-[#F5F5F5] transition-colors"
-                        >
-                          <span
-                            :class="[
-                              'min-w-0 flex-1 truncate text-[13px] tracking-tight',
-                              isTierRowYourArea(area) ? 'font-black text-[#0A0A0A]' : 'font-bold text-[#4A4A4A]'
-                            ]"
+                      <template v-for="(row, ri) in tierAreaRows(view.block)" :key="row.separator ? `sep-${ri}` : row.ai">
+                        <!-- Group label: the user's area first, everything else under "Other areas" -->
+                        <li v-if="row.separator" class="px-1 pt-2">
+                          <p class="text-[10px] font-black uppercase tracking-wider text-[#5C5C5C]">
+                            {{ t('advisory.otherAreas') }}
+                          </p>
+                        </li>
+                        <li v-else>
+                          <!-- Province with municipalities: collapsible row -->
+                          <button
+                            v-if="tierAreaMunicipalities(row.area).length"
+                            type="button"
+                            @click="toggleTierRow(view.i, row.ai)"
+                            :aria-expanded="isTierRowExpanded(view.i, row.ai)"
+                            :aria-controls="`advisory-tier-row-${view.i}-${row.ai}`"
+                            class="w-full flex items-center gap-2 rounded-xl border border-[#0A0A0A]/5 bg-white px-3 py-2 text-left hover:bg-[#F5F5F5] transition-colors"
                           >
-                            {{ area.province }}
-                          </span>
-                          <span
-                            v-if="isTierRowYourArea(area)"
-                            class="inline-flex items-center rounded-full bg-[#902715] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white"
+                            <span
+                              :class="[
+                                'min-w-0 flex-1 truncate text-[13px] tracking-tight',
+                                isTierRowYourArea(row.area) ? 'font-black text-[#0A0A0A]' : 'font-bold text-[#4A4A4A]'
+                              ]"
+                            >
+                              {{ row.area.province }}
+                            </span>
+                            <span
+                              v-if="isTierRowYourArea(row.area)"
+                              class="inline-flex items-center rounded-full bg-[#902715] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white"
+                            >
+                              {{ t('advisory.yourArea') }}
+                            </span>
+                            <ChevronDown
+                              :class="['w-4 h-4 shrink-0 text-[#5C5C5C] transition-transform duration-300', isTierRowExpanded(view.i, row.ai) ? 'rotate-180' : '']"
+                              :stroke-width="2.2"
+                              aria-hidden="true"
+                            />
+                          </button>
+                          <!-- Bare province (no municipalities): static line, no chevron -->
+                          <div
+                            v-else
+                            class="w-full flex items-center gap-2 rounded-xl border border-[#0A0A0A]/5 bg-white px-3 py-2 text-left"
                           >
-                            {{ t('advisory.yourArea') }}
-                          </span>
-                          <ChevronDown
-                            :class="['w-4 h-4 shrink-0 text-[#5C5C5C] transition-transform duration-300', isTierRowExpanded(view.i, ai) ? 'rotate-180' : '']"
-                            :stroke-width="2.2"
-                            aria-hidden="true"
-                          />
-                        </button>
-                        <!-- Bare province (no municipalities): static line, no chevron -->
-                        <div
-                          v-else
-                          class="w-full flex items-center gap-2 rounded-xl border border-[#0A0A0A]/5 bg-white px-3 py-2 text-left"
-                        >
-                          <span class="min-w-0 flex-1 truncate text-[13px] font-bold text-[#4A4A4A]">
-                            {{ area.province }}
-                          </span>
-                        </div>
-                        <p
-                          v-if="tierAreaMunicipalities(area).length && isTierRowExpanded(view.i, ai)"
-                          :id="`advisory-tier-row-${view.i}-${ai}`"
-                          class="mt-1 px-3 text-[13px] font-medium text-[#4A4A4A] leading-relaxed whitespace-pre-line"
-                        >
-                          <template v-if="tierMunicipalityParts(area)">
-                            {{ tierMunicipalityParts(area).before }}
-                            <strong class="font-black text-[#0A0A0A]">{{ tierMunicipalityParts(area).match }}</strong>
-                            {{ tierMunicipalityParts(area).after }}
-                          </template>
-                          <template v-else>
-                            {{ tierAreaMunicipalities(area).join(', ') }}
-                          </template>
-                        </p>
-                      </li>
+                            <span class="min-w-0 flex-1 truncate text-[13px] font-bold text-[#4A4A4A]">
+                              {{ row.area.province }}
+                            </span>
+                          </div>
+                          <p
+                            v-if="tierAreaMunicipalities(row.area).length && isTierRowExpanded(view.i, row.ai)"
+                            :id="`advisory-tier-row-${view.i}-${row.ai}`"
+                            class="mt-1 px-3 text-[13px] font-medium text-[#4A4A4A] leading-relaxed whitespace-pre-line"
+                          >
+                            <template v-if="tierMunicipalityParts(row.area)">
+                              {{ tierMunicipalityParts(row.area).before }}
+                              <strong class="font-black text-[#0A0A0A]">{{ tierMunicipalityParts(row.area).match }}</strong>
+                              {{ tierMunicipalityParts(row.area).after }}
+                            </template>
+                            <template v-else>
+                              {{ tierAreaMunicipalities(row.area).join(', ') }}
+                            </template>
+                          </p>
+                        </li>
+                      </template>
                     </ul>
                     <!-- What this level means (muted, no badge) -->
                     <p v-if="view.block.hazard" class="mt-2 px-1 text-[11px] font-semibold text-[#5C5C5C]">
@@ -174,42 +182,49 @@
                   {{ view.block.title }}
                 </p>
                 <ul :class="[view.block.title ? 'mt-2' : '', 'space-y-1.5']">
-                  <li v-for="(item, ji) in view.block.items" :key="ji">
-                    <button
-                      type="button"
-                      @click="toggleFlood(view.i, ji)"
-                      :aria-expanded="isFloodExpanded(view.i, ji)"
-                      :aria-controls="`advisory-flood-${view.i}-${ji}`"
-                      class="w-full flex items-center gap-2 rounded-xl border border-[#0A0A0A]/5 bg-white px-3 py-2 text-left hover:bg-[#F5F5F5] transition-colors"
-                    >
-                      <span
-                        :class="[
-                          'min-w-0 flex-1 truncate text-[13px] tracking-tight',
-                          isFloodYourArea(item) ? 'font-black text-[#0A0A0A]' : 'font-bold text-[#4A4A4A]'
-                        ]"
+                  <template v-for="(row, rj) in floodItemRows(view.block)" :key="row.separator ? `sep-${rj}` : row.ji">
+                    <li v-if="row.separator" class="px-1 pt-2">
+                      <p class="text-[10px] font-black uppercase tracking-wider text-[#5C5C5C]">
+                        {{ t('advisory.otherAreas') }}
+                      </p>
+                    </li>
+                    <li v-else>
+                      <button
+                        type="button"
+                        @click="toggleFlood(view.i, row.ji)"
+                        :aria-expanded="isFloodExpanded(view.i, row.ji)"
+                        :aria-controls="`advisory-flood-${view.i}-${row.ji}`"
+                        class="w-full flex items-center gap-2 rounded-xl border border-[#0A0A0A]/5 bg-white px-3 py-2 text-left hover:bg-[#F5F5F5] transition-colors"
                       >
-                        {{ item.label }}
-                      </span>
-                      <span
-                        v-if="isFloodYourArea(item)"
-                        class="inline-flex items-center rounded-full bg-[#902715] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white"
+                        <span
+                          :class="[
+                            'min-w-0 flex-1 truncate text-[13px] tracking-tight',
+                            isFloodYourArea(row.item) ? 'font-black text-[#0A0A0A]' : 'font-bold text-[#4A4A4A]'
+                          ]"
+                        >
+                          {{ row.item.label }}
+                        </span>
+                        <span
+                          v-if="isFloodYourArea(row.item)"
+                          class="inline-flex items-center rounded-full bg-[#902715] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white"
+                        >
+                          {{ t('advisory.yourArea') }}
+                        </span>
+                        <ChevronDown
+                          :class="['w-4 h-4 shrink-0 text-[#5C5C5C] transition-transform duration-300', isFloodExpanded(view.i, row.ji) ? 'rotate-180' : '']"
+                          :stroke-width="2.2"
+                          aria-hidden="true"
+                        />
+                      </button>
+                      <p
+                        v-if="isFloodExpanded(view.i, row.ji) && row.item.text"
+                        :id="`advisory-flood-${view.i}-${row.ji}`"
+                        class="mt-1 px-3 text-[13px] font-medium text-[#4A4A4A] leading-relaxed whitespace-pre-line"
                       >
-                        {{ t('advisory.yourArea') }}
-                      </span>
-                      <ChevronDown
-                        :class="['w-4 h-4 shrink-0 text-[#5C5C5C] transition-transform duration-300', isFloodExpanded(view.i, ji) ? 'rotate-180' : '']"
-                        :stroke-width="2.2"
-                        aria-hidden="true"
-                      />
-                    </button>
-                    <p
-                      v-if="isFloodExpanded(view.i, ji) && item.text"
-                      :id="`advisory-flood-${view.i}-${ji}`"
-                      class="mt-1 px-3 text-[13px] font-medium text-[#4A4A4A] leading-relaxed whitespace-pre-line"
-                    >
-                      {{ item.text }}
-                    </p>
-                  </li>
+                        {{ row.item.text }}
+                      </p>
+                    </li>
+                  </template>
                 </ul>
               </div>
 
@@ -433,6 +448,22 @@ const sheetFlatMessage = computed(() => formatAdvisoryText(selected.value?.messa
    "YELLOW / YELLOW" duplication); legacy blocks keep title or severity name. */
 const tierHeaderLabel = (b) =>
   hasTierAreas(b) ? t('advisory.areasAffected') : b?.title || severityOfBlock(b).label
+
+/* Group rows within a tier: the user's area row first, then an "Other areas"
+   label followed by the rest. Rows keep their original indices so collapse
+   state + aria-controls stay stable. No separator when either group is empty. */
+function groupedRows(rows, isYourRow) {
+  const your = rows.filter(isYourRow)
+  const other = rows.filter((r) => !isYourRow(r))
+  if (!your.length || !other.length) return rows
+  return [...your, { separator: true }, ...other]
+}
+
+const tierAreaRows = (block) =>
+  groupedRows(block.areas.map((area, ai) => ({ area, ai })), (r) => isTierRowYourArea(r.area))
+
+const floodItemRows = (block) =>
+  groupedRows(block.items.map((item, ji) => ({ item, ji })), (r) => isFloodYourArea(r.item))
 
 /* Default focus: the tier matching the user's LOCAL level (fallback: the first
    tier block) is hoisted to the front and expanded; everything else keeps its

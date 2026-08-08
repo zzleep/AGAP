@@ -145,16 +145,18 @@ const WATERCOURSES_HEADER_RE = /^watercourses\s+likely\s+to\s+be\s+affected\s*:/
  * Split an area list like "Laguna(Santa Rosa, Calamba), Metro Manila,
  * Cavite(Silang)" into province groups. Commas inside parentheses are kept;
  * entries without parentheses (e.g. "Metro Manila") are province-wide.
+ * Tolerant of the feed's typos: a missing trailing ")" after the last town
+ * list, and "Province(A, B) and Province(C, D)" chains.
  */
-export function parseAreaGroups(text) {
-  if (typeof text !== 'string' || text.trim() === '') return []
+export function parseAreaGroups(text, depth = 0) {
+  if (typeof text !== 'string' || text.trim() === '' || depth > 2) return []
   const parts = []
-  let depth = 0
+  let depthLevel = 0
   let current = ''
   for (const ch of text) {
-    if (ch === '(') depth += 1
-    else if (ch === ')') depth -= 1
-    if (ch === ',' && depth === 0) {
+    if (ch === '(') depthLevel += 1
+    else if (ch === ')') depthLevel -= 1
+    if (ch === ',' && depthLevel === 0) {
       if (current.trim()) parts.push(current.trim())
       current = ''
     } else {
@@ -166,10 +168,27 @@ export function parseAreaGroups(text) {
   const groups = []
   for (const part of parts) {
     const open = part.indexOf('(')
-    if (open > 0 && part.endsWith(')')) {
+    if (open > 0 && part.includes(')')) {
+      const close = part.indexOf(')')
       const province = part.slice(0, open).trim()
       const municipalities = part
-        .slice(open + 1, -1)
+        .slice(open + 1, close)
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+      if (province) groups.push({ province, municipalities })
+      // Anything after the closing paren can list more areas, e.g.
+      // "...Bamban) and Quezon(Lucban, ..." — recurse on the remainder.
+      const remainder = part.slice(close + 1).trim().replace(/^(and|&)\s+/i, '')
+      if (remainder.includes('(')) groups.push(...parseAreaGroups(remainder, depth + 1))
+    } else if (open > 0) {
+      // Unclosed paren — the feed omits the trailing ")" after the last town
+      // list (e.g. "Bulacan(Hagonoy, Paombong, Malolos, Bulakan, ...").
+      // Treat the remainder as the municipality list instead of dumping the
+      // whole string into the province name.
+      const province = part.slice(0, open).trim()
+      const municipalities = part
+        .slice(open + 1)
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean)

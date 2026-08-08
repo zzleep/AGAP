@@ -9,7 +9,7 @@ const CACHE_KEY = 'agap_advisory_cache'
 // stale entries from an older schema are treated as cache misses instead of
 // being shown with missing fields (e.g. a missing localSeverity falling back
 // to the Luzon-wide severity, or unformatted message text).
-const CACHE_SCHEMA_VERSION = 7
+const CACHE_SCHEMA_VERSION = 8
 const CACHE_TTL_MS = 15 * 60 * 1000 // 15 minutes TTL
 // Rainfall is only meaningful for derivation while fresh — before the first
 // successful weather fetch, rainfallRate is a placeholder (12.5) that would
