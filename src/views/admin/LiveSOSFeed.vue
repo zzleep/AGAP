@@ -197,10 +197,10 @@
       </div>
 
       <!-- High-Density Operator Table Container -->
-      <div class="bg-white border border-[#1F3A4B]/15 rounded-3xl overflow-hidden shadow-sm w-full">
-        <div class="overflow-x-auto">
+      <div class="bg-white border border-[#1F3A4B]/15 rounded-3xl shadow-sm w-full overflow-hidden">
+        <div class="overflow-x-auto overflow-y-visible">
           <table class="w-full text-left border-collapse min-w-[768px]">
-            <thead>
+            <thead class="sticky top-0 z-10">
               <tr class="bg-[#1F3A4B] text-white text-[11px] uppercase font-black tracking-wider border-b border-[#1F3A4B]/20">
                 <th class="py-3.5 px-5">Status</th>
                 <th class="py-3.5 px-5">Alert ID</th>
@@ -262,8 +262,9 @@
 
                 <!-- GPS Coordinates with Interactive Quick Actions -->
                 <td class="py-3.5 px-5 whitespace-nowrap font-mono text-xs">
-                  <div class="relative inline-block text-left" @click.stop>
+                  <div class="inline-block" @click.stop>
                     <button
+                      :ref="el => setGpsButtonRef(item.id, el)"
                       @click="toggleGpsDropdown(item.id)"
                       class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#902715]/10 text-[#902715] font-black border border-[#902715]/20 hover:bg-[#902715] hover:text-white transition-all shadow-xs group"
                       title="Click for GPS dispatch actions"
@@ -277,50 +278,6 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
                       </svg>
                     </button>
-
-                    <!-- Contextual GPS Actions Dropdown Popover -->
-                    <div
-                      v-if="activeGpsDropdownId === item.id"
-                      class="absolute left-0 mt-1.5 w-60 rounded-2xl bg-white border border-[#1F3A4B]/20 shadow-2xl py-2 z-50 text-left font-sans text-xs space-y-1 animate-fade-in"
-                    >
-                      <div class="px-3.5 py-1 border-b border-[#E0E0E0] mb-1">
-                        <p class="text-[10px] font-black uppercase tracking-wider text-[#717171]">GPS Dispatch Actions</p>
-                        <p class="font-mono text-[11px] font-bold text-[#1F3A4B] truncate">
-                          {{ item.latitude }}, {{ item.longitude }}
-                        </p>
-                      </div>
-
-                      <!-- 1. Open in Google Maps -->
-                      <a
-                        :href="getGoogleMapsUrl(item.latitude, item.longitude)"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        @click="activeGpsDropdownId = null"
-                        class="w-full px-3.5 py-2 text-xs font-bold text-[#1F3A4B] hover:bg-[#EEF4FB] hover:text-[#902715] flex items-center gap-2.5 transition-colors"
-                      >
-                        <svg class="w-4 h-4 text-[#902715] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                        </svg>
-                        <div class="flex flex-col text-left">
-                          <span class="font-black text-xs">Open Google Maps</span>
-                          <span class="text-[10px] text-[#717171] font-normal">External GPS directions for drivers</span>
-                        </div>
-                      </a>
-
-                      <!-- 2. Copy Exact Coordinates -->
-                      <button
-                        @click="copyCoords(item.latitude, item.longitude)"
-                        class="w-full px-3.5 py-2 text-xs font-bold text-[#1F3A4B] hover:bg-[#EEF4FB] flex items-center gap-2.5 transition-colors text-left"
-                      >
-                        <svg class="w-4 h-4 text-[#717171] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                        </svg>
-                        <div class="flex flex-col text-left">
-                          <span class="font-black text-xs">Copy Raw Lat/Lng</span>
-                          <span class="text-[10px] text-[#717171] font-normal">Copy {{ item.latitude }}, {{ item.longitude }}</span>
-                        </div>
-                      </button>
-                    </div>
                   </div>
                 </td>
 
@@ -364,13 +321,13 @@
 
                 <!-- Timestamp -->
                 <td class="py-3.5 px-5 whitespace-nowrap">
-                  <div class="flex flex-col items-start">
+                  <div class="flex flex-col items-start gap-1.5">
                     <span class="text-[#717171] font-semibold text-xs">
                       {{ formatTimeAgo(item.created_at) }}
                     </span>
                     <span
                       v-if="updateChipVariant(item) === 'moved-responding'"
-                      class="mt-1 inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-[#902715] px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-white"
+                      class="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-[#902715] px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-white"
                     >
                       <span class="relative flex h-1.5 w-1.5 shrink-0" aria-hidden="true">
                         <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-60"></span>
@@ -380,13 +337,13 @@
                     </span>
                     <span
                       v-else-if="updateChipVariant(item) === 'moved'"
-                      class="mt-1 inline-flex items-center gap-1 rounded-full bg-[#F7FB41] border border-[#8a7e00] px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#0A0A0A]"
+                      class="inline-flex items-center gap-1 rounded-full bg-[#F7FB41] border border-[#8a7e00] px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#0A0A0A]"
                     >
                       Victim moved · new location · {{ formatRelative(item.updated_at) }}
                     </span>
                     <span
                       v-else-if="updateChipVariant(item)"
-                      class="mt-1 inline-flex items-center gap-1 rounded-full bg-[#F7FB41] border border-[#8a7e00] px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#0A0A0A]"
+                      class="inline-flex items-center gap-1 rounded-full bg-[#F7FB41] border border-[#8a7e00] px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#0A0A0A]"
                     >
                       Victim updated · {{ formatRelative(item.updated_at) }}
                     </span>
@@ -577,6 +534,59 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- GPS Dropdown Popover (Teleported to body to avoid overflow clipping) -->
+    <Teleport to="body">
+      <div
+        v-if="activeGpsDropdownId && gpsDropdownPosition"
+        @click.stop
+        class="fixed w-60 rounded-2xl bg-white border border-[#1F3A4B]/20 shadow-2xl py-2 z-[100] text-left font-sans text-xs space-y-1"
+        :style="{
+          top: gpsDropdownPosition.top + 'px',
+          left: gpsDropdownPosition.left + 'px'
+        }"
+      >
+        <div class="px-3.5 py-1 border-b border-[#E0E0E0] mb-1">
+          <p class="text-[10px] font-black uppercase tracking-wider text-[#717171]">GPS Dispatch Actions</p>
+          <p class="font-mono text-[11px] font-bold text-[#1F3A4B] truncate">
+            {{ activeGpsDropdownItem?.latitude }}, {{ activeGpsDropdownItem?.longitude }}
+          </p>
+        </div>
+
+        <!-- 1. Open in Google Maps -->
+        <a
+          v-if="activeGpsDropdownItem"
+          :href="getGoogleMapsUrl(activeGpsDropdownItem.latitude, activeGpsDropdownItem.longitude)"
+          target="_blank"
+          rel="noopener noreferrer"
+          @click="activeGpsDropdownId = null"
+          class="w-full px-3.5 py-2 text-xs font-bold text-[#1F3A4B] hover:bg-[#EEF4FB] hover:text-[#902715] flex items-center gap-2.5 transition-colors"
+        >
+          <svg class="w-4 h-4 text-[#902715] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+          </svg>
+          <div class="flex flex-col text-left">
+            <span class="font-black text-xs">Open Google Maps</span>
+            <span class="text-[10px] text-[#717171] font-normal">External GPS directions for drivers</span>
+          </div>
+        </a>
+
+        <!-- 2. Copy Exact Coordinates -->
+        <button
+          v-if="activeGpsDropdownItem"
+          @click="copyCoords(activeGpsDropdownItem.latitude, activeGpsDropdownItem.longitude)"
+          class="w-full px-3.5 py-2 text-xs font-bold text-[#1F3A4B] hover:bg-[#EEF4FB] flex items-center gap-2.5 transition-colors text-left"
+        >
+          <svg class="w-4 h-4 text-[#717171] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+          <div class="flex flex-col text-left">
+            <span class="font-black text-xs">Copy Raw Lat/Lng</span>
+            <span class="text-[10px] text-[#717171] font-normal">Copy {{ activeGpsDropdownItem.latitude }}, {{ activeGpsDropdownItem.longitude }}</span>
+          </div>
+        </button>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -604,6 +614,8 @@ let pollTimer = null
 // ── Dropdown & Modal State ──
 const activeDropdownId = ref(null)
 const activeGpsDropdownId = ref(null)
+const gpsButtonRefs = ref({})
+const gpsDropdownPosition = ref(null)
 const showSpamModal = ref(false)
 const selectedReportForFlag = ref(null)
 const spamReason = ref('')
@@ -633,6 +645,11 @@ watch(() => sosStore.lastAutoFlags, (flags) => {
   const first = flags[0]
   const extra = flags.length > 1 ? ` (+${flags.length - 1} more)` : ''
   toastMessage.value = `Auto-flagged device: ${first.hash.substring(0, 8)} — ${first.label}. Moved to flagged queue.${extra}`
+})
+
+const activeGpsDropdownItem = computed(() => {
+  if (!activeGpsDropdownId.value) return null
+  return paginatedQueue.value.find(item => item.id === activeGpsDropdownId.value)
 })
 
 const filteredQueue = computed(() => {
@@ -702,17 +719,55 @@ async function copyToClipboard(text) {
 
 function toggleDropdown(id) {
   activeGpsDropdownId.value = null
+  gpsDropdownPosition.value = null
   activeDropdownId.value = activeDropdownId.value === id ? null : id
+}
+
+function setGpsButtonRef(id, el) {
+  if (el) {
+    gpsButtonRefs.value[id] = el
+  }
 }
 
 function toggleGpsDropdown(id) {
   activeDropdownId.value = null
-  activeGpsDropdownId.value = activeGpsDropdownId.value === id ? null : id
+  
+  if (activeGpsDropdownId.value === id) {
+    activeGpsDropdownId.value = null
+    gpsDropdownPosition.value = null
+    return
+  }
+  
+  activeGpsDropdownId.value = id
+  
+  // Calculate dropdown position based on button position
+  const buttonEl = gpsButtonRefs.value[id]
+  if (buttonEl) {
+    const rect = buttonEl.getBoundingClientRect()
+    const dropdownWidth = 240 // 60 * 4 (w-60 in Tailwind)
+    const dropdownHeight = 150 // approximate height
+    
+    let top = rect.bottom + 6 // mt-1.5
+    let left = rect.left
+    
+    // Adjust if dropdown would go off-screen to the right
+    if (left + dropdownWidth > window.innerWidth) {
+      left = window.innerWidth - dropdownWidth - 16
+    }
+    
+    // Adjust if dropdown would go off-screen at the bottom
+    if (top + dropdownHeight > window.innerHeight) {
+      top = rect.top - dropdownHeight - 6
+    }
+    
+    gpsDropdownPosition.value = { top, left }
+  }
 }
 
 function handleDocumentClick() {
   activeDropdownId.value = null
   activeGpsDropdownId.value = null
+  gpsDropdownPosition.value = null
 }
 
 function getGoogleMapsUrl(lat, lng) {
@@ -721,6 +776,7 @@ function getGoogleMapsUrl(lat, lng) {
 
 function copyCoords(lat, lng) {
   activeGpsDropdownId.value = null
+  gpsDropdownPosition.value = null
   copyToClipboard(`${lat}, ${lng}`)
 }
 
