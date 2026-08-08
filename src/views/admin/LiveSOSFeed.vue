@@ -654,6 +654,13 @@ const activeGpsDropdownItem = computed(() => {
   return paginatedQueue.value.find(item => item.id === activeGpsDropdownId.value)
 })
 
+// Close dropdown if the active item leaves paginatedQueue
+watch(activeGpsDropdownItem, (newItem) => {
+  if (!newItem && activeGpsDropdownId.value) {
+    closeGpsDropdown()
+  }
+})
+
 const filteredQueue = computed(() => {
   return sosStore.sortedQueue.filter(item => {
     // 1. Search Query (ID or Barangay). Space-separated terms OR-match
