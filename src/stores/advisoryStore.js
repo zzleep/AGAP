@@ -32,9 +32,16 @@ export const useAdvisoryStore = defineStore('advisory', () => {
   const fetchAdvisory = async () => {
     isLoading.value = true
     try {
-      const data = await getAdvisoryData()
-      advisories.value = data || []
-      lastFetched.value = Date.now()
+      const result = await getAdvisoryData()
+      advisories.value = result?.entries || []
+      // Only authoritative results prove the official state: a cache hit or a
+      // live feed response. A degraded result (feed unreachable, no fallback
+      // available) must NOT advance lastFetched — otherwise Aegis would skip
+      // retrying for 15 minutes and persist "No active alert" while an
+      // official advisory is actually active.
+      if (result?.source === 'cache' || result?.source === 'live') {
+        lastFetched.value = Date.now()
+      }
     } catch (err) {
       console.warn('advisoryStore fetch error:', err)
     } finally {

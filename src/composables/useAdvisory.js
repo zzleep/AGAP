@@ -86,6 +86,10 @@ export function useAdvisory() {
     }
   }
 
+  // Resolves to { entries, source }: entries is the advisory list (possibly
+  // empty — a legitimate "no active advisory"), source tells callers whether
+  // the result reflects the OFFICIAL state ('cache' hit or 'live' feed) or a
+  // degraded 'derived' fallback. Callers gate freshness bookkeeping on it.
   const getAdvisoryData = async () => {
     loading.value = true
     error.value = null
@@ -95,7 +99,7 @@ export function useAdvisory() {
     if (cached) {
       advisories.value = cached
       loading.value = false
-      return cached
+      return { entries: cached, source: 'cache' }
     }
 
     // 2. Live fetch from the PAGASA PANaHON CAP feed
@@ -108,7 +112,7 @@ export function useAdvisory() {
         saveLocalCache(entries)
         advisories.value = entries
         loading.value = false
-        return entries
+        return { entries, source: 'live' }
       }
     }
 
@@ -116,7 +120,7 @@ export function useAdvisory() {
     const fallback = deriveFallbackList()
     advisories.value = fallback
     loading.value = false
-    return fallback
+    return { entries: fallback, source: 'derived' }
   }
 
   return {
