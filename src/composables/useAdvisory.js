@@ -62,6 +62,30 @@ export function useAdvisory() {
     return derived ? [derived] : []
   }
 
+  // One live-fetch attempt with a timeout; null on failure (timeout, network
+  // error, or non-OK status). Kept separate so the fallback path can retry.
+  const fetchLive = async () => {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), NETWORK_CONFIG.pagasaFetchTimeout)
+    try {
+      const res = await fetch(PANAHON_URL, { signal: controller.signal })
+      if (!res.ok) {
+        console.warn('PANaHON CAP feed response not OK:', res.status)
+        return null
+      }
+      return parseAdvisoryFeed(await res.json())
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        console.warn('PANaHON CAP feed fetch timed out')
+      } else {
+        console.warn('PANaHON CAP feed fetch failed:', err.message)
+      }
+      return null
+    } finally {
+      clearTimeout(timeout)
+    }
+  }
+
   const getAdvisoryData = async () => {
     loading.value = true
     error.value = null
@@ -76,26 +100,15 @@ export function useAdvisory() {
 
     // 2. Live fetch from the PAGASA PANaHON CAP feed
     if (typeof navigator !== 'undefined' && navigator.onLine) {
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), NETWORK_CONFIG.pagasaFetchTimeout)
-      try {
-        const res = await fetch(PANAHON_URL, { signal: controller.signal })
-        if (res.ok) {
-          const entries = parseAdvisoryFeed(await res.json())
-          saveLocalCache(entries)
-          advisories.value = entries
-          loading.value = false
-          return entries
-        }
-        console.warn('PANaHON CAP feed response not OK:', res.status)
-      } catch (err) {
-        if (err.name === 'AbortError') {
-          console.warn('PANaHON CAP feed fetch timed out')
-        } else {
-          console.warn('PANaHON CAP feed fetch failed:', err.message)
-        }
-      } finally {
-        clearTimeout(timeout)
+      let entries = await fetchLive()
+      // Mobile networks are flaky: one retry before giving up to the fallback,
+      // so a transient stall doesn't swap the official advisory for a derived one.
+      if (entries === null) entries = await fetchLive()
+      if (entries) {
+        saveLocalCache(entries)
+        advisories.value = entries
+        loading.value = false
+        return entries
       }
     }
 

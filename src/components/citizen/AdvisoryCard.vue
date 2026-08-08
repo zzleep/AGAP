@@ -143,7 +143,9 @@
 
     <!-- Footer meta row: issued · urgency countdown · source + official link -->
     <div class="mt-3 pt-3 border-t border-[#0A0A0A]/5 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[11px] font-semibold text-[#5C5C5C]">
-      <span v-if="issuedLabel" class="inline-flex items-center gap-1">
+      <!-- "Issued" only for official entries — a derived warning's timestamp is
+           the computation time, and the derived chip already says so -->
+      <span v-if="issuedLabel && !topAdvisory.isDerived" class="inline-flex items-center gap-1">
         {{ t('advisory.issued') }}
         <span class="font-bold text-[#4A4A4A]">{{ issuedLabel }}</span>
       </span>
