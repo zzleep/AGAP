@@ -209,14 +209,14 @@ import AdvisoryDetailsSheet from '@/components/citizen/AdvisoryDetailsSheet.vue'
 import { useNow } from '@/composables/useNow'
 import {
   OFFICIAL_ADVISORY_URL,
+  advisoryMeta,
   coverageMeta,
   coverageOf,
-  formatDateTime,
+  formatRemaining,
   isYourArea,
   severityLevelOf,
   severityOf,
-  splitHeadline,
-  tsOf
+  splitHeadline
 } from '@/lib/advisoryDisplay'
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -266,23 +266,21 @@ const coverageItems = computed(() => coverageOf(topAdvisory.value))
 /* ── Date + urgency countdown (reactive minute tick via useNow) ─────────── */
 const { now } = useNow()
 
-const issuedLabel = computed(() => formatDateTime(tsOf(topAdvisory.value?.issuedAt), locale.value === 'fil' ? 'fil-PH' : 'en-PH'))
+/* Shared time meta (issued label, expiry window, remaining time) — the same
+   source the details sheet uses, so the two can't drift. */
+const timeMeta = computed(() =>
+  advisoryMeta(topAdvisory.value, {
+    nowTs: now.value.getTime(),
+    localeTag: locale.value === 'fil' ? 'fil-PH' : 'en-PH'
+  })
+)
 
-const validUntilTs = computed(() => tsOf(topAdvisory.value?.validUntil))
-const isExpired = computed(() => validUntilTs.value != null && validUntilTs.value - now.value.getTime() <= 0)
-
-function formatRemaining(ms) {
-  const totalMin = Math.max(1, Math.ceil(ms / 60_000))
-  const h = Math.floor(totalMin / 60)
-  const m = totalMin % 60
-  return h > 0 ? `${h}h ${m}m` : `${m}m`
-}
-
-const countdownText = computed(() => {
-  const ts = validUntilTs.value
-  if (ts == null || isExpired.value) return null
-  return formatRemaining(ts - now.value.getTime())
-})
+const issuedLabel = computed(() => timeMeta.value.issuedLabel)
+const validUntilTs = computed(() => timeMeta.value.validUntilTs)
+const isExpired = computed(() => timeMeta.value.isExpired)
+const countdownText = computed(() =>
+  validUntilTs.value == null || isExpired.value ? null : formatRemaining(timeMeta.value.remainingMs)
+)
 
 /* ── Detail sheet (state lives in AdvisoryDetailsSheet) ─────────────────── */
 const sheetOpen = ref(false)

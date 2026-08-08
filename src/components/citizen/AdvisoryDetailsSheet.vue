@@ -384,6 +384,7 @@ import { ChevronDown, ChevronUp, CloudRain, ExternalLink, Share, TriangleAlert, 
 import { formatAdvisoryText } from '@/lib/advisoryFeed'
 import {
   OFFICIAL_ADVISORY_URL,
+  advisoryMeta,
   coverageMeta,
   coverageOf,
   dotForLevel,
@@ -401,8 +402,7 @@ import {
   severityOfBlock,
   splitHeadline,
   tierAreaMunicipalities,
-  tierMunicipalityParts,
-  tsOf
+  tierMunicipalityParts
 } from '@/lib/advisoryDisplay'
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -431,9 +431,16 @@ const selected = computed(() => props.advisories[selectedIndex.value] || props.a
 const sheetSeverity = computed(() => severityOf(selected.value))
 const sheetCoverage = computed(() => coverageOf(selected.value))
 const sheetHeadlineParts = computed(() => splitHeadline(selected.value?.headline))
-const sheetIssuedLabel = computed(() => formatDateTime(tsOf(selected.value?.issuedAt), locale.value === 'fil' ? 'fil-PH' : 'en-PH'))
+const sheetIssuedLabel = computed(() => sheetTimeMeta.value.issuedLabel)
 const sheetValidUntilLabel = computed(() =>
-  selected.value?.validUntil ? formatDateTime(tsOf(selected.value.validUntil), locale.value === 'fil' ? 'fil-PH' : 'en-PH') : null
+  sheetTimeMeta.value.validUntilTs != null
+    ? formatDateTime(sheetTimeMeta.value.validUntilTs, locale.value === 'fil' ? 'fil-PH' : 'en-PH')
+    : null
+)
+/* Shared time meta (same source as the card): a derived warning's timestamps
+   are computation-time, not an official issue — never shown as "Issued". */
+const sheetTimeMeta = computed(() =>
+  advisoryMeta(selected.value, { localeTag: locale.value === 'fil' ? 'fil-PH' : 'en-PH' })
 )
 
 /* ── Structured message blocks (messageBlocks) ────────────────────────────

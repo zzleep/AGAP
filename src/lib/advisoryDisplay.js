@@ -172,19 +172,26 @@ export function isFloodYourArea(item) {
   return normalizeName(item?.label) === HOME_PROVINCE
 }
 
-/* Date formatting (en-PH / fil-PH short form, forced to Asia/Manila so mobile
-   and desktop never read local-device time; "PHT" disambiguates). */
+/* Date formatting, pinned to one layout across engines: "{Month} {d}, {h}:{mm}
+   AM/PM" forced to Asia/Manila, so mobile and desktop read byte-identical
+   strings regardless of the device's CLDR/ICU version ("Aug 8, 2:00 PM PHT"
+   everywhere, never "Aug 8 at 2:00 PM"). The month stays localized via Intl;
+   the date and time parts are fetched separately so no locale-specific
+   combined pattern ("at", ",", "،") can leak in. "PHT" disambiguates. */
 export function formatDateTime(ts, localeTag = 'en-PH') {
   if (!ts || !Number.isFinite(ts)) return ''
   try {
-    const local = new Date(ts).toLocaleString(localeTag, {
+    const dayMonth = new Date(ts).toLocaleDateString(localeTag, {
       month: 'short',
       day: 'numeric',
+      timeZone: 'Asia/Manila'
+    })
+    const time = new Date(ts).toLocaleTimeString(localeTag, {
       hour: 'numeric',
       minute: '2-digit',
       timeZone: 'Asia/Manila'
     })
-    return `${local} PHT`
+    return `${dayMonth}, ${time} PHT`
   } catch {
     return new Date(ts).toLocaleString()
   }
@@ -195,4 +202,32 @@ export function tsOf(value) {
   if (value == null) return null
   const ts = new Date(value).getTime()
   return Number.isFinite(ts) ? ts : null
+}
+
+/* One source of truth for what the card AND the details sheet show about a
+   warning's times. A derived warning's timestamps are computation-time, not
+   an official issue: never present them as "Issued", and it carries no
+   expiry — so no countdown either. Both views consume this so they can't
+   drift apart again. */
+export function advisoryMeta(a, { nowTs = null, localeTag = 'en-PH' } = {}) {
+  const isDerived = !!a?.isDerived
+  const issuedTs = tsOf(a?.issuedAt)
+  const validUntilTs = tsOf(a?.validUntil)
+  return {
+    isDerived,
+    issuedLabel: isDerived ? '' : formatDateTime(issuedTs, localeTag),
+    showIssued: !isDerived && issuedTs != null,
+    validUntilTs,
+    isExpired: validUntilTs != null && nowTs != null && validUntilTs - nowTs <= 0,
+    remainingMs: validUntilTs != null && nowTs != null ? validUntilTs - nowTs : null
+  }
+}
+
+/** "2h 48m" / "45m" from a remaining-duration in ms. */
+export function formatRemaining(ms) {
+  if (!Number.isFinite(ms) || ms <= 0) return ''
+  const totalMin = Math.max(1, Math.ceil(ms / 60_000))
+  const h = Math.floor(totalMin / 60)
+  const m = totalMin % 60
+  return h > 0 ? `${h}h ${m}m` : `${m}m`
 }

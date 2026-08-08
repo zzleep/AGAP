@@ -406,7 +406,10 @@ export function deriveAdvisoryFromRainfall(rateMmHr) {
     headline: `Rainfall warning - ${severity} level`,
     message: `Heavy rain in progress (${rate.toFixed(1)} mm/hr). Possible flooding in low-lying areas. Stay alert and monitor advisories.`,
     issuedAt: Date.now(),
-    validUntil: Date.now() + 3 * 60 * 60 * 1000,
+    // No expiry: the 3-hour window was fabricated, and a made-up countdown
+    // would masquerade as an official validity period. Derived entries show
+    // the "derived" chip instead of Issued/Expires-in (see advisoryMeta).
+    validUntil: null,
     publishedBy: 'PAGASA',
     source: 'pagasa',
     isDerived: true
