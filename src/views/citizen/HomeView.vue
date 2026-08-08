@@ -118,7 +118,7 @@
     </section>
 
     <!-- Official PAGASA Weather Advisory Strip (SMS-style alerts) -->
-    <AdvisoryCard :advisories="advisory.advisories" :loading="advisory.isLoading" />
+    <AdvisoryCard :advisories="advisory.advisories" :loading="advisory.isLoading" :diag="advisory.diag" />
 
     <!-- Stay Ready Header Block (Compact Tight Spacing) -->
     <div class="pt-0.5">

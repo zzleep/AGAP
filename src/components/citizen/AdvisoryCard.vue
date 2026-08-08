@@ -196,6 +196,21 @@
       {{ t('advisory.details') }}
       <ChevronUp class="w-4 h-4" :stroke-width="2.5" aria-hidden="true" />
     </button>
+
+    <!-- ?diag=1 troubleshooting panel: identifies the running build and the
+         data path (live feed / cache / rainfall-derived), plus the fetch
+         failure reason — so a phone-vs-desktop discrepancy can be pinned down -->
+    <pre
+      v-if="debugOn"
+      class="mt-3 rounded-xl bg-[#0A0A0A] text-[#7CFC98] text-[10px] leading-relaxed p-3 overflow-x-auto whitespace-pre-wrap break-all"
+    >build: {{ buildCommit }}
+source: {{ diag?.source ?? 'n/a' }} | entries: {{ diag?.entryCount ?? 'n/a' }} | at: {{ diag?.at ? new Date(diag.at).toISOString() : 'n/a' }}
+{{ diag?.error ? `error: ${diag.error} — ${diag.detail ?? ''}` : 'fetch: ok' }}
+top: {{ topAdvisory?.id ?? 'none' }}
+top: derived={{ !!topAdvisory?.isDerived }} sev={{ topAdvisory?.severity }} local={{ topAdvisory?.localSeverity }}
+issuedAt: {{ topAdvisory?.issuedAt ? new Date(topAdvisory.issuedAt).toISOString() : 'null' }}
+validUntil: {{ topAdvisory?.validUntil ? new Date(topAdvisory.validUntil).toISOString() : 'null' }}
+now: {{ now.toISOString() }} | locale: {{ locale }} | onLine: {{ navigatorOnLine }}</pre>
   </section>
 
   <AdvisoryDetailsSheet :advisories="advisories" :open="sheetOpen" @close="closeSheet" />
@@ -229,10 +244,16 @@ import {
    ──────────────────────────────────────────────────────────────────────────── */
 const props = defineProps({
   advisories: { type: Array, default: () => [] },
-  loading: { type: Boolean, default: false }
+  loading: { type: Boolean, default: false },
+  diag: { type: Object, default: null }
 })
 
 const { t, locale } = useI18n()
+
+/* ── Diagnostic panel (?diag=1) — see the template pre block ─────────────── */
+const buildCommit = __BUILD_COMMIT__
+const debugOn = typeof window !== 'undefined' && /[?&]diag=1\b/.test(window.location.search)
+const navigatorOnLine = typeof navigator !== 'undefined' ? String(navigator.onLine) : 'n/a'
 
 /* Top of the severity-sorted list is what the user's area faces most. */
 const topAdvisory = computed(() => (Array.isArray(props.advisories) ? props.advisories[0] : null) || null)

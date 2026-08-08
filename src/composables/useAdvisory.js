@@ -22,6 +22,9 @@ export function useAdvisory() {
   const advisories = ref([])
   const loading = ref(false)
   const error = ref(null)
+  // Diagnostic breadcrumbs for the ?diag=1 panel: which path the data came
+  // from and, on a failed live fetch, exactly why (timeout/HTTP/network).
+  const diag = ref({ source: null, error: null, detail: null, entryCount: 0, at: 0 })
 
   const readLocalCache = () => {
     try {
@@ -71,15 +74,19 @@ export function useAdvisory() {
       const res = await fetch(PANAHON_URL, { signal: controller.signal })
       if (!res.ok) {
         console.warn('PANaHON CAP feed response not OK:', res.status)
+        diag.value = { ...diag.value, error: `http ${res.status}`, detail: `feed returned status ${res.status}`, at: Date.now() }
         return null
       }
+      diag.value = { ...diag.value, error: null, detail: null, at: Date.now() }
       return parseAdvisoryFeed(await res.json())
     } catch (err) {
+      const detail = err.name === 'AbortError' ? `timed out after ${NETWORK_CONFIG.pagasaFetchTimeout}ms` : err.message
       if (err.name === 'AbortError') {
         console.warn('PANaHON CAP feed fetch timed out')
       } else {
         console.warn('PANaHON CAP feed fetch failed:', err.message)
       }
+      diag.value = { ...diag.value, error: err.name === 'AbortError' ? 'timeout' : 'network', detail, at: Date.now() }
       return null
     } finally {
       clearTimeout(timeout)
@@ -99,6 +106,7 @@ export function useAdvisory() {
     if (cached) {
       advisories.value = cached
       loading.value = false
+      diag.value = { source: 'cache', error: null, detail: null, entryCount: cached.length, at: Date.now() }
       return { entries: cached, source: 'cache' }
     }
 
@@ -112,14 +120,18 @@ export function useAdvisory() {
         saveLocalCache(entries)
         advisories.value = entries
         loading.value = false
+        diag.value = { source: 'live', error: null, detail: null, entryCount: entries.length, at: Date.now() }
         return { entries, source: 'live' }
       }
+    } else {
+      diag.value = { ...diag.value, error: 'offline', detail: 'navigator.onLine was false — live fetch skipped', at: Date.now() }
     }
 
     // 3. Derived fallback from live rainfall (offline or fetch failed) — never cached
     const fallback = deriveFallbackList()
     advisories.value = fallback
     loading.value = false
+    diag.value = { source: 'derived', error: diag.value.error ?? null, detail: diag.value.detail ?? null, entryCount: fallback.length, at: Date.now() }
     return { entries: fallback, source: 'derived' }
   }
 
@@ -127,6 +139,7 @@ export function useAdvisory() {
     advisories,
     loading,
     error,
+    diag,
     getAdvisoryData
   }
 }

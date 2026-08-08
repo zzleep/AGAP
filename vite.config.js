@@ -3,8 +3,24 @@ import vue from '@vitejs/plugin-vue'
 import basicSsl from '@vitejs/plugin-basic-ssl'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
+import { execSync } from 'child_process'
+
+// Cloudflare Pages injects SOURCE_VERSION (git SHA) at build time; local builds
+// fall back to the checked-out commit. Surfaced by the ?diag=1 advisory panel.
+const buildCommit =
+  process.env.SOURCE_VERSION ||
+  (() => {
+    try {
+      return execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim()
+    } catch {
+      return 'unknown'
+    }
+  })()
 
 export default defineConfig({
+  define: {
+    __BUILD_COMMIT__: JSON.stringify(buildCommit)
+  },
   plugins: [
     basicSsl(),
     vue(),
