@@ -1,20 +1,17 @@
 /**
- * PAGASA advisory feed parsing (pure module — imports nothing).
+ * PAGASA advisory feed parsing (pure module — no Vue/reactivity imports).
+ * Geographic scope comes from src/config/locality.js.
  *
  * SECURITY: advisory text must ONLY render via Vue {{ }} interpolation
  * (auto-escaped); NEVER use v-html — the live feed has contained <script>
  * content inside headlines.
  */
 
-/** Municipalities the app serves plus its immediate neighbors. Municipality-level
- * matching keeps the card focused on the user's area: an advisory naming only
- * towns elsewhere is dropped even when the province broadly matches. */
-export const NEARBY_MUNICIPALITIES = ['santa rosa', 'cabuyao', 'biñan', 'binan', 'san pedro', 'calamba']
+import { NEARBY_MUNICIPALITIES, HOME_PROVINCE } from '@/config/locality'
 
-/** Province-level fallback: when an advisory omits municipality detail entirely,
- * only the home province (Laguna) is trusted — adjacent provinces still require
- * municipality-level confirmation to count as "nearby". */
-export const HOME_PROVINCE = 'laguna'
+// Re-exported so existing importers keep working; the single source of truth
+// for the geographic scope is src/config/locality.js.
+export { NEARBY_MUNICIPALITIES, HOME_PROVINCE }
 
 /** Official PAGASA rainfall intensity thresholds (mm/hr). */
 export const PAGASA_THRESHOLDS = { yellow: 7.5, orange: 15, red: 30 }
