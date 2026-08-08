@@ -32,7 +32,7 @@ export const useAdvisoryStore = defineStore('advisory', () => {
   // Single composable instance for the whole store lifetime — the fetch logic
   // is stateless (the store owns advisories/isLoading), so creating a new
   // instance per call would only redo setup work.
-  const { getAdvisoryData, diag } = useAdvisory()
+  const { getAdvisoryData } = useAdvisory()
 
   const fetchAdvisory = async () => {
     isLoading.value = true
@@ -62,7 +62,6 @@ export const useAdvisoryStore = defineStore('advisory', () => {
     isLoading,
     lastFetched,
     advisorySummary,
-    diag,
     fetchAdvisory
   }
 })
