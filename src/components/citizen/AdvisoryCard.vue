@@ -196,14 +196,18 @@
       {{ t('advisory.details') }}
       <ChevronUp class="w-4 h-4" :stroke-width="2.5" aria-hidden="true" />
     </button>
+  </section>
 
-    <!-- ?diag=1 troubleshooting panel: identifies the running build and the
-         data path (live feed / cache / rainfall-derived), plus the fetch
-         failure reason — so a phone-vs-desktop discrepancy can be pinned down -->
-    <pre
-      v-if="debugOn"
-      class="mt-3 rounded-xl bg-[#0A0A0A] text-[#7CFC98] text-[10px] leading-relaxed p-3 overflow-x-auto whitespace-pre-wrap break-all"
-    >build: {{ buildCommit }}
+  <AdvisoryDetailsSheet :advisories="advisories" :open="sheetOpen" @close="closeSheet" />
+
+  <!-- ?diag=1 troubleshooting panel: identifies the running build and the
+       data path (live feed / cache / rainfall-derived), plus the fetch
+       failure reason — so a phone-vs-desktop discrepancy can be pinned down.
+       Rendered in every card state (loading / all-clear / active). -->
+  <pre
+    v-if="debugOn"
+    class="mt-3 rounded-xl bg-[#0A0A0A] text-[#7CFC98] text-[10px] leading-relaxed p-3 overflow-x-auto whitespace-pre-wrap break-all"
+  >build: {{ buildCommit }}
 source: {{ diag?.source ?? 'n/a' }} | entries: {{ diag?.entryCount ?? 'n/a' }} | at: {{ diag?.at ? new Date(diag.at).toISOString() : 'n/a' }}
 {{ diag?.error ? `error: ${diag.error} — ${diag.detail ?? ''}` : 'fetch: ok' }}
 top: {{ topAdvisory?.id ?? 'none' }}
@@ -211,9 +215,6 @@ top: derived={{ !!topAdvisory?.isDerived }} sev={{ topAdvisory?.severity }} loca
 issuedAt: {{ topAdvisory?.issuedAt ? new Date(topAdvisory.issuedAt).toISOString() : 'null' }}
 validUntil: {{ topAdvisory?.validUntil ? new Date(topAdvisory.validUntil).toISOString() : 'null' }}
 now: {{ now.toISOString() }} | locale: {{ locale }} | onLine: {{ navigatorOnLine }}</pre>
-  </section>
-
-  <AdvisoryDetailsSheet :advisories="advisories" :open="sheetOpen" @close="closeSheet" />
 </template>
 
 <script setup>
