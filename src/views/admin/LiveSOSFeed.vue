@@ -538,7 +538,8 @@
     <!-- GPS Dropdown Popover (Teleported to body to avoid overflow clipping) -->
     <Teleport to="body">
       <div
-        v-if="activeGpsDropdownId && gpsDropdownPosition"
+        v-if="activeGpsDropdownId && gpsDropdownPosition && activeGpsDropdownItem"
+        ref="gpsDropdownRef"
         @click.stop
         class="fixed w-60 rounded-2xl bg-white border border-[#1F3A4B]/20 shadow-2xl py-2 z-[100] text-left font-sans text-xs space-y-1"
         :style="{
@@ -559,7 +560,7 @@
           :href="getGoogleMapsUrl(activeGpsDropdownItem.latitude, activeGpsDropdownItem.longitude)"
           target="_blank"
           rel="noopener noreferrer"
-          @click="activeGpsDropdownId = null"
+          @click="closeGpsDropdown"
           class="w-full px-3.5 py-2 text-xs font-bold text-[#1F3A4B] hover:bg-[#EEF4FB] hover:text-[#902715] flex items-center gap-2.5 transition-colors"
         >
           <svg class="w-4 h-4 text-[#902715] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -615,6 +616,7 @@ let pollTimer = null
 const activeDropdownId = ref(null)
 const activeGpsDropdownId = ref(null)
 const gpsButtonRefs = ref({})
+const gpsDropdownRef = ref(null)
 const gpsDropdownPosition = ref(null)
 const showSpamModal = ref(false)
 const selectedReportForFlag = ref(null)
@@ -718,8 +720,7 @@ async function copyToClipboard(text) {
 }
 
 function toggleDropdown(id) {
-  activeGpsDropdownId.value = null
-  gpsDropdownPosition.value = null
+  closeGpsDropdown()
   activeDropdownId.value = activeDropdownId.value === id ? null : id
 }
 
@@ -745,29 +746,51 @@ function toggleGpsDropdown(id) {
   if (buttonEl) {
     const rect = buttonEl.getBoundingClientRect()
     const dropdownWidth = 240 // 60 * 4 (w-60 in Tailwind)
-    const dropdownHeight = 150 // approximate height
     
     let top = rect.bottom + 6 // mt-1.5
     let left = rect.left
     
-    // Adjust if dropdown would go off-screen to the right
-    if (left + dropdownWidth > window.innerWidth) {
-      left = window.innerWidth - dropdownWidth - 16
-    }
-    
-    // Adjust if dropdown would go off-screen at the bottom
-    if (top + dropdownHeight > window.innerHeight) {
-      top = rect.top - dropdownHeight - 6
-    }
-    
+    // Initial positioning
     gpsDropdownPosition.value = { top, left }
+    
+    // Wait for dropdown to render, then recalculate with actual dimensions
+    import('vue').then(({ nextTick }) => {
+      nextTick(() => {
+        if (gpsDropdownRef.value) {
+          const dropdownHeight = gpsDropdownRef.value.offsetHeight
+          
+          // Adjust if dropdown would go off-screen to the right
+          if (left + dropdownWidth > window.innerWidth) {
+            left = window.innerWidth - dropdownWidth - 16
+          }
+          
+          // Adjust if dropdown would go off-screen at the bottom
+          if (top + dropdownHeight > window.innerHeight) {
+            top = rect.top - dropdownHeight - 6
+          }
+          
+          gpsDropdownPosition.value = { top, left }
+        }
+      })
+    })
   }
+}
+
+function closeGpsDropdown() {
+  activeGpsDropdownId.value = null
+  gpsDropdownPosition.value = null
 }
 
 function handleDocumentClick() {
   activeDropdownId.value = null
-  activeGpsDropdownId.value = null
-  gpsDropdownPosition.value = null
+  closeGpsDropdown()
+}
+
+function handleScrollOrResize() {
+  // Close GPS dropdown when scrolling or resizing to prevent stale positioning
+  if (activeGpsDropdownId.value) {
+    closeGpsDropdown()
+  }
 }
 
 function getGoogleMapsUrl(lat, lng) {
@@ -775,8 +798,7 @@ function getGoogleMapsUrl(lat, lng) {
 }
 
 function copyCoords(lat, lng) {
-  activeGpsDropdownId.value = null
-  gpsDropdownPosition.value = null
+  closeGpsDropdown()
   copyToClipboard(`${lat}, ${lng}`)
 }
 
@@ -910,6 +932,9 @@ async function handleAegisOutcome(cluster, { outcome, modifiedAction }) {
 
 onMounted(async () => {
   document.addEventListener('click', handleDocumentClick)
+  window.addEventListener('scroll', handleScrollOrResize, true)
+  window.addEventListener('resize', handleScrollOrResize)
+  
   if (sosStore.fetchActiveReports) {
     await sosStore.fetchActiveReports()
   }
@@ -936,6 +961,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
   document.removeEventListener('click', handleDocumentClick)
+  window.removeEventListener('scroll', handleScrollOrResize, true)
+  window.removeEventListener('resize', handleScrollOrResize)
   sosStore.unsubscribeRealtimeSOS()
   if (staleTimer) {
     clearInterval(staleTimer)
