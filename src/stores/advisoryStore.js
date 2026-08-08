@@ -34,16 +34,26 @@ export const useAdvisoryStore = defineStore('advisory', () => {
   // instance per call would only redo setup work.
   const { getAdvisoryData } = useAdvisory()
 
+  // Monotonic request counter: overlapping fetchAdvisory calls (HomeView
+  // fetches on mount AND again once weather resolves) can resolve out of
+  // order — a request that STARTED earlier may FINISH later and carry an older
+  // feed snapshot. Only the latest issued request may commit state.
+  let fetchSeq = 0
+
   const fetchAdvisory = async () => {
+    // Stale results (a newer request superseded this one) must not commit:
+    // an older official snapshot landing late would revert the card and the
+    // Aegis weather context to a superseded state.
+    const seq = ++fetchSeq
     isLoading.value = true
     try {
       const result = await getAdvisoryData()
+      if (seq !== fetchSeq) return
       const source = result?.source ?? 'derived'
       const authoritative = source === 'cache' || source === 'live'
-      // Overlapping requests (HomeView fetches on mount AND again after
-      // weather resolves) resolve out of order: a degraded result that lands
-      // AFTER an official one must not clobber it — Aegis and the card would
-      // keep reading the degraded state even though the store is fresh.
+      // A degraded result that lands after an authoritative one must not
+      // clobber it — Aegis and the card would keep reading the degraded
+      // state even though the store is fresh.
       const storeIsFresh = lastFetched.value !== 0 && Date.now() - lastFetched.value < AUTHORITATIVE_FRESH_MS
       if (!authoritative && storeIsFresh) return
       advisories.value = result?.entries || []
@@ -52,7 +62,9 @@ export const useAdvisoryStore = defineStore('advisory', () => {
     } catch (err) {
       console.warn('advisoryStore fetch error:', err)
     } finally {
-      isLoading.value = false
+      // The flag belongs to the latest request only — an older request
+      // finishing later must not clear it while the newer one still runs.
+      if (seq === fetchSeq) isLoading.value = false
     }
   }
 
