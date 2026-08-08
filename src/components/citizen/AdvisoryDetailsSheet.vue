@@ -523,6 +523,11 @@ function selectAdvisory(i) {
   })
 }
 
+/* Close button + backdrop tap → parent. Escape goes through onEscapeKey. */
+function close() {
+  emit('close')
+}
+
 /* Open/close lifecycle: reset state, focus the close button, and bind Escape
    while open. The parent restores focus to the trigger on close. */
 watch(
